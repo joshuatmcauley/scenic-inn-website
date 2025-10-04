@@ -2,9 +2,9 @@
   "name": "scenic-inn-backend",
   "version": "1.0.0",
   "description": "Backend API for The Scenic Inn booking and management system",
-  "main": "server.js",
+  "main": "server-production.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-production.js",
     "dev": "nodemon server.js",
     "test": "jest",
     "migrate": "node scripts/migrate.js",

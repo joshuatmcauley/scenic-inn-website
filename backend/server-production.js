@@ -58,6 +58,7 @@ app.use('/api/admin', require('./routes/admin-production'));
 app.use('/api/menu', require('./routes/menu-production'));
 app.use('/api/menus', require('./routes/menu-production'));
 app.use('/api/booking', require('./routes/booking-production'));
+app.use('/api/seed', require('./routes/seed-production')); // Temporary seeding endpoint
 
 // 404 handler
 app.use('*', (req, res) => {

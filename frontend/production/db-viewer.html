@@ -418,8 +418,20 @@
                             const menuCard = document.createElement('div');
                             menuCard.className = 'menu-card';
                             
+                            // Group items by section
+                            const groupedItems = {};
+                            sections.data.forEach(item => {
+                                if (!groupedItems[item.section_key]) {
+                                    groupedItems[item.section_key] = {
+                                        name: item.section_name,
+                                        items: []
+                                    };
+                                }
+                                groupedItems[item.section_key].items.push(item);
+                            });
+                            
                             let sectionsHtml = '';
-                            sections.data.forEach(section => {
+                            Object.values(groupedItems).forEach(section => {
                                 let itemsHtml = '';
                                 section.items.forEach(item => {
                                     itemsHtml += `

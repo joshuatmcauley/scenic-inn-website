@@ -208,7 +208,7 @@
                 </div>
 
                 <div class="db-section">
-                    <h2>📋 All Menu Items (52 items)</h2>
+                    <h2>📋 All Menu Items</h2>
                     <div id="all-menu-items-container" class="loading">Loading all menu items...</div>
                 </div>
 
@@ -269,11 +269,11 @@
                 const response = await fetch(`${API_BASE_URL}/menus`);
                 const menus = await response.json();
                 
-                if (response.ok && menus.length > 0) {
+                if (response.ok && menus.success && menus.data && menus.data.length > 0) {
                     const menuGrid = document.createElement('div');
                     menuGrid.className = 'menu-grid';
                     
-                    menus.forEach(menu => {
+                    menus.data.forEach(menu => {
                         const menuCard = document.createElement('div');
                         menuCard.className = 'menu-card';
                         
@@ -400,7 +400,7 @@
                 const menusResponse = await fetch(`${API_BASE_URL}/menus`);
                 const menus = await menusResponse.json();
                 
-                if (!menusResponse.ok || !menus.length) {
+                if (!menusResponse.ok || !menus.success || !menus.data || !menus.data.length) {
                     container.innerHTML = '<div class="error">No menus found to load items from</div>';
                     return;
                 }
@@ -409,17 +409,17 @@
                 menuGrid.className = 'menu-grid';
                 
                 // Load items for each menu
-                for (const menu of menus) {
+                for (const menu of menus.data) {
                     try {
                         const itemsResponse = await fetch(`${API_BASE_URL}/menus/${menu.id}/items`);
                         const sections = await itemsResponse.json();
                         
-                        if (itemsResponse.ok && sections.length > 0) {
+                        if (itemsResponse.ok && sections.success && sections.data && sections.data.length > 0) {
                             const menuCard = document.createElement('div');
                             menuCard.className = 'menu-card';
                             
                             let sectionsHtml = '';
-                            sections.forEach(section => {
+                            sections.data.forEach(section => {
                                 let itemsHtml = '';
                                 section.items.forEach(item => {
                                     itemsHtml += `

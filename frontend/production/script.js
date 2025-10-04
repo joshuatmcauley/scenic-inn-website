@@ -9,7 +9,7 @@ let eventBookingData = {};
 let menuSchedule = null; // Will store the menu schedule from menu-schedule.txt
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+        const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {

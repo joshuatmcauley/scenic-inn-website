@@ -1,0 +1,15 @@
+# The Scenic Inn - Menu Schedule
+# Format: "Menu Name" "Days" "Time Range"
+# Days: Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday
+# Time: 24-hour format (HHMM-HHMM)
+
+"Tea Time Menu" "Monday,Tuesday,Wednesday,Thursday" "1700-2030"
+"Weekend Evening Menu" "Friday,Saturday,Sunday" "1700-2100"
+"Sunday Lunch Menu" "Sunday" "1200-1700"
+"Lunch Menu" "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday" "1200-1645"
+
+# Notes:
+# - Sunday Lunch Menu runs 12:00-17:00 (12pm-5pm) on Sundays only
+# - Weekend Evening Menu runs 17:00-21:00 (5pm-9pm) on Friday, Saturday, Sunday
+# - Tea Time Menu runs 17:00-20:30 (5pm-8:30pm) on Monday-Thursday
+# - Lunch Menu runs 12:00-16:45 (12pm-4:45pm) on Monday-Saturday

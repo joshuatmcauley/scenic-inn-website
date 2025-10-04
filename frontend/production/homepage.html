@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Scenic Inn - Bar and Restaurant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #752f15;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+        }
+
+        .nav-right span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3));
+        }
+
+        .hero-content {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 60px 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 20px;
+        }
+
+        .logo-image {
+            max-width: 300px;
+            height: auto;
+            margin: 0 auto 30px;
+            display: block;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            color: #2C2C2C;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: #5C4033;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            background: linear-gradient(135deg, #A0522D, #8B4513);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Content Sections */
+        .content-section {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 20px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .content-block {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-block {
+            background: linear-gradient(135deg, #2C2C2C, #1A1A1A);
+            color: white;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: #2C2C2C;
+        }
+
+        .dark-block .section-title {
+            color: white;
+        }
+
+        .section-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .menu-button {
+            background: linear-gradient(135deg, #DC143C, #B22222);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .menu-button:hover {
+            background: linear-gradient(135deg, #B22222, #DC143C);
+            transform: translateY(-2px);
+        }
+
+        /* Image Placeholders */
+        .image-placeholder {
+            background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .hero-image {
+            height: 400px;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: white;
+        }
+
+        .interior-image {
+            height: 300px;
+            background: linear-gradient(135deg, #704214, #8B4513);
+            color: white;
+        }
+
+        .awards-image {
+            height: 200px;
+            background: linear-gradient(135deg, #5C4033, #704214);
+            color: white;
+            margin-top: 20px;
+        }
+
+        /* Testimonials */
+        .testimonial {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #DC143C;
+        }
+
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .testimonial-author {
+            font-weight: 600;
+            color: #DC143C;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #1A1A1A, #2C2C2C);
+            color: white;
+            padding: 60px 0 30px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .footer-section h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #DC143C;
+        }
+
+        .footer-section p {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #DC143C;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            background-color: #B22222;
+            transform: translateY(-2px);
+        }
+
+        /* Floating Contact Button */
+        .floating-contact {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #DC143C, #B22222);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .floating-contact:hover {
+            background: linear-gradient(135deg, #B22222, #DC143C);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .two-column {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .floating-contact {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <ul class="nav-links">
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="index.html">Book a Table</a></li>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#contact">Contact Us</a></li>
+                <li><a href="menus.html">Menus</a></li>
+                <li><a href="#events">What's On</a></li>
+            </ul>
+            <div class="nav-right">
+                <span onclick="window.location.href='admin-login.html'" style="cursor: pointer;">👤 Admin Login</span>
+                <span>🛒 0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <img src="Theme/logotransparent.png" alt="The Scenic Inn" class="logo-image">
+                <a href="index.html" class="cta-button">Book a Table</a>
+            </div>
+        </section>
+
+        <!-- Welcome Section -->
+        <section class="content-section">
+            <div class="two-column">
+                <div class="content-block">
+                    <h2 class="section-title">Welcome to The Scenic Inn</h2>
+                    <p class="section-text">
+                        A family-run Bar and Restaurant situated near Armoy and the iconic Dark Hedges. 
+                        We offer a wide range of dishes including our famous Sizzling Pepper Chicken and 
+                        locally sourced steaks.
+                    </p>
+                    <p class="section-text">
+                        We are passionate about local produce and fresh cooking, offering Lunch time, 
+                        Evening, and Sunday Lunch menus. We cater for parties and can create tailor-made 
+                        menus for your special occasions.
+                    </p>
+                    <p class="section-text">
+                        Enjoy live entertainment on weekends with free admission and different bands weekly.
+                    </p>
+                </div>
+                <div class="content-block dark-block">
+                    <h2 class="section-title">LOCAL AWARD-WINNING BAR AND RESTAURANT</h2>
+                    <p class="section-text">
+                        Since January 2013 the Scenic Inn has helped raise over £200,000 for various 
+                        charities in Northern Ireland, demonstrating our commitment to the local community.
+                    </p>
+                    <p class="section-text">
+                        In 2017 we won the very prestigious accolade 'Pub Food of The Year' for the 
+                        whole of Northern Ireland along with Community Bar of the year.
+                    </p>
+                    <a href="#menus" class="menu-button">SEE THE MENU</a>
+                    <div class="image-placeholder awards-image">
+                        📸 Awards Photo Placeholder<br>
+                        <small>Staff with awards</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="content-section">
+            <div class="two-column">
+                <div class="content-block dark-block">
+                    <h2 class="section-title">What Our Customers Say</h2>
+                    <div class="testimonial">
+                        <p class="testimonial-text">
+                            "I've never had a bad meal at the Scenic Inn! The food is always fantastic, 
+                            and the staff couldn't be nicer, or more helpful. Would definitely recommend."
+                        </p>
+                        <p class="testimonial-author">- Lauren C</p>
+                    </div>
+                    <div class="testimonial">
+                        <p class="testimonial-text">
+                            "Had a brilliant meal in very comfortable surroundings. Food is great & the 
+                            prices are very good. Staff were very helpful and well mannered."
+                        </p>
+                        <p class="testimonial-author">- shirl228</p>
+                    </div>
+                    <div class="testimonial">
+                        <p class="testimonial-text">
+                            "First time there for birthday meal, food was excellent, staff were so friendly 
+                            & couldn't do enough for you. Will definitely be back"
+                        </p>
+                        <p class="testimonial-author">- macey612</p>
+                    </div>
+                    <a href="#reviews" class="menu-button">SEE MORE REVIEWS</a>
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <span style="color: #DC143C;">⭐⭐⭐⭐⭐</span>
+                        <span style="color: #DC143C;">⭐⭐⭐⭐⭐</span>
+                    </div>
+                </div>
+                <div class="content-block">
+                    <div class="image-placeholder interior-image">
+                        📸 Restaurant Interior Photo Placeholder<br>
+                        <small>Stylish bar area with warm lighting</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Location & Hours Section -->
+        <section class="content-section">
+            <div class="two-column">
+                <div class="content-block dark-block">
+                    <h2 class="section-title">LOCATION & HOURS</h2>
+                    <p class="section-text">
+                        <strong>Address:</strong><br>
+                        38 FIVEY ROAD, BALLYMONEY, COUNTY ANTRIM, BT53 8UT
+                    </p>
+                    <p class="section-text">
+                        <strong>Phone:</strong><br>
+                        CALL 02820751260
+                    </p>
+                    <p class="section-text">
+                        <strong>Email:</strong><br>
+                        ENQUIRIES@THESCENICINN.COM
+                    </p>
+                    <p class="section-text">
+                        <strong>Location:</strong><br>
+                        SITUATED CLOSE TO THE ICONIC DARK HEDGES, ARMOY
+                    </p>
+                    <p class="section-text">
+                        <strong>Hours:</strong><br>
+                        OPEN DAILY NOON TILL 1AM<br>
+                        SERVING FOOD NOON TILL 8:30 PM
+                    </p>
+                </div>
+                <div class="content-block">
+                    <div class="image-placeholder" style="height: 400px;">
+                        🗺️ Google Maps Placeholder<br>
+                        <small>Interactive map showing The Scenic Inn location</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>CONTACT</h3>
+                <p>ENQUIRIES@THESCENICINN.COM</p>
+                <p>028 2075 1260</p>
+                <p>© 2021 The Scenic Inn</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon">📘</a>
+                    <a href="#" class="social-icon">📷</a>
+                    <a href="#" class="social-icon">⭐</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>JOBS</h3>
+                <p>WANT TO JOIN THE TEAM?</p>
+                <p>EMAIL US YOUR CV!</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Contact Button -->
+    <a href="#contact" class="floating-contact">
+        💬 CONTACT US
+    </a>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.backgroundColor = '#5a2410';
+            } else {
+                navbar.style.backgroundColor = '#752f15';
+            }
+        });
+    </script>
+</body>
+</html>

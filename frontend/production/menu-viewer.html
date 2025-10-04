@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Viewer - The Scenic Inn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .logo-image {
+            max-width: 60px;
+            height: auto;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background-color: #f8f6f3;
+            border-bottom: 1px solid #e0d5c7;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #8B4513, #A0522D);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background: linear-gradient(to bottom, #A0522D, #8B4513);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to bottom, #6c757d, #5a6268);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(to bottom, #5a6268, #6c757d);
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .status.loading {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 30px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-header {
+            background: linear-gradient(135deg, #704214, #8B4513);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .menu-header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .menu-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .menu-content {
+            padding: 20px;
+        }
+
+        .category {
+            margin-bottom: 25px;
+        }
+
+        .category h4 {
+            font-family: 'Playfair Display', serif;
+            color: #5C4033;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0d5c7;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: #8B4513;
+            font-size: 1.1rem;
+            margin-left: 15px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .data-source {
+            background-color: #e7f3ff;
+            color: #004085;
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 8px;
+            border: 1px solid #b8daff;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <img src="Theme/logotransparent.png" alt="The Scenic Inn" class="logo-image">
+                Menu Viewer
+            </h1>
+            <p>View all available menus and items for The Scenic Inn</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="loadAllMenus()">🔄 Load All Menus</button>
+            <button class="btn btn-secondary" onclick="loadFromDojo()">🔗 Load from Dojo API</button>
+            <button class="btn btn-secondary" onclick="loadSampleData()">📋 Load Sample Data</button>
+            <span id="status" class="status loading">Ready to load menus</span>
+        </div>
+
+        <div id="data-source" class="data-source" style="display: none;">
+            <strong>Data Source:</strong> <span id="source-info"></span>
+        </div>
+
+        <div id="menu-container">
+            <div class="loading-spinner">
+                <h3>Click "Load All Menus" to view available menus</h3>
+                <p>This will show all menu items from your current data source</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="sample-data.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+        let currentDataSource = 'none';
+
+        async function loadAllMenus() {
+            updateStatus('loading', 'Loading menus...');
+            hideDataSource();
+            
+            try {
+                // ONLY try real Dojo API - NO FALLBACKS
+                const response = await fetch(`${API_BASE_URL}/dojo/experiences`);
+                const data = await response.json();
+                
+                if (!response.ok || !data.success || !data.data) {
+                    throw new Error(data.error || data.message || 'Failed to load experiences from Dojo API');
+                }
+
+                // Convert experiences to menu format
+                const menuData = {};
+                data.data.forEach(exp => {
+                    menuData[exp.id] = {
+                        name: exp.name,
+                        price: exp.price,
+                        description: exp.description,
+                        status: exp.status
+                    };
+                });
+                
+                displayMenus(menuData, 'Real Dojo API');
+                currentDataSource = 'dojo';
+            } catch (error) {
+                updateStatus('error', `Dojo API Error: ${error.message}`);
+                showError(`Failed to load from Dojo API: ${error.message}`);
+            }
+        }
+
+        async function loadFromDojo() {
+            updateStatus('loading', 'Loading from Real Dojo API...');
+            hideDataSource();
+            
+            try {
+                // Load experiences
+                const experiencesResponse = await fetch(`${API_BASE_URL}/dojo/experiences`);
+                const experiencesData = await experiencesResponse.json();
+                
+                if (!experiencesResponse.ok || !experiencesData.success || !experiencesData.data) {
+                    throw new Error(experiencesData.error || experiencesData.message || 'Failed to load from Dojo API');
+                }
+
+                // Load products for each experience
+                const menuData = {};
+                
+                for (const exp of experiencesData.data) {
+                    try {
+                        const productsResponse = await fetch(`${API_BASE_URL}/dojo/menu-items?experienceId=${exp.id}`);
+                        const productsData = await productsResponse.json();
+                        
+                        menuData[exp.id] = {
+                            name: exp.name,
+                            price: exp.price,
+                            description: exp.description,
+                            status: exp.status,
+                            items: {
+                                categories: [
+                                    {
+                                        name: 'Menu Items',
+                                        items: productsData.data || []
+                                    }
+                                ]
+                            }
+                        };
+                    } catch (error) {
+                        console.error(`Error loading products for ${exp.id}:`, error);
+                        menuData[exp.id] = {
+                            name: exp.name,
+                            price: exp.price,
+                            description: exp.description,
+                            status: exp.status,
+                            items: { categories: [] }
+                        };
+                    }
+                }
+                
+                displayMenus(menuData, 'Real Dojo API');
+                currentDataSource = 'dojo';
+            } catch (error) {
+                updateStatus('error', `Dojo API Error: ${error.message}`);
+                showError(`Failed to load from Dojo API: ${error.message}`);
+            }
+        }
+
+        function loadSampleData() {
+            updateStatus('error', 'Sample data disabled - only real Dojo data allowed');
+            showError('Sample data has been disabled. Please use "Load from Dojo API" to get real menu data.');
+        }
+
+        function displayMenus(menuData, source) {
+            const container = document.getElementById('menu-container');
+            
+            if (!menuData || Object.keys(menuData).length === 0) {
+                showError('No menu data available');
+                return;
+            }
+            
+            let html = '<div class="menu-grid">';
+            
+            Object.entries(menuData).forEach(([menuKey, menu]) => {
+                html += `
+                    <div class="menu-card">
+                        <div class="menu-header">
+                            <h3>${menu.name || 'Unknown Menu'}</h3>
+                            <p>${menu.price || 'Price not set'}</p>
+                        </div>
+                        <div class="menu-content">
+                `;
+                
+                if (menu.items && menu.items.categories) {
+                    menu.items.categories.forEach(category => {
+                        html += `
+                            <div class="category">
+                                <h4>${category.name}</h4>
+                        `;
+                        
+                        category.items.forEach(item => {
+                            html += `
+                                <div class="menu-item">
+                                    <div class="item-info">
+                                        <div class="item-name">${item.name}</div>
+                                        <div class="item-description">${item.description || 'No description available'}</div>
+                                    </div>
+                                    <div class="item-price">${item.price || 'N/A'}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                    });
+                } else if (menu.error) {
+                    html += `<div class="error-message">Error loading menu items: ${menu.error}</div>`;
+                } else {
+                    html += '<div class="error-message">No menu items available</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+            updateStatus('success', `Loaded ${Object.keys(menuData).length} menus from ${source}`);
+            showDataSource(source);
+        }
+
+        function updateStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function showDataSource(source) {
+            const dataSource = document.getElementById('data-source');
+            const sourceInfo = document.getElementById('source-info');
+            sourceInfo.textContent = source;
+            dataSource.style.display = 'block';
+        }
+
+        function hideDataSource() {
+            document.getElementById('data-source').style.display = 'none';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = `
+                <div class="error-message">
+                    <h3>Error Loading Menus</h3>
+                    <p>${message}</p>
+                    <p>Try using "Load Sample Data" to see example menus.</p>
+                </div>
+            `;
+        }
+
+        // Auto-load Dojo data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromDojo();
+        });
+    </script>
+</body>
+</html>

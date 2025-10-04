@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menus - The Scenic Inn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #752f15;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: #f4f1eb;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #d4af37;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #d4af37;
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: #752f15;
+            margin-bottom: 15px;
+        }
+
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Menu Navigation */
+        .menu-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .menu-tab {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #d4af37;
+            color: #752f15;
+            padding: 15px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-tab:hover {
+            background: #d4af37;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .menu-tab.active {
+            background: #752f15;
+            color: white;
+            border-color: #752f15;
+        }
+
+        /* Menu Content */
+        .menu-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-tab-content {
+            display: none;
+        }
+
+        .menu-tab-content.active {
+            display: block;
+        }
+
+        .menu-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #d4af37;
+        }
+
+        .menu-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: #752f15;
+            margin-bottom: 10px;
+        }
+
+        .menu-subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .pricing-info {
+            background: linear-gradient(135deg, #752f15 0%, #d4af37 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .pricing-info h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .pricing-options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .pricing-option {
+            text-align: center;
+        }
+
+        .pricing-option .courses {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .pricing-option .price {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .menu-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: #752f15;
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: #d4af37;
+        }
+
+        .menu-items {
+            display: grid;
+            gap: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            border-left: 4px solid #d4af37;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .item-info {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .item-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            color: #752f15;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .item-description {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .item-price {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            color: #752f15;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* Loading States */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .menu-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .menu-tab {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .menu-content {
+                padding: 20px;
+            }
+
+            .menu-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .item-info {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+
+            .pricing-options {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">The Scenic Inn</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menus-dynamic.html">Menus</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">Our Menus</h1>
+                <p class="page-subtitle">Discover our carefully crafted dishes, prepared with the finest ingredients and served with warm hospitality</p>
+            </div>
+
+            <!-- Menu Navigation Tabs -->
+            <div class="menu-nav" id="menuNav">
+                <!-- Tabs will be dynamically generated -->
+            </div>
+
+            <!-- Menu Content -->
+            <div class="menu-content">
+                <div id="menuContainer">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <h3>Loading our delicious menus...</h3>
+                        <p>Please wait while we fetch the latest menu information</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let menus = [];
+        let currentMenuId = null;
+
+        // Load all menus from database
+        async function loadMenus() {
+            try {
+                const response = await fetch(`${API_BASE}/menu`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load menus');
+                }
+                
+                menus = data.data;
+                displayMenus();
+            } catch (error) {
+                console.error('Error loading menus:', error);
+                showError('Failed to load menus. Please try again later.');
+            }
+        }
+
+        // Display menus with tabs and content
+        function displayMenus() {
+            if (menus.length === 0) {
+                showError('No menus available at the moment.');
+                return;
+            }
+
+            // Generate navigation tabs
+            generateMenuTabs();
+            
+            // Show first menu by default
+            if (menus.length > 0) {
+                showMenu(menus[0].id);
+            }
+        }
+
+        // Generate menu navigation tabs
+        function generateMenuTabs() {
+            const navContainer = document.getElementById('menuNav');
+            navContainer.innerHTML = '';
+            
+            menus.forEach(menu => {
+                const tab = document.createElement('button');
+                tab.className = 'menu-tab';
+                tab.textContent = menu.name;
+                tab.onclick = () => showMenu(menu.id);
+                navContainer.appendChild(tab);
+            });
+        }
+
+        // Show specific menu
+        function showMenu(menuId) {
+            const menu = menus.find(m => m.id === menuId);
+            if (!menu) return;
+
+            currentMenuId = menuId;
+            
+            // Update active tab
+            document.querySelectorAll('.menu-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Generate menu content
+            generateMenuContent(menu);
+        }
+
+        // Generate menu content HTML
+        function generateMenuContent(menu) {
+            const container = document.getElementById('menuContainer');
+            
+            let html = `
+                <div class="menu-tab-content active">
+                    <div class="menu-header">
+                        <h1 class="menu-title">${menu.name}</h1>
+                        <p class="menu-subtitle">${menu.schedule}</p>
+                    </div>
+            `;
+
+            // Add pricing information if available
+            if (menu.pricing && Object.keys(menu.pricing).length > 0) {
+                html += `
+                    <div class="pricing-info">
+                        <h3>Menu Pricing</h3>
+                        <div class="pricing-options">
+                `;
+                
+                Object.entries(menu.pricing).forEach(([key, price]) => {
+                    const courseText = key.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    html += `
+                        <div class="pricing-option">
+                            <div class="courses">${courseText}</div>
+                            <div class="price">£${price.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add menu sections
+            if (menu.sections && Object.keys(menu.sections).length > 0) {
+                Object.entries(menu.sections).forEach(([sectionKey, section]) => {
+                    html += `
+                        <div class="menu-section">
+                            <h2 class="section-title">${section.name}</h2>
+                            <div class="menu-items">
+                    `;
+                    
+                    if (section.items && section.items.length > 0) {
+                        section.items.forEach(item => {
+                            html += `
+                                <div class="menu-item">
+                                    <div class="item-info">
+                                        <h3 class="item-name">${item.name}</h3>
+                                        <p class="item-description">${item.description}</p>
+                                    </div>
+                                    <span class="item-price">£${item.price.toFixed(2)}</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p style="text-align: center; color: #666; font-style: italic;">No items available in this section</p>';
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p style="text-align: center; color: #666; font-style: italic;">Menu sections are being updated. Please check back soon.</p>';
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Show error message
+        function showError(message) {
+            const container = document.getElementById('menuContainer');
+            container.innerHTML = `
+                <div class="error">
+                    <h3>Oops! Something went wrong</h3>
+                    <p>${message}</p>
+                    <button onclick="loadMenus()" style="margin-top: 15px; padding: 10px 20px; background: #752f15; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMenus();
+        });
+    </script>
+</body>
+</html>

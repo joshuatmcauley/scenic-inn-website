@@ -1,0 +1,10 @@
+# Dojo API Configuration
+# Create a file called .env in this directory with these values:
+
+DOJO_API_BASE_URL=https://api.dojo.com/v1
+DOJO_API_KEY=your_dojo_api_key_here
+DOJO_VENDOR_ID=your_vendor_id_here
+DOJO_RESTAURANT_ID=your_restaurant_id_here
+
+PORT=3001
+NODE_ENV=development

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menus - The Scenic Inn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #752f15;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+        }
+
+        .nav-right span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Menu Navigation Tabs */
+        .menu-nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-tab {
+            padding: 15px 25px;
+            margin: 0 5px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .menu-tab.active {
+            color: #752f15;
+            background: rgba(117, 47, 21, 0.1);
+        }
+
+        .menu-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: #DC143C;
+            border-radius: 2px;
+        }
+
+        .menu-tab:hover {
+            color: #752f15;
+            background: rgba(117, 47, 21, 0.05);
+        }
+
+        /* Menu Content */
+        .menu-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            min-height: 600px;
+        }
+
+        .menu-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .menu-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: #2C2C2C;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .menu-subtitle {
+            font-size: 1.2rem;
+            color: #5C4033;
+            font-weight: 500;
+        }
+
+        .menu-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: #DC143C;
+            margin-bottom: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-items {
+            display: grid;
+            gap: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            border-left: 4px solid #DC143C;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            color: #2C2C2C;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .item-description {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .item-price {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            color: #752f15;
+            font-weight: 600;
+            margin-left: 20px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .menu-nav {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .menu-tab {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+
+            .menu-content {
+                padding: 30px 20px;
+            }
+
+            .menu-title {
+                font-size: 2.2rem;
+            }
+
+            .menu-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .item-price {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <ul class="nav-links">
+                <li><a href="homepage.html">Home</a></li>
+                <li><a href="index.html">Book a Table</a></li>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#contact">Contact Us</a></li>
+                <li><a href="menus.html" class="active">Menus</a></li>
+                <li><a href="#events">What's On</a></li>
+            </ul>
+            <div class="nav-right">
+                <span onclick="window.location.href='admin-login.html'" style="cursor: pointer;">👤 Admin Login</span>
+                <span>🛒 0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Menu Navigation Tabs -->
+            <div class="menu-nav">
+                <button class="menu-tab active" onclick="showMenu('tea-time')">Tea Time Menu</button>
+                <button class="menu-tab" onclick="showMenu('weekend-evening')">Weekend Evening Menu</button>
+                <button class="menu-tab" onclick="showMenu('sunday-lunch')">Sunday Lunch Menu</button>
+                <button class="menu-tab" onclick="showMenu('lunch')">Lunch Menu</button>
+            </div>
+
+            <!-- Menu Content -->
+            <div class="menu-content">
+                <!-- Tea Time Menu -->
+                <div id="tea-time" class="menu-tab-content active">
+                    <div class="menu-header">
+                        <h1 class="menu-title">Tea Time Menu</h1>
+                        <p class="menu-subtitle">Served Monday - Thursday 5:00pm - 8:30pm</p>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Starters</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Soup Of The Day</h3>
+                                    <p class="item-description">Wheaten bread</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Salt N Chilli Chicken</h3>
+                                    <p class="item-description">Salad Garnish/Garlic Aioli</p>
+                                </div>
+                                <span class="item-price">£8.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Cheesy Bacon Garlic Bread</h3>
+                                    <p class="item-description">Salad Garnish/Garlic Aioli</p>
+                                </div>
+                                <span class="item-price">£7.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Vegetable Spring Rolls</h3>
+                                    <p class="item-description">Salad Garnish/Chilli Dip</p>
+                                </div>
+                                <span class="item-price">£7.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Cheese BBQ Wedges</h3>
+                                    <p class="item-description">Wedges/BBQ Sauce/Cheese/Bacon</p>
+                                </div>
+                                <span class="item-price">£8.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Franks Hot Chicken Wings</h3>
+                                    <p class="item-description">Franks Hot Sauce Butter</p>
+                                </div>
+                                <span class="item-price">£9.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Potato Bread Fries</h3>
+                                    <p class="item-description">Ketchup Dip</p>
+                                </div>
+                                <span class="item-price">£6.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Nachos</h3>
+                                    <p class="item-description">BBQ Beef Brisket/Tortillas/Guacamole/Salsa/Jalapeños</p>
+                                </div>
+                                <span class="item-price">£10.95</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Main Course</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Pan Seared Salmon</h3>
+                                    <p class="item-description">Champ/Asparagus/Lemon Butter Sauce</p>
+                                </div>
+                                <span class="item-price">£19.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">8oz Sirloin Steak</h3>
+                                    <p class="item-description">Tobacco Onions/Pepper Sauce/Chips</p>
+                                </div>
+                                <span class="item-price">£24.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Chicken Curry</h3>
+                                    <p class="item-description">Basmati Rice/Naan Bread</p>
+                                </div>
+                                <span class="item-price">£17.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekend Evening Menu -->
+                <div id="weekend-evening" class="menu-tab-content">
+                    <div class="menu-header">
+                        <h1 class="menu-title">Weekend Evening Menu</h1>
+                        <p class="menu-subtitle">Served Friday - Sunday 5:00pm - 9:00pm</p>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Starters</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Soup Of The Day</h3>
+                                    <p class="item-description">Wheaten Bread</p>
+                                </div>
+                                <span class="item-price">£7.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Cheesy Garlic Bread</h3>
+                                    <p class="item-description">Salad Garnish/Garlic Mayo</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Garlic Mushroom</h3>
+                                    <p class="item-description">Breaded Mushroom/Salad Garnish/Garlic Mayo</p>
+                                </div>
+                                <span class="item-price">£7.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Chinese Chicken Strippers</h3>
+                                    <p class="item-description">Battered Chicken Strips In Chinese Glaze/Salad Garnish/BBQ Mayo</p>
+                                </div>
+                                <span class="item-price">£8.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Main Course</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Pan Seared Salmon</h3>
+                                    <p class="item-description">Champ/Asparagus/Lemon Butter Sauce</p>
+                                </div>
+                                <span class="item-price">£19.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">8oz Sirloin Steak</h3>
+                                    <p class="item-description">Tobacco Onions/Pepper Sauce/Chips</p>
+                                </div>
+                                <span class="item-price">£24.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Chicken Curry</h3>
+                                    <p class="item-description">Basmati Rice/Naan Bread</p>
+                                </div>
+                                <span class="item-price">£17.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sunday Lunch Menu -->
+                <div id="sunday-lunch" class="menu-tab-content">
+                    <div class="menu-header">
+                        <h1 class="menu-title">Sunday Lunch Menu</h1>
+                        <p class="menu-subtitle">Served Sunday 12:00pm - 5:00pm</p>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Starters</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Soup Of The Day</h3>
+                                    <p class="item-description">Wheaten Bread</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Garlic Mushrooms</h3>
+                                    <p class="item-description">Breaded Mushrooms/Salad Garnish/Garlic Mayo</p>
+                                </div>
+                                <span class="item-price">£7.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Prawn Cocktail</h3>
+                                    <p class="item-description">Prawns/Salad/Marie Rose Sauce/Wheaten Bread</p>
+                                </div>
+                                <span class="item-price">£8.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Chicken Strippers</h3>
+                                    <p class="item-description">Chinese Seasoned Battered Chicken/Salad Garnish/Dip</p>
+                                </div>
+                                <span class="item-price">£7.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Egg Mayo</h3>
+                                    <p class="item-description">Salad/Paprika</p>
+                                </div>
+                                <span class="item-price">£6.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Main Course</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Traditional Turkey, Ham, Stuffing</h3>
+                                    <p class="item-description">Mash/Roast Potato/Chefs Vegetables/Sauce</p>
+                                </div>
+                                <span class="item-price">£16.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Roast Beef And Yorkshire Pudding</h3>
+                                    <p class="item-description">Mash/Roast Potato/Chefs Vegetables/Gravy</p>
+                                </div>
+                                <span class="item-price">£18.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Gammon And Pineapple</h3>
+                                    <p class="item-description">Chips/Peas</p>
+                                </div>
+                                <span class="item-price">£15.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Pan Fried Chicken Escalope</h3>
+                                    <p class="item-description">Creamy Pepper Sauce/Chips/Salad</p>
+                                </div>
+                                <span class="item-price">£16.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Desserts</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Brownie Sundae</h3>
+                                    <p class="item-description">Warm Chocolate Brownie/Ice Cream/Chocolate Sauce</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Apple Crumble And Custard</h3>
+                                    <p class="item-description">Homemade Apple Crumble/Custard</p>
+                                </div>
+                                <span class="item-price">£6.50</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Chefs Cheesecake</h3>
+                                    <p class="item-description">Ask server for today's flavour</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lunch Menu -->
+                <div id="lunch" class="menu-tab-content">
+                    <div class="menu-header">
+                        <h1 class="menu-title">Lunch Menu</h1>
+                        <p class="menu-subtitle">Served Monday - Saturday 12:00pm - 4:45pm</p>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Light Bites</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Club Sandwich</h3>
+                                    <p class="item-description">Chicken, bacon, and avocado on toasted bread</p>
+                                </div>
+                                <span class="item-price">£9.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Quiche Lorraine</h3>
+                                    <p class="item-description">Traditional quiche with side salad</p>
+                                </div>
+                                <span class="item-price">£8.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Soup of the Day</h3>
+                                    <p class="item-description">Chef's daily selection with bread roll</p>
+                                </div>
+                                <span class="item-price">£6.95</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <h2 class="section-title">Main Courses</h2>
+                        <div class="menu-items">
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Beef Burger</h3>
+                                    <p class="item-description">8oz beef patty with chips and coleslaw</p>
+                                </div>
+                                <span class="item-price">£12.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Pasta Carbonara</h3>
+                                    <p class="item-description">Creamy bacon and egg pasta</p>
+                                </div>
+                                <span class="item-price">£11.95</span>
+                            </div>
+                            <div class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name">Fish and Chips</h3>
+                                    <p class="item-description">Beer battered cod with mushy peas</p>
+                                </div>
+                                <span class="item-price">£13.95</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showMenu(menuId) {
+            // Hide all menu contents
+            const allMenus = document.querySelectorAll('.menu-tab-content');
+            allMenus.forEach(menu => {
+                menu.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            const allTabs = document.querySelectorAll('.menu-tab');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected menu
+            document.getElementById(menuId).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Add scroll effect to navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.backgroundColor = '#5a2410';
+            } else {
+                navbar.style.backgroundColor = '#752f15';
+            }
+        });
+    </script>
+</body>
+</html>

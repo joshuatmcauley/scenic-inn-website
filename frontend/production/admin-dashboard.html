@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - The Scenic Inn</title>
+    <style>
+        body {
+            font-family: 'Playfair Display', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f6f0 100%);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.2);
+            border: 2px solid #8b4513;
+        }
+        
+        h1 {
+            color: #8b4513;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #d4af37;
+            border-radius: 10px;
+            background: #fffef7;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1 style="margin: 0;">🎛️ Admin Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="admin-info" style="color: #666; font-weight: 500;"></span>
+                <button onclick="logout()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Logout</button>
+            </div>
+        </div>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">Manage your Dojo API integration and menu data for The Scenic Inn</p>
+        
+        <div class="test-section">
+            <h3>🔗 API Connection Status</h3>
+            <button class="test-button" onclick="testConnection()">Test API Connection</button>
+            <span id="connection-status" class="status loading">Not tested</span>
+            <div id="connection-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Menu Management</h3>
+            <button class="test-button" onclick="testExperiences()">Load Menus from DB</button>
+            <button class="test-button" onclick="testProducts()">Load All Menu Items from DB</button>
+            <button class="test-button" onclick="testMenuItems()">Load Menu Items</button>
+            <div id="menu-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📅 Booking System</h3>
+            <button class="test-button" onclick="testAvailability()">Test Availability</button>
+            <div id="availability-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔄 Data Sync</h3>
+            <button class="test-button" onclick="syncToMainApp()">Sync Menu Data to Booking System</button>
+            <div id="sync-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Menu Management</h3>
+            <a href="admin-menu-manager.html" class="test-button" style="text-decoration: none; display: inline-block; margin-right: 10px; background: linear-gradient(to bottom, #28a745, #20c997);">Manage Menus</a>
+            <a href="menu-viewer.html" class="test-button" style="text-decoration: none; display: inline-block; margin-right: 10px;">View All Menus & Items</a>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">Create, edit, and delete menus and menu items. View all menus and verify data connection.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+
+        // Check authentication on page load
+        window.addEventListener('load', function() {
+            console.log('Admin dashboard loaded');
+            const token = localStorage.getItem('adminToken');
+            console.log('Token found:', !!token);
+            
+            if (!token) {
+                console.log('No token, redirecting to login');
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            console.log('Verifying token...');
+            // Verify token is still valid
+            fetch(`${API_BASE_URL}/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                console.log('Verify response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Verify response data:', data);
+                if (!data.success) {
+                    console.log('Token invalid, redirecting to login');
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminUser');
+                    window.location.href = 'admin-login.html';
+                } else {
+                    console.log('Token valid, showing dashboard');
+                    // Show welcome message
+                    const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
+                    document.getElementById('admin-info').textContent = `Welcome, ${user.username}`;
+                }
+            })
+            .catch(error => {
+                console.error('Token verification error:', error);
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                window.location.href = 'admin-login.html';
+            });
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            window.location.href = 'admin-login.html';
+        }
+        
+        async function testConnection() {
+            const statusEl = document.getElementById('connection-status');
+            const resultEl = document.getElementById('connection-result');
+            
+            statusEl.textContent = 'Testing...';
+            statusEl.className = 'status loading';
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Testing API connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/dojo/test`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.textContent = 'Connected ✅';
+                    statusEl.className = 'status connected';
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Connection successful!\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    throw new Error(data.error || 'Connection failed');
+                }
+            } catch (error) {
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Connection failed: ${error.message}`;
+            }
+        }
+        
+        async function testExperiences() {
+            const resultEl = document.getElementById('menu-result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Fetching menus from database...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/menu`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Menus retrieved from database!\n\nFound ${data.data.length} menus:\n${data.data.map(menu => `- ${menu.name} (${menu.id})`).join('\n')}`;
+                } else {
+                    throw new Error(data.message || 'Failed to fetch menus');
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Failed to fetch menus: ${error.message}`;
+            }
+        }
+        
+        async function testProducts() {
+            const resultEl = document.getElementById('menu-result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Fetching all menu items from database...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/menus/test/all-items`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ All menu items retrieved from database!\n\nFound ${data.count} items:\n${data.items.slice(0, 10).map(item => `- ${item.name} - £${item.price} (${item.section_key})`).join('\n')}${data.items.length > 10 ? '\n... and more' : ''}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ Failed to fetch menu items: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Failed to fetch menu items: ${error.message}`;
+            }
+        }
+
+
+        async function testMenuItems() {
+            const resultEl = document.getElementById('menu-result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Fetching menu items from database...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/menus/test/all-items`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Menu items retrieved from database!\n\nFound ${data.count} items:\n${data.items.slice(0, 15).map(item => `- ${item.name} - £${item.price} (${item.section_key})`).join('\n')}${data.items.length > 15 ? '\n... and more' : ''}`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch menu items');
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Failed to fetch menu items: ${error.message}`;
+            }
+        }
+        
+        async function testAvailability() {
+            const resultEl = document.getElementById('availability-result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Testing availability...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/dojo/availability?date=2025-01-10&party_size=4`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Availability retrieved!\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch availability');
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Failed to fetch availability: ${error.message}`;
+            }
+        }
+        
+        async function syncToMainApp() {
+            const resultEl = document.getElementById('sync-result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result loading';
+            resultEl.textContent = 'Syncing menu data to main app...';
+            
+            try {
+                // This would update the main app's sample data with real Dojo data
+                const response = await fetch(`${API_BASE_URL}/dojo/sync-menus`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Menu data synced to main app!\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    throw new Error(data.error || 'Failed to sync menu data');
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Failed to sync menu data: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

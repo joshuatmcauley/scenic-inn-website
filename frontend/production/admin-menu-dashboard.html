@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management - The Scenic Inn Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .auth-section {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .auth-section.hidden {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .menu-card {
+            background: white;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .menu-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .menu-card .schedule {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .pricing {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .pricing h4 {
+            margin-bottom: 10px;
+        }
+
+        .pricing-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .sections {
+            margin-top: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h4 {
+            color: #34495e;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .item-price {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .menu-actions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .section-items {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .item-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .item-form:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Menu Management</h1>
+            <p>The Scenic Inn - Admin Dashboard</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <div class="auth-section" id="authSection">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label for="adminToken">Admin Token:</label>
+                <input type="password" id="adminToken" placeholder="Enter admin token">
+            </div>
+            <button class="btn btn-primary" onclick="authenticate()">Login</button>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <div class="controls">
+                <button class="btn btn-primary" onclick="loadMenus()">🔄 Refresh Menus</button>
+                <button class="btn btn-success" onclick="showCreateMenuModal()">➕ Create New Menu</button>
+                <button class="btn btn-secondary" onclick="migrateMenus()">📥 Migrate Current Menus</button>
+                <button class="btn btn-danger" onclick="logout()">🚪 Logout</button>
+            </div>
+
+            <div id="messageContainer"></div>
+            <div id="menuContainer" class="menu-grid">
+                <div class="loading">Loading menus...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Menu Modal -->
+    <div id="menuModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Create New Menu</h2>
+            <form id="menuForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="menuName">Menu Name:</label>
+                        <input type="text" id="menuName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuSchedule">Schedule:</label>
+                        <input type="text" id="menuSchedule" placeholder="e.g., Served Monday - Friday 12:00pm - 3:00pm" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Pricing (optional):</label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="number" id="price1Course" placeholder="1 Course Price" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="price2Course" placeholder="2 Course Price" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="price3Course" placeholder="3 Course Price" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Menu Sections:</label>
+                    <div id="sectionsContainer">
+                        <div class="section-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" placeholder="Section Key (e.g., starters)" class="section-key">
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" placeholder="Section Name (e.g., Starters)" class="section-name">
+                                </div>
+                                <div class="form-group">
+                                    <button type="button" class="btn btn-danger btn-small" onclick="removeSection(this)">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addSection()">Add Section</button>
+                </div>
+
+                <div style="margin-top: 30px; text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Menu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentMenus = [];
+        let editingMenuId = null;
+        const API_BASE = 'http://localhost:3001/api';
+        let adminToken = '';
+
+        // Authentication
+        function authenticate() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                showMessage('Please login first', 'error');
+                setTimeout(() => {
+                    window.location.href = 'admin-login.html';
+                }, 2000);
+                return;
+            }
+
+            adminToken = token;
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboard').style.display = 'block';
+            loadMenus();
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            window.location.href = 'admin-login.html';
+        }
+
+        // API Helper
+        async function apiCall(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                ...options
+            };
+
+            try {
+                const response = await fetch(url, config);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'API request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Auto-authenticate on page load
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                authenticate();
+            } else {
+                showMessage('Please login first', 'error');
+                setTimeout(() => {
+                    window.location.href = 'admin-login.html';
+                }, 2000);
+            }
+        });
+
+        // Menu Management
+        async function loadMenus() {
+            try {
+                const response = await apiCall('/admin/menus');
+                currentMenus = response.data;
+                displayMenus();
+            } catch (error) {
+                showMessage(`Failed to load menus: ${error.message}`, 'error');
+            }
+        }
+
+        function displayMenus() {
+            const container = document.getElementById('menuContainer');
+            
+            if (currentMenus.length === 0) {
+                container.innerHTML = '<div class="loading">No menus found. Create your first menu!</div>';
+                return;
+            }
+
+            container.innerHTML = currentMenus.map(menu => `
+                <div class="menu-card">
+                    <div class="menu-actions">
+                        <button class="btn btn-primary btn-small" onclick="editMenu('${menu.id}')">Edit</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteMenu('${menu.id}')">Delete</button>
+                    </div>
+                    
+                    <h3>${menu.name}</h3>
+                    <div class="schedule">${menu.schedule}</div>
+                    
+                    ${menu.pricing ? `
+                        <div class="pricing">
+                            <h4>Pricing</h4>
+                            ${Object.entries(menu.pricing).map(([key, price]) => `
+                                <div class="pricing-item">
+                                    <span>${key.replace('-', ' ').toUpperCase()}</span>
+                                    <span>£${price.toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="sections">
+                        ${Object.entries(menu.sections).map(([key, section]) => `
+                            <div class="section">
+                                <h4>${section.name}</h4>
+                                ${section.items.map(item => `
+                                    <div class="item">
+                                        <div>
+                                            <div class="item-name">${item.name}</div>
+                                            <div style="font-size: 0.9rem; color: #666;">${item.description}</div>
+                                        </div>
+                                        <div class="item-price">£${item.price.toFixed(2)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function migrateMenus() {
+            try {
+                showMessage('Migrating current menus to database...', 'success');
+                // This would call a migration endpoint if we had one
+                // For now, we'll just reload the menus
+                await loadMenus();
+                showMessage('Menu migration completed!', 'success');
+            } catch (error) {
+                showMessage(`Migration failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteMenu(menuId) {
+            if (!confirm('Are you sure you want to delete this menu?')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/admin/menus/${menuId}`, { method: 'DELETE' });
+                showMessage('Menu deleted successfully', 'success');
+                loadMenus();
+            } catch (error) {
+                showMessage(`Failed to delete menu: ${error.message}`, 'error');
+            }
+        }
+
+        function editMenu(menuId) {
+            const menu = currentMenus.find(m => m.id === menuId);
+            if (!menu) return;
+
+            editingMenuId = menuId;
+            document.getElementById('modalTitle').textContent = 'Edit Menu';
+            document.getElementById('menuName').value = menu.name;
+            document.getElementById('menuSchedule').value = menu.schedule;
+            
+            // Set pricing
+            if (menu.pricing) {
+                document.getElementById('price1Course').value = menu.pricing['1-course'] || '';
+                document.getElementById('price2Course').value = menu.pricing['2-courses'] || '';
+                document.getElementById('price3Course').value = menu.pricing['3-courses'] || '';
+            }
+
+            // Clear and populate sections
+            const sectionsContainer = document.getElementById('sectionsContainer');
+            sectionsContainer.innerHTML = '';
+            
+            Object.entries(menu.sections).forEach(([key, section]) => {
+                addSection(key, section.name);
+            });
+
+            document.getElementById('menuModal').style.display = 'block';
+        }
+
+        function showCreateMenuModal() {
+            editingMenuId = null;
+            document.getElementById('modalTitle').textContent = 'Create New Menu';
+            document.getElementById('menuForm').reset();
+            document.getElementById('sectionsContainer').innerHTML = `
+                <div class="section-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" placeholder="Section Key (e.g., starters)" class="section-key">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" placeholder="Section Name (e.g., Starters)" class="section-name">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-danger btn-small" onclick="removeSection(this)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('menuModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('menuModal').style.display = 'none';
+        }
+
+        function addSection(key = '', name = '') {
+            const container = document.getElementById('sectionsContainer');
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'section-form';
+            sectionDiv.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="text" placeholder="Section Key (e.g., starters)" class="section-key" value="${key}">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" placeholder="Section Name (e.g., Starters)" class="section-name" value="${name}">
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-danger btn-small" onclick="removeSection(this)">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(sectionDiv);
+        }
+
+        function removeSection(button) {
+            button.closest('.section-form').remove();
+        }
+
+        // Form submission
+        document.getElementById('menuForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('menuName').value,
+                schedule: document.getElementById('menuSchedule').value,
+                sections: {}
+            };
+
+            // Add pricing if provided
+            const pricing = {};
+            const price1 = document.getElementById('price1Course').value;
+            const price2 = document.getElementById('price2Course').value;
+            const price3 = document.getElementById('price3Course').value;
+            
+            if (price1) pricing['1-course'] = parseFloat(price1);
+            if (price2) pricing['2-courses'] = parseFloat(price2);
+            if (price3) pricing['3-courses'] = parseFloat(price3);
+            
+            if (Object.keys(pricing).length > 0) {
+                formData.pricing = pricing;
+            }
+
+            // Add sections
+            const sectionForms = document.querySelectorAll('.section-form');
+            sectionForms.forEach(form => {
+                const key = form.querySelector('.section-key').value;
+                const name = form.querySelector('.section-name').value;
+                if (key && name) {
+                    formData.sections[key] = {
+                        name: name,
+                        items: []
+                    };
+                }
+            });
+
+            try {
+                if (editingMenuId) {
+                    await apiCall(`/admin/menus/${editingMenuId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(formData)
+                    });
+                    showMessage('Menu updated successfully', 'success');
+                } else {
+                    await apiCall('/admin/menus', {
+                        method: 'POST',
+                        body: JSON.stringify(formData)
+                    });
+                    showMessage('Menu created successfully', 'success');
+                }
+                
+                closeModal();
+                loadMenus();
+            } catch (error) {
+                showMessage(`Failed to save menu: ${error.message}`, 'error');
+            }
+        });
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('menuModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

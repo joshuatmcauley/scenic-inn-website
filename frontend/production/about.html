@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - The Scenic Inn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #752f15;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo img {
+            height: 50px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 0;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 40px;
+            border-radius: 10px;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: #752f15;
+            margin-bottom: 20px;
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .content-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: #752f15;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .content-section p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+
+        .awards-section {
+            background: #752f15;
+            color: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        .awards-section h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .awards-section p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .menu-button {
+            display: inline-block;
+            background: #ff6b35;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px auto;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background: #e55a2b;
+        }
+
+        .reviews-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .review {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #752f15;
+            border-radius: 5px;
+        }
+
+        .review p {
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .review-author {
+            font-weight: 600;
+            color: #752f15;
+        }
+
+        .image-placeholder {
+            background: #ddd;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .content-section h2 {
+                font-size: 2rem;
+            }
+
+            .content-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="Theme/logotransparent.png" alt="The Scenic Inn">
+            </div>
+            <ul class="nav-links">
+                <li><a href="homepage.html">Home</a></li>
+                <li><a href="index.html">Book a Table</a></li>
+                <li><a href="about.html" class="active">About Us</a></li>
+                <li><a href="contact.html">Contact Us</a></li>
+                <li><a href="menus.html">Menus</a></li>
+                <li><a href="events.html">What's On</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="container">
+            <section class="hero">
+                <h1>About The Scenic Inn</h1>
+                <p>Welcome to The Scenic Inn, where exceptional dining meets breathtaking views.</p>
+            </section>
+            
+            <section class="content-section">
+                <h2>Our Story</h2>
+                <p>Welcome to The Scenic Inn. We are a family run Bar and Restaurant situated just outside Armoy, a short distance from the Famous Dark Hedges. We offer a wide range of dishes to suit everyone's taste from our Famous Sizzling Pepper Chicken to the finest steaks which are all locally sourced. We are Passionate about sourcing all of our produce locally and all of our food is cooked from fresh. We have a variety of menu's including Lunch time menu, Evening menu and Sunday Lunch.</p>
+                
+                <p>We can cater for parties and tailor menus to suit your needs. We offer live entertainment at the weekends with free admission, with a different band playing each week.</p>
+            </section>
+
+            <section class="awards-section">
+                <h2>Local Award-Winning Bar and Restaurant</h2>
+                <p>Did you know that since January 2013 the Scenic Inn has helped raise over £200,000 for various charities in Northern Ireland? We're committed to helping our local community in any way we can!</p>
+                
+                <p>In 2017 we won the very prestigious accolade "Pub Food of The Year" for the whole of Northern Ireland along with Community Bar of the year.</p>
+                
+                <div style="text-align: center;">
+                    <a href="menus.html" class="menu-button">See the Menu</a>
+                </div>
+                
+                <div class="image-placeholder">
+                    [Awards Image - IMG_1096.jpeg]
+                </div>
+            </section>
+
+            <section class="reviews-section">
+                <h2>What Our Customers Say</h2>
+                
+                <div class="review">
+                    <p>"I've never had a bad meal at the Scenic Inn! The food is always fantastic, and the staff couldn't be nicer, or more helpful. Would definitely recommend."</p>
+                    <div class="review-author">- Lauren C</div>
+                </div>
+
+                <div class="review">
+                    <p>"Had a brilliant meal in very comfortable surroundings. Food is great & the prices are very good. Staff were very helpful and well mannered."</p>
+                    <div class="review-author">- shirl228</div>
+                </div>
+
+                <div class="review">
+                    <p>"First time there for birthday meal, food was excellent, staff were so friendly & couldn't do enough for you. Will definitely be back"</p>
+                    <div class="review-author">- macey612</div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="#" class="menu-button">See More Reviews</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Add scroll effect to navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.backgroundColor = '#5a2410';
+            } else {
+                navbar.style.backgroundColor = '#752f15';
+            }
+        });
+    </script>
+</body>
+</html>

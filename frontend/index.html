@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Scenic Inn - Book a Table</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <img src="Theme/logotransparent.png" alt="The Scenic Inn" class="logo-image">
+                <p>Book Your Table</p>
+            </div>
+            
+            <!-- Event Preorder Link -->
+            <div class="event-preorder-link">
+                <a href="#" onclick="showEventPreorder()" class="event-link">
+                    🎉 Booking for an event? Want food out quick? 
+                    <strong>Book a preorder here!</strong>
+                </a>
+            </div>
+        </header>
+
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-step active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span class="step-label">Party Details</span>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <span class="step-number">2</span>
+                    <span class="step-label">Time</span>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <span class="step-number">3</span>
+                    <span class="step-label">Menu</span>
+                </div>
+                <div class="progress-step" data-step="4">
+                    <span class="step-number">4</span>
+                    <span class="step-label">Contact Details</span>
+                </div>
+                <div class="progress-step" data-step="5">
+                    <span class="step-number">5</span>
+                    <span class="step-label">Confirmation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step 1: Party Details -->
+            <div class="step-content active" id="step-1">
+                <div class="step-header">
+                    <h2>Party Details & Date</h2>
+                    <p>Let's start with the basics</p>
+                </div>
+                
+                <form class="booking-form">
+                    <div class="form-group">
+                        <label for="party-size">How many people?</label>
+                        <select id="party-size" name="party_size" required>
+                            <option value="">Select party size</option>
+                            <option value="1">1 person</option>
+                            <option value="2">2 people</option>
+                            <option value="3">3 people</option>
+                            <option value="4">4 people</option>
+                            <option value="5">5 people</option>
+                            <option value="6">6 people</option>
+                            <option value="7">7 people</option>
+                            <option value="8">8 people</option>
+                            <option value="9">9 people</option>
+                            <option value="10">10 people</option>
+                            <option value="11">11 people</option>
+                            <option value="12">12 people</option>
+                            <option value="13">13 people</option>
+                            <option value="14">14 people</option>
+                            <option value="15">15 people</option>
+                            <option value="16">16 people</option>
+                            <option value="17">17 people</option>
+                            <option value="18">18 people</option>
+                            <option value="19">19 people</option>
+                            <option value="20">20 people</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-date">Select Date</label>
+                        <input type="date" id="booking-date" name="date" required>
+                    </div>
+
+                    <div class="large-party-notice" id="large-party-notice" style="display: none;">
+                        <div class="notice-box">
+                            <h3>📋 Large Party Options</h3>
+                            <p>For parties of 11 or more, you can choose to preorder meals for a smoother dining experience.</p>
+                            
+                            <div class="preorder-toggle">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="enable-preorder" name="enable_preorder">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="toggle-label">Enable preorder for this booking</span>
+                            </div>
+                            
+                            <div class="preorder-info" id="preorder-info" style="display: none;">
+                                <p><strong>Preorder Benefits:</strong></p>
+                                <ul>
+                                    <li>Faster service on arrival</li>
+                                    <li>Kitchen can prepare meals in advance</li>
+                                    <li>Reduced waiting time for large groups</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 2: Time Selection -->
+            <div class="step-content" id="step-2">
+                <div class="step-header">
+                    <h2>Select Time</h2>
+                    <p>Choose your preferred time</p>
+                </div>
+
+                <form class="booking-form">
+                    <div class="form-group">
+                        <label for="booking-time">Time</label>
+                        <select id="booking-time" name="time" required>
+                            <option value="">Select time</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 3: Menu Selection -->
+            <div class="step-content" id="step-3">
+                <div class="step-header">
+                    <h2>Menu Selection</h2>
+                    <p id="menu-instruction">Your menu has been automatically selected based on your date and time</p>
+                </div>
+
+                <div class="menu-info-card" id="menu-info-card">
+                    <h3 id="selected-menu-name">Menu Name</h3>
+                    <p id="selected-menu-description">Menu description will appear here</p>
+                </div>
+
+                <div class="form-group" id="menu-selection">
+                    <!-- Menu selection will be populated by JavaScript -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Contact Details -->
+            <div class="step-content" id="step-4">
+                <div class="step-header">
+                    <h2>Contact Details</h2>
+                    <p>We'll use this to confirm your booking</p>
+                </div>
+
+                <form class="booking-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first-name">First Name</label>
+                            <input type="text" id="first-name" name="first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last Name</label>
+                            <input type="text" id="last-name" name="last_name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="special-requests">Special Requests (Optional)</label>
+                        <textarea id="special-requests" name="special_requests" rows="3" placeholder="Any dietary requirements, allergies, or special requests..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="marketing-consent" name="marketing_consent">
+                            <span class="checkmark"></span>
+                            I'd like to receive special offers and updates from The Scenic Inn
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
+                        <button type="button" class="btn btn-primary" onclick="submitBooking()">Complete Booking</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 5: Confirmation -->
+            <div class="step-content" id="step-5">
+                <div class="step-header">
+                    <h2>Booking Confirmed!</h2>
+                    <p>Thank you for choosing The Scenic Inn</p>
+                </div>
+
+                <div class="confirmation-details" id="confirmation-details">
+                    <!-- Confirmation details will be populated by JavaScript -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="startNewBooking()">Make Another Booking</button>
+                </div>
+            </div>
+
+            <!-- Event Preorder Section -->
+            <div class="step-content" id="event-preorder">
+                <div class="step-header">
+                    <h2>Event Preorder</h2>
+                    <p>Select all items for your event to ensure quick service</p>
+                </div>
+
+                <form class="booking-form">
+                    <div class="form-group">
+                        <label for="event-party-size">How many people?</label>
+                        <select id="event-party-size" name="party_size" required>
+                            <option value="">Select party size</option>
+                            <option value="10">10 people</option>
+                            <option value="15">15 people</option>
+                            <option value="20">20 people</option>
+                            <option value="25">25 people</option>
+                            <option value="30">30 people</option>
+                            <option value="40">40 people</option>
+                            <option value="50">50 people</option>
+                            <option value="60">60 people</option>
+                            <option value="80">80 people</option>
+                            <option value="100">100 people</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-date">Date</label>
+                            <input type="date" id="event-date" name="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-time">Time</label>
+                            <select id="event-time" name="time" required>
+                                <option value="">Select time</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="event-menu-selection" id="event-menu-selection">
+                        <!-- Event menu selection will be populated by JavaScript -->
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="showRegularBooking()">Back to Regular Booking</button>
+                        <button type="button" class="btn btn-primary" onclick="submitEventPreorder()">Complete Event Preorder</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Processing your booking...</p>
+        </div>
+
+        <!-- Error Modal -->
+        <div class="modal" id="error-modal">
+            <div class="modal-content">
+                <h3>Error</h3>
+                <p id="error-message"></p>
+                <button class="btn btn-primary" onclick="closeErrorModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="sample-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

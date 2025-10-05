@@ -152,3 +152,28 @@ router.post('/replace-menu/:menuId', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to replace menu', error: error.message });
   }
 });
+
+// Diagnostics: per-menu item counts
+router.get('/debug/menu-counts', async (req, res) => {
+  try {
+    const counts = await pool.query(`
+      SELECT menu_id, COUNT(*)::int AS item_count
+      FROM menu_items
+      GROUP BY menu_id
+      ORDER BY menu_id
+    `);
+    res.json({ success: true, data: counts.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/debug/sections/:menuId', async (req, res) => {
+  try {
+    const { menuId } = req.params;
+    const sections = await pool.query('SELECT menu_id, section_key, name FROM menu_sections WHERE menu_id=$1 ORDER BY section_key', [menuId]);
+    res.json({ success: true, data: sections.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});

@@ -61,7 +61,14 @@ async function sendEmailViaResend({ from, to, subject, text, html, attachments }
     return res.data;
 }
 
-// Generate PDF for preorder
+function pick(obj, keys, fallback = '') {
+  for (const k of keys) {
+    if (obj && obj[k] != null && obj[k] !== '') return obj[k];
+  }
+  return fallback;
+}
+
+// Generate PDF for preorder (table layout)
 function generatePreorderPDF(bookingData, preorderData) {
     return new Promise((resolve, reject) => {
         try {
@@ -82,16 +89,26 @@ function generatePreorderPDF(bookingData, preorderData) {
                .text('The Scenic Inn - Preorder Details', { align: 'center' })
                .moveDown();
             
-            // Booking Information
+      // Normalize fields from various payload shapes
+      const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+      const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+      const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+      const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
+      const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
+      const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
+      const date = pick(bookingData, ['date'], '');
+      const time = pick(bookingData, ['time'], '');
+
+      // Booking Information
             doc.fontSize(14)
                .text('Booking Information:', { underline: true })
                .fontSize(12)
-               .text(`Date: ${bookingData.date}`)
-               .text(`Time: ${bookingData.time}`)
-               .text(`Party Size: ${bookingData.partySize} people`)
-               .text(`Customer: ${bookingData.firstName} ${bookingData.lastName}`)
-               .text(`Email: ${bookingData.email}`)
-               .text(`Phone: ${bookingData.phone}`)
+         .text(`Date: ${date}`)
+         .text(`Time: ${time}`)
+         .text(`Party Size: ${partySize} people`)
+         .text(`Customer: ${fullName}`)
+         .text(`Email: ${email}`)
+         .text(`Phone: ${phone}`)
                .moveDown();
             
             // Special Requests
@@ -103,27 +120,38 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .moveDown();
             }
             
-            // Preorder Details
+      // Preorder Details (table per person)
             if (preorderData && preorderData.length > 0) {
                 doc.fontSize(14)
                    .text('Preorder Menu Selections:', { underline: true })
                    .moveDown();
                 
                 preorderData.forEach((person, index) => {
-                    doc.fontSize(12).text(`Person ${person.person_number || index + 1}:`);
-                    if (person.items && Array.isArray(person.items)) {
-                        person.items.forEach(sel => {
-                            const label = sel.course_type ? sel.course_type.charAt(0).toUpperCase() + sel.course_type.slice(1) : 'Item';
-                            const name = sel.item_name || sel.name || sel.menu_item_id;
-                            doc.text(`  ${label}: ${name}`);
-                        });
-                    } else {
-                        // legacy shape: person has fields starter/main/dessert
-                        doc.text(`  Starter: ${person.starter || 'Not selected'}`);
-                        doc.text(`  Main: ${person.main || 'Not selected'}`);
-                        doc.text(`  Dessert: ${person.dessert || 'Not selected'}`);
-                    }
-                    doc.moveDown();
+          doc.fontSize(12).text(`Person ${person.person_number || index + 1}:`);
+          // Table header
+          const rows = [];
+          if (person.items && Array.isArray(person.items)) {
+            person.items.forEach(sel => {
+              const course = (sel.course_type || 'Item').replace('-', ' ');
+              const name = sel.item_name || sel.name || sel.menu_item_id || '';
+              rows.push([course, name]);
+            });
+          } else {
+            rows.push(['Starter', person.starter || 'Not selected']);
+            rows.push(['Main', person.main || 'Not selected']);
+            if (person.dessert) rows.push(['Dessert', person.dessert]);
+          }
+          // Draw simple 2‑col table
+          const startX = doc.x + 10;
+          let y = doc.y + 4;
+          const colW1 = 100;
+          const colW2 = 400;
+          rows.forEach(([c, n]) => {
+            doc.text(c + ':', startX, y, { width: colW1 });
+            doc.text(n, startX + colW1 + 6, y, { width: colW2 });
+            y += 16;
+          });
+          doc.moveDown();
                 });
             }
             

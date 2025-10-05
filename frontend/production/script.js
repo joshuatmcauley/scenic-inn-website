@@ -565,6 +565,7 @@ function generateMenuCategories(personNumber) {
     const starters = [];
     const mains = [];
     const desserts = [];
+    const sides = [];
     
     menuItems.categories.forEach(category => {
         const sectionKey = category.name; // Use exact case from database
@@ -572,12 +573,15 @@ function generateMenuCategories(personNumber) {
         console.log(`Processing section: "${sectionKey}" with ${category.items.length} items`);
         
         // Starters - exact matches
-        if (sectionKey === 'starters') {
+        if (sectionKey === 'starters' || sectionKey === 'light-bites') {
             starters.push(...category.items);
             console.log(`  → Added to starters: ${category.items.map(item => item.name).join(', ')}`);
         }
-        // Main courses - exact matches
-        else if (sectionKey === 'main-course') {
+        // Main courses - all main course types
+        else if (sectionKey === 'main-course' || sectionKey === 'main-courses' || 
+                 sectionKey === 'chicken-dishes' || sectionKey === 'fish-dishes' || 
+                 sectionKey === 'vegan-dishes' || sectionKey === 'burgers' || 
+                 sectionKey === 'loaded-fries') {
             mains.push(...category.items);
             console.log(`  → Added to mains: ${category.items.map(item => item.name).join(', ')}`);
         }
@@ -586,9 +590,10 @@ function generateMenuCategories(personNumber) {
             desserts.push(...category.items);
             console.log(`  → Added to desserts: ${category.items.map(item => item.name).join(', ')}`);
         }
-        // Sides/Extras - skip these for 3-course selection
-        else if (sectionKey === 'side-orders' || sectionKey === 'Dips' || sectionKey === 'Sauces') {
-            console.log(`  → Skipped (sides/extras): ${category.items.map(item => item.name).join(', ')}`);
+        // Sides - separate category
+        else if (sectionKey === 'sides' || sectionKey === 'dips' || sectionKey === 'sauces') {
+            sides.push(...category.items);
+            console.log(`  → Added to sides: ${category.items.map(item => item.name).join(', ')}`);
         }
         else {
             console.warn(`  → Unknown section key: "${sectionKey}" - defaulting to mains`);
@@ -596,8 +601,9 @@ function generateMenuCategories(personNumber) {
         }
     });
     
-    // Check if there are any desserts available
+    // Check if there are any desserts or sides available
     const hasDesserts = desserts.length > 0;
+    const hasSides = sides.length > 0;
     
     return `
         <div class="course-selection">
@@ -606,7 +612,7 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-starter" name="person-${personNumber}-starter">
                     <option value="">Select a starter</option>
                     ${starters.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - ' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
                     `).join('')}
                 </select>
             </div>
@@ -616,10 +622,22 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-main" name="person-${personNumber}-main">
                     <option value="">Select a main course</option>
                     ${mains.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - ' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
                     `).join('')}
                 </select>
             </div>
+            
+            ${hasSides ? `
+            <div class="course-group">
+                <label for="person-${personNumber}-side">Side (Optional):</label>
+                <select id="person-${personNumber}-side" name="person-${personNumber}-side">
+                    <option value="">Select a side (optional)</option>
+                    ${sides.map(item => `
+                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
+                    `).join('')}
+                </select>
+            </div>
+            ` : ''}
             
             ${hasDesserts ? `
             <div class="course-group">
@@ -627,7 +645,7 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-dessert" name="person-${personNumber}-dessert">
                     <option value="">Select a dessert</option>
                     ${desserts.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - ' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
                     `).join('')}
                 </select>
             </div>
@@ -641,12 +659,51 @@ function collectPreorderData() {
     const preorderData = [];
     
     for (let i = 1; i <= bookingData.party_size; i++) {
-        const checkboxes = document.querySelectorAll(`input[name="person-${i}-items"]:checked`);
-        const items = Array.from(checkboxes).map(checkbox => ({
-            menu_item_id: checkbox.value,
-            quantity: 1,
-            special_instructions: ''
-        }));
+        const items = [];
+        
+        // Get starter selection
+        const starterSelect = document.getElementById(`person-${i}-starter`);
+        if (starterSelect && starterSelect.value) {
+            items.push({
+                menu_item_id: starterSelect.value,
+                course_type: 'starter',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get main course selection
+        const mainSelect = document.getElementById(`person-${i}-main`);
+        if (mainSelect && mainSelect.value) {
+            items.push({
+                menu_item_id: mainSelect.value,
+                course_type: 'main',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get side selection (optional)
+        const sideSelect = document.getElementById(`person-${i}-side`);
+        if (sideSelect && sideSelect.value) {
+            items.push({
+                menu_item_id: sideSelect.value,
+                course_type: 'side',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get dessert selection
+        const dessertSelect = document.getElementById(`person-${i}-dessert`);
+        if (dessertSelect && dessertSelect.value) {
+            items.push({
+                menu_item_id: dessertSelect.value,
+                course_type: 'dessert',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
         
         if (items.length > 0) {
             preorderData.push({

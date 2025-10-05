@@ -358,9 +358,9 @@ async function loadExperiences() {
         const response = await fetch(`${API_BASE_URL}/menus`);
         const data = await response.json();
         
-        if (response.ok && data && data.success && data.data) {
+        if (response.ok && data) {
             // Convert menu data to experience format
-            availableExperiences = data.data.map(menu => ({
+            availableExperiences = data.map(menu => ({
                 id: menu.id,
                 name: menu.name,
                 description: menu.schedule,
@@ -424,10 +424,10 @@ async function loadMenuItems() {
         const data = await response.json();
         console.log('Menu items response:', data);
         
-        if (response.ok && data && data.success && data.data) {
+        if (response.ok && data) {
             // Convert database format to expected format
             menuItems = {
-                categories: data.data.map(section => ({
+                categories: data.map(section => ({
                     name: section.name,
                     items: section.items.map(item => ({
                         id: item.id,

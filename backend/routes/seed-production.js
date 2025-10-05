@@ -35,12 +35,14 @@ router.post('/migrate-real-data', async (req, res) => {
     // Insert REAL menus first (required for foreign keys)
     console.log('📝 Inserting REAL menus...');
     for (const menu of menus) {
-      // Handle null pricing
+      // Handle null pricing and timestamps
       const pricing = menu.pricing || null;
+      const createdAt = menu.created_at || new Date().toISOString();
+      const updatedAt = menu.updated_at || new Date().toISOString();
       
       await pool.query(
         'INSERT INTO menus (id, name, schedule, pricing, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
-        [menu.id, menu.name, menu.schedule, pricing, menu.created_at, menu.updated_at]
+        [menu.id, menu.name, menu.schedule, pricing, createdAt, updatedAt]
       );
       console.log(`   ✅ Menu: ${menu.name}`);
     }
@@ -58,21 +60,24 @@ router.post('/migrate-real-data', async (req, res) => {
     // Insert REAL menu items last (depends on menus and sections)
     console.log('📝 Inserting REAL menu items...');
     for (const item of items) {
-      // Handle empty or null prices
+      // Handle empty or null prices and timestamps
       const price = item.price && item.price !== '' ? parseFloat(item.price) : 0.00;
+      const createdAt = item.created_at || new Date().toISOString();
+      const updatedAt = item.updated_at || new Date().toISOString();
       
       await pool.query(
         'INSERT INTO menu_items (id, menu_id, section_key, name, description, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [item.id, item.menu_id, item.section_key, item.name, item.description, price, item.created_at, item.updated_at]
+        [item.id, item.menu_id, item.section_key, item.name, item.description, price, createdAt, updatedAt]
       );
       console.log(`   ✅ Item: ${item.name} - £${price}`);
     }
 
     // Insert REAL admin users
     for (const admin of admins) {
+      const createdAt = admin.created_at || new Date().toISOString();
       await pool.query(
         'INSERT INTO admin_users (username, password_hash, created_at) VALUES ($1, $2, $3)',
-        [admin.username, admin.password_hash, admin.created_at]
+        [admin.username, admin.password_hash, createdAt]
       );
     }
 

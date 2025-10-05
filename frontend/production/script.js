@@ -425,18 +425,41 @@ async function loadMenuItems() {
         console.log('Menu items response:', data);
         
         if (response.ok && data) {
-            // Convert database format to expected format
-            menuItems = {
-                categories: data.map(section => ({
-                    name: section.name,
-                    items: section.items.map(item => ({
+            // Handle both shapes: { success, data: [...] } or direct array
+            const raw = Array.isArray(data) ? data : (data.data || []);
+
+            // Some endpoints return a flat list of items with section_key/section_name
+            // Normalize into categories grouped by section_key
+            if (raw.length > 0 && !raw[0].items && raw[0].section_key) {
+                const grouped = {};
+                raw.forEach(item => {
+                    const key = (item.section_key || '').toString().toLowerCase();
+                    if (!grouped[key]) {
+                        grouped[key] = { name: key, items: [] };
+                    }
+                    grouped[key].items.push({
                         id: item.id,
                         name: item.name,
                         description: item.description || '',
                         price: item.price ? `£${item.price}` : ''
+                    });
+                });
+                menuItems = { categories: Object.values(grouped) };
+            } else {
+                // Already grouped by sections with items
+                menuItems = {
+                    categories: raw.map(section => ({
+                        // Prefer section_key if present for categorization logic
+                        name: (section.section_key || section.name || '').toString().toLowerCase(),
+                        items: (section.items || []).map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            description: item.description || '',
+                            price: item.price ? `£${item.price}` : ''
+                        }))
                     }))
-                }))
-            };
+                };
+            }
             console.log('Menu items loaded:', menuItems);
             populateMenuSelection();
         } else {

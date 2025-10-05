@@ -22,11 +22,16 @@ const dojoClient = axios.create({
 
 // Email configuration
 const emailTransporter = nodemailer.createTransport({
-    service: 'gmail', // You can change this to your email provider
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
+    secure: true, // 465 = SSL
     auth: {
         user: process.env.EMAIL_USER || 'your-email@gmail.com',
         pass: process.env.EMAIL_PASS || 'your-app-password'
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
 });
 
 // Lightweight transporter verification helper
@@ -279,6 +284,7 @@ module.exports = router;
 router.get('/test-email', async (req, res) => {
     const to = req.query.to || process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
     try {
+        // Cap total test duration to ~15s
         const verify = await verifyTransporter();
         if (!verify.ok) {
             return res.status(500).json({ success: false, stage: 'verify', error: verify.error });

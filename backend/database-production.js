@@ -188,14 +188,17 @@ const dbHelpers = {
     return result.rows[0];
   },
 
-  // Get menu items by menu ID
+  // Get menu items by menu ID (tolerant if a section row is missing)
   getMenuItems: async (menuId) => {
     const result = await pool.query(`
-      SELECT mi.*, ms.name as section_name 
-      FROM menu_items mi 
-      JOIN menu_sections ms ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key 
-      WHERE mi.menu_id = $1 
-      ORDER BY ms.section_key, mi.name
+      SELECT 
+        mi.*, 
+        COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name
+      FROM menu_items mi
+      LEFT JOIN menu_sections ms
+        ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key
+      WHERE mi.menu_id = $1
+      ORDER BY mi.section_key, mi.name
     `, [menuId]);
     return result.rows;
   },

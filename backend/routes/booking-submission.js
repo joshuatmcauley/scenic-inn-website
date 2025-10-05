@@ -158,46 +158,56 @@ function generatePreorderPDF(bookingData, preorderData) {
           }
         });
 
-        // Draw side-by-side table for starters and mains
-        const drawSideBySide = (leftTitle, leftItems, rightTitle, rightItems) => {
+        // Draw table with Person, Item, Notes columns
+        const drawTable = (title, items) => {
           const x0 = doc.x;
           let y = doc.y;
-          const colW = (doc.page.width - doc.page.margins.left - doc.page.margins.right - 20) / 2; // padding 20
+          const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+          const personW = 80;
+          const itemW = totalW - personW - 100; // Notes column gets 100px
+          const notesW = 100;
           const rowH = 18;
-          const rows = Math.max(leftItems.length, rightItems.length) + 1; // + header
+          const rows = items.length + 1; // + header
+          
           // Headers
           doc.font('Helvetica-Bold');
-          doc.text(leftTitle, x0 + 6, y + 4, { width: colW - 12 });
-          doc.text(rightTitle, x0 + colW + 20 + 6, y + 4, { width: colW - 12 });
-          // Grid
+          doc.text('Person', x0 + 6, y + 4, { width: personW - 12 });
+          doc.text('Item', x0 + personW + 6, y + 4, { width: itemW - 12 });
+          doc.text('Notes', x0 + personW + itemW + 6, y + 4, { width: notesW - 12 });
+          
+          // Grid lines
           doc.lineWidth(0.5);
           for (let r = 0; r <= rows; r++) {
             const yy = y + r * rowH;
-            doc.moveTo(x0, yy).lineTo(x0 + colW, yy).stroke();
-            doc.moveTo(x0 + colW + 20, yy).lineTo(x0 + colW + 20 + colW, yy).stroke();
+            doc.moveTo(x0, yy).lineTo(x0 + totalW, yy).stroke();
           }
-          // vertical borders
+          // Vertical borders
           doc.moveTo(x0, y).lineTo(x0, y + rows * rowH).stroke();
-          doc.moveTo(x0 + colW, y).lineTo(x0 + colW, y + rows * rowH).stroke();
-          doc.moveTo(x0 + colW + 20, y).lineTo(x0 + colW + 20, y + rows * rowH).stroke();
-          doc.moveTo(x0 + colW + 20 + colW, y).lineTo(x0 + colW + 20 + colW, y + rows * rowH).stroke();
+          doc.moveTo(x0 + personW, y).lineTo(x0 + personW, y + rows * rowH).stroke();
+          doc.moveTo(x0 + personW + itemW, y).lineTo(x0 + personW + itemW, y + rows * rowH).stroke();
+          doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + rows * rowH).stroke();
+          
           // Fill body
           doc.font('Helvetica');
-          for (let i = 0; i < rows - 1; i++) {
+          for (let i = 0; i < items.length; i++) {
             const ly = y + (i + 1) * rowH + 4;
-            if (i < leftItems.length) doc.text(leftItems[i], x0 + 6, ly, { width: colW - 12, ellipsis: true });
-            if (i < rightItems.length) doc.text(rightItems[i], x0 + colW + 20 + 6, ly, { width: colW - 12, ellipsis: true });
+            const cleanItem = items[i].replace(/\s*-\s*£.*$/,'');
+            doc.text(`Person ${i + 1}`, x0 + 6, ly, { width: personW - 12 });
+            doc.text(cleanItem, x0 + personW + 6, ly, { width: itemW - 12 });
+            doc.text('', x0 + personW + itemW + 6, ly, { width: notesW - 12 }); // Empty notes column
           }
-          doc.moveDown(rows * rowH / 14); // advance roughly rows height
+          doc.moveDown(rows * rowH / 14 + 1); // advance roughly rows height + spacing
         };
 
-        drawSideBySide('Starters', starters.map(i => i.replace(/\s*-\s*£.*$/,'')), 'Mains', mains.map(i => i.replace(/\s*-\s*£.*$/,'')));
+        doc.font('Helvetica-Bold').text('Starters').moveDown(0.3);
+        drawTable('Starters', starters);
+        
+        doc.font('Helvetica-Bold').text('Mains').moveDown(0.3);
+        drawTable('Mains', mains);
 
-        // Desserts below as single column list
+        // Desserts table
         doc.font('Helvetica-Bold').text('Desserts').moveDown(0.3);
-        doc.font('Helvetica');
-        if (desserts.length === 0) { doc.text('—').moveDown(); }
-        else { desserts.forEach(i => doc.text(`• ${i.replace(/\s*-\s*£.*$/,'')}`)); doc.moveDown(); }
+        drawTable('Desserts', desserts);
             }
             
             doc.end();

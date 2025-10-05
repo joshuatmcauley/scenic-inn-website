@@ -141,16 +141,32 @@ function generatePreorderPDF(bookingData, preorderData) {
             rows.push(['Main', person.main || 'Not selected']);
             if (person.dessert) rows.push(['Dessert', person.dessert]);
           }
-          // Draw simple 2‑col table
+          // Draw 4‑column grid header once per person
           const startX = doc.x + 10;
           let y = doc.y + 4;
-          const colW1 = 100;
-          const colW2 = 400;
-          rows.forEach(([c, n]) => {
-            doc.text(c + ':', startX, y, { width: colW1 });
-            doc.text(n, startX + colW1 + 6, y, { width: colW2 });
-            y += 16;
+          const colW = [120, 150, 150, 150]; // Customer, Starter, Main, Dessert
+          const headers = ['Customer', 'Starter', 'Main', 'Dessert'];
+          // Compose one row per person
+          const starter = (rows.find(r => r[0].toLowerCase().includes('starter')) || ['', ''])[1] || '—';
+          const main = (rows.find(r => r[0].toLowerCase().includes('main')) || ['', ''])[1] || '—';
+          const dessert = (rows.find(r => r[0].toLowerCase().includes('dessert')) || ['', ''])[1] || '—';
+          const customerLabel = `Person ${person.person_number || index + 1}`;
+          // Header
+          doc.font('Helvetica-Bold');
+          let x = startX;
+          headers.forEach((h, i) => {
+            doc.text(h, x, y, { width: colW[i] });
+            x += colW[i] + 6;
           });
+          y += 16;
+          doc.font('Helvetica');
+          // Row
+          x = startX;
+          [customerLabel, starter, main, dessert].forEach((val, i) => {
+            doc.text(val, x, y, { width: colW[i] });
+            x += colW[i] + 6;
+          });
+          y += 20;
           doc.moveDown();
                 });
             }
@@ -297,11 +313,12 @@ router.post('/', async (req, res) => {
         // Step 4: Send confirmation email to customer
         try {
             if (RESEND_API_KEY) {
+                const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();
                 await sendEmailViaResend({
                     from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
                     to: bookingData.email,
                     subject: `Booking Confirmation - The Scenic Inn`,
-                    text: `Dear ${bookingData.firstName},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                    text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
                 });
             } else {
                 const verify = await verifyTransporter();
@@ -312,7 +329,7 @@ router.post('/', async (req, res) => {
                     from: process.env.EMAIL_USER || 'your-email@gmail.com',
                     to: bookingData.email,
                     subject: `Booking Confirmation - The Scenic Inn`,
-                    text: `Dear ${bookingData.firstName},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                    text: `Dear ${(bookingData.firstName || bookingData.first_name || 'guest')},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
                 };
                 await emailTransporter.sendMail(customerEmail);
             }

@@ -163,17 +163,17 @@ function generatePreorderPDF(bookingData, preorderData) {
           const x0 = doc.x;
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-          const personW = 80;
-          const itemW = totalW - personW - 100; // Notes column gets 100px
-          const notesW = 100;
-          const rowH = 18;
+          const personW = 60;
+          const itemW = totalW - personW - 80; // Notes column gets 80px
+          const notesW = 80;
+          const rowH = 16;
           const rows = items.length + 1; // + header
           
           // Headers
           doc.font('Helvetica-Bold');
-          doc.text('Person', x0 + 6, y + 4, { width: personW - 12 });
-          doc.text('Item', x0 + personW + 6, y + 4, { width: itemW - 12 });
-          doc.text('Notes', x0 + personW + itemW + 6, y + 4, { width: notesW - 12 });
+          doc.text('Person', x0 + 4, y + 3, { width: personW - 8 });
+          doc.text('Item', x0 + personW + 4, y + 3, { width: itemW - 8 });
+          doc.text('Notes', x0 + personW + itemW + 4, y + 3, { width: notesW - 8 });
           
           // Grid lines
           doc.lineWidth(0.5);
@@ -190,13 +190,13 @@ function generatePreorderPDF(bookingData, preorderData) {
           // Fill body
           doc.font('Helvetica');
           for (let i = 0; i < items.length; i++) {
-            const ly = y + (i + 1) * rowH + 4;
-            const cleanItem = items[i].replace(/\s*-\s*£.*$/,'');
-            doc.text(`Person ${i + 1}`, x0 + 6, ly, { width: personW - 12 });
-            doc.text(cleanItem, x0 + personW + 6, ly, { width: itemW - 12 });
-            doc.text('', x0 + personW + itemW + 6, ly, { width: notesW - 12 }); // Empty notes column
+            const ly = y + (i + 1) * rowH + 3;
+            const cleanItem = items[i].replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            doc.text(`${i + 1}`, x0 + 4, ly, { width: personW - 8 });
+            doc.text(cleanItem, x0 + personW + 4, ly, { width: itemW - 8 });
+            doc.text('', x0 + personW + itemW + 4, ly, { width: notesW - 8 }); // Empty notes column
           }
-          doc.moveDown(rows * rowH / 14 + 1); // advance roughly rows height + spacing
+          doc.moveDown(rows * rowH / 14 + 0.5); // advance roughly rows height + spacing
         };
 
         doc.font('Helvetica-Bold').text('Starters').moveDown(0.3);

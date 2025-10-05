@@ -29,6 +29,17 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
+// Lightweight transporter verification helper
+async function verifyTransporter() {
+    try {
+        await emailTransporter.verify();
+        return { ok: true };
+    } catch (e) {
+        console.error('Nodemailer transporter verify failed:', e.message);
+        return { ok: false, error: e.message };
+    }
+}
+
 // Generate PDF for preorder
 function generatePreorderPDF(bookingData, preorderData) {
     return new Promise((resolve, reject) => {
@@ -216,6 +227,10 @@ router.post('/', async (req, res) => {
         
         // Step 4: Send confirmation email to customer
         try {
+            const verify = await verifyTransporter();
+            if (!verify.ok) {
+                console.warn('Email transporter not verified, continuing but email may fail');
+            }
             const customerEmail = {
                 from: process.env.EMAIL_USER || 'your-email@gmail.com',
                 to: bookingData.email,
@@ -257,3 +272,26 @@ router.get('/test', (req, res) => {
 });
 
 module.exports = router;
+
+// Diagnostic endpoints (safe):
+// 1) GET /api/booking-submission/test-email?to=address
+// Sends a simple email to confirm SMTP works
+router.get('/test-email', async (req, res) => {
+    const to = req.query.to || process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
+    try {
+        const verify = await verifyTransporter();
+        if (!verify.ok) {
+            return res.status(500).json({ success: false, stage: 'verify', error: verify.error });
+        }
+        const info = await emailTransporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to,
+            subject: 'Scenic Inn SMTP test',
+            text: 'This is a test email from Railway backend to confirm SMTP credentials.'
+        });
+        res.json({ success: true, messageId: info.messageId, to });
+    } catch (e) {
+        console.error('SMTP test failed:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});

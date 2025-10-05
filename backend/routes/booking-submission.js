@@ -68,6 +68,11 @@ function pick(obj, keys, fallback = '') {
   return fallback;
 }
 
+function pad(str, len) {
+  const s = (str || '').toString();
+  return s.length >= len ? s.slice(0, len - 1) + '…' : s + ' '.repeat(len - s.length);
+}
+
 // Generate PDF for preorder (table layout)
 function generatePreorderPDF(bookingData, preorderData) {
     return new Promise((resolve, reject) => {
@@ -126,49 +131,34 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .text('Preorder Menu Selections:', { underline: true })
                    .moveDown();
                 
-                preorderData.forEach((person, index) => {
-          doc.fontSize(12).text(`Person ${person.person_number || index + 1}:`);
-          // Table header
+        // Render a fixed-width table using Courier to keep columns aligned
+        doc.font('Courier-Bold');
+        doc.text(`${pad('Customer', 12)} | ${pad('Starter', 28)} | ${pad('Main', 28)} | ${pad('Dessert', 20)}`);
+        doc.font('Courier');
+        doc.moveDown(0.5);
+
+        preorderData.forEach((person, index) => {
           const rows = [];
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
-              const course = (sel.course_type || 'Item').replace('-', ' ');
+              const course = (sel.course_type || 'item').toLowerCase();
               const name = sel.item_name || sel.name || sel.menu_item_id || '';
               rows.push([course, name]);
             });
           } else {
-            rows.push(['Starter', person.starter || 'Not selected']);
-            rows.push(['Main', person.main || 'Not selected']);
-            if (person.dessert) rows.push(['Dessert', person.dessert]);
+            rows.push(['starter', person.starter || 'Not selected']);
+            rows.push(['main', person.main || 'Not selected']);
+            if (person.dessert) rows.push(['dessert', person.dessert]);
           }
-          // Draw 4‑column grid header once per person
-          const startX = doc.x + 10;
-          let y = doc.y + 4;
-          const colW = [120, 150, 150, 150]; // Customer, Starter, Main, Dessert
-          const headers = ['Customer', 'Starter', 'Main', 'Dessert'];
-          // Compose one row per person
-          const starter = (rows.find(r => r[0].toLowerCase().includes('starter')) || ['', ''])[1] || '—';
-          const main = (rows.find(r => r[0].toLowerCase().includes('main')) || ['', ''])[1] || '—';
-          const dessert = (rows.find(r => r[0].toLowerCase().includes('dessert')) || ['', ''])[1] || '—';
-          const customerLabel = `Person ${person.person_number || index + 1}`;
-          // Header
-          doc.font('Helvetica-Bold');
-          let x = startX;
-          headers.forEach((h, i) => {
-            doc.text(h, x, y, { width: colW[i] });
-            x += colW[i] + 6;
-          });
-          y += 16;
-          doc.font('Helvetica');
-          // Row
-          x = startX;
-          [customerLabel, starter, main, dessert].forEach((val, i) => {
-            doc.text(val, x, y, { width: colW[i] });
-            x += colW[i] + 6;
-          });
-          y += 20;
-          doc.moveDown();
-                });
+
+          const starter = (rows.find(r => r[0] === 'starter') || ['', ''])[1] || '—';
+          const main = (rows.find(r => r[0] === 'main') || ['', ''])[1] || '—';
+          const dessert = (rows.find(r => r[0] === 'dessert') || ['', ''])[1] || '—';
+          const label = `Person ${person.person_number || index + 1}`;
+          const line = `${pad(label, 12)} | ${pad(starter, 28)} | ${pad(main, 28)} | ${pad(dessert, 20)}`;
+          doc.text(line);
+        });
+        doc.moveDown();
             }
             
             doc.end();

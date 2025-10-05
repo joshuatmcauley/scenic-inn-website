@@ -131,42 +131,44 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .moveDown();
             }
             
-      // Preorder Details (table per person)
+      // Preorder Details (grouped lists)
             if (preorderData && preorderData.length > 0) {
                 doc.fontSize(14)
                    .text('Preorder Menu Selections:', { underline: true })
                    .moveDown();
                 
-        // Render a fixed-width table using Courier to keep columns aligned
-        // Compact widths to avoid wrapping
-        const W = { cust: 10, starter: 22, main: 22, dessert: 14 };
-        doc.font('Courier-Bold');
-        doc.text(`${pad('Customer', W.cust)} | ${pad('Starter', W.starter)} | ${pad('Main', W.main)} | ${pad('Dessert', W.dessert)}`);
-        doc.font('Courier');
-        doc.moveDown(0.5);
+        const starters = [];
+        const mains = [];
+        const desserts = [];
 
         preorderData.forEach((person, index) => {
-          const rows = [];
+          const label = `Person ${person.person_number || index + 1}`;
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
-              const course = (sel.course_type || 'item').toLowerCase();
+              const course = (sel.course_type || '').toLowerCase();
               const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
-              rows.push([course, name]);
+              if (course === 'starter') starters.push(`${label}: ${name}`);
+              else if (course === 'main') mains.push(`${label}: ${name}`);
+              else if (course === 'dessert') desserts.push(`${label}: ${name}`);
             });
           } else {
-            rows.push(['starter', cleanName(person.starter || 'Not selected')]);
-            rows.push(['main', cleanName(person.main || 'Not selected')]);
-            if (person.dessert) rows.push(['dessert', cleanName(person.dessert)]);
+            if (person.starter) starters.push(`${label}: ${cleanName(person.starter)}`);
+            if (person.main) mains.push(`${label}: ${cleanName(person.main)}`);
+            if (person.dessert) desserts.push(`${label}: ${cleanName(person.dessert)}`);
           }
-
-          const starter = (rows.find(r => r[0] === 'starter') || ['', ''])[1] || '—';
-          const main = (rows.find(r => r[0] === 'main') || ['', ''])[1] || '—';
-          const dessert = (rows.find(r => r[0] === 'dessert') || ['', ''])[1] || '—';
-          const label = `Person ${person.person_number || index + 1}`;
-          const line = `${pad(label, W.cust)} | ${pad(starter, W.starter)} | ${pad(main, W.main)} | ${pad(dessert, W.dessert)}`;
-          doc.text(line);
         });
-        doc.moveDown();
+
+        const renderList = (title, items) => {
+          doc.font('Helvetica-Bold').text(title).moveDown(0.3);
+          doc.font('Helvetica');
+          if (items.length === 0) { doc.text('—').moveDown(); return; }
+          items.forEach(i => doc.text(`• ${i}`));
+          doc.moveDown();
+        };
+
+        renderList('Starters', starters);
+        renderList('Mains', mains);
+        renderList('Desserts', desserts);
             }
             
             doc.end();

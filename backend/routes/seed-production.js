@@ -34,9 +34,12 @@ router.post('/migrate-real-data', async (req, res) => {
 
     // Insert REAL menus
     for (const menu of menus) {
+      // Handle null pricing
+      const pricing = menu.pricing || null;
+      
       await pool.query(
         'INSERT INTO menus (id, name, schedule, pricing, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
-        [menu.id, menu.name, menu.schedule, menu.pricing, menu.created_at, menu.updated_at]
+        [menu.id, menu.name, menu.schedule, pricing, menu.created_at, menu.updated_at]
       );
     }
 
@@ -50,9 +53,12 @@ router.post('/migrate-real-data', async (req, res) => {
 
     // Insert REAL menu items
     for (const item of items) {
+      // Handle empty or null prices
+      const price = item.price && item.price !== '' ? parseFloat(item.price) : 0.00;
+      
       await pool.query(
         'INSERT INTO menu_items (id, menu_id, section_key, name, description, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [item.id, item.menu_id, item.section_key, item.name, item.description, item.price, item.created_at, item.updated_at]
+        [item.id, item.menu_id, item.section_key, item.name, item.description, price, item.created_at, item.updated_at]
       );
     }
 

@@ -234,6 +234,7 @@ router.post('/', async (req, res) => {
         const preorderData = req.body?.preorderData || req.body?.preorder || [];
         
         console.log('Received booking submission:', bookingData);
+      console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
         // Step 1: Skip Dojo for now per request; just prepare PDF + email
         const dojoResult = { success: false, reason: 'Dojo disabled for beta' };
@@ -246,7 +247,8 @@ router.post('/', async (req, res) => {
                 const pdfPath = await generatePreorderPDF(bookingData, preorderData);
                 
                 // Send email with PDF
-                preorderResult = await sendPreorderEmail(pdfPath, bookingData);
+              preorderResult = await sendPreorderEmail(pdfPath, bookingData);
+              console.log('Preorder email result:', preorderResult);
                 
                 // Clean up PDF file after sending
                 setTimeout(() => {

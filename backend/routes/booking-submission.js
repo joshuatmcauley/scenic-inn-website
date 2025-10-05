@@ -110,12 +110,20 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .moveDown();
                 
                 preorderData.forEach((person, index) => {
-                    doc.fontSize(12)
-                       .text(`Person ${index + 1}:`, { bold: true })
-                       .text(`  Starter: ${person.starter || 'Not selected'}`)
-                       .text(`  Main: ${person.main || 'Not selected'}`)
-                       .text(`  Dessert: ${person.dessert || 'Not selected'}`)
-                       .moveDown();
+                    doc.fontSize(12).text(`Person ${person.person_number || index + 1}:`);
+                    if (person.items && Array.isArray(person.items)) {
+                        person.items.forEach(sel => {
+                            const label = sel.course_type ? sel.course_type.charAt(0).toUpperCase() + sel.course_type.slice(1) : 'Item';
+                            const name = sel.item_name || sel.name || sel.menu_item_id;
+                            doc.text(`  ${label}: ${name}`);
+                        });
+                    } else {
+                        // legacy shape: person has fields starter/main/dessert
+                        doc.text(`  Starter: ${person.starter || 'Not selected'}`);
+                        doc.text(`  Main: ${person.main || 'Not selected'}`);
+                        doc.text(`  Dessert: ${person.dessert || 'Not selected'}`);
+                    }
+                    doc.moveDown();
                 });
             }
             

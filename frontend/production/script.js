@@ -690,6 +690,7 @@ function collectPreorderData() {
             items.push({
                 menu_item_id: starterSelect.value,
                 course_type: 'starter',
+                item_name: starterSelect.options[starterSelect.selectedIndex]?.text || '',
                 quantity: 1,
                 special_instructions: ''
             });
@@ -701,6 +702,7 @@ function collectPreorderData() {
             items.push({
                 menu_item_id: mainSelect.value,
                 course_type: 'main',
+                item_name: mainSelect.options[mainSelect.selectedIndex]?.text || '',
                 quantity: 1,
                 special_instructions: ''
             });
@@ -712,6 +714,7 @@ function collectPreorderData() {
             items.push({
                 menu_item_id: sideSelect.value,
                 course_type: 'side',
+                item_name: sideSelect.options[sideSelect.selectedIndex]?.text || '',
                 quantity: 1,
                 special_instructions: ''
             });
@@ -723,6 +726,7 @@ function collectPreorderData() {
             items.push({
                 menu_item_id: dessertSelect.value,
                 course_type: 'dessert',
+                item_name: dessertSelect.options[dessertSelect.selectedIndex]?.text || '',
                 quantity: 1,
                 special_instructions: ''
             });

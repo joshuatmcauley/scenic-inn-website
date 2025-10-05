@@ -75,8 +75,8 @@ function pad(str, len) {
 
 function cleanName(name) {
   if (!name) return '';
-  // remove " - £xx.xx" or "- £xx" trailing price
-  return name.replace(/\s*-\s*£[0-9.,]+\s*$/i, '').trim();
+  // remove trailing price patterns like " - £0.00" or "- 0.00"
+  return name.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
 }
 
 // Generate PDF for preorder (table layout)
@@ -158,17 +158,46 @@ function generatePreorderPDF(bookingData, preorderData) {
           }
         });
 
-        const renderList = (title, items) => {
-          doc.font('Helvetica-Bold').text(title).moveDown(0.3);
+        // Draw side-by-side table for starters and mains
+        const drawSideBySide = (leftTitle, leftItems, rightTitle, rightItems) => {
+          const x0 = doc.x;
+          let y = doc.y;
+          const colW = (doc.page.width - doc.page.margins.left - doc.page.margins.right - 20) / 2; // padding 20
+          const rowH = 18;
+          const rows = Math.max(leftItems.length, rightItems.length) + 1; // + header
+          // Headers
+          doc.font('Helvetica-Bold');
+          doc.text(leftTitle, x0 + 6, y + 4, { width: colW - 12 });
+          doc.text(rightTitle, x0 + colW + 20 + 6, y + 4, { width: colW - 12 });
+          // Grid
+          doc.lineWidth(0.5);
+          for (let r = 0; r <= rows; r++) {
+            const yy = y + r * rowH;
+            doc.moveTo(x0, yy).lineTo(x0 + colW, yy).stroke();
+            doc.moveTo(x0 + colW + 20, yy).lineTo(x0 + colW + 20 + colW, yy).stroke();
+          }
+          // vertical borders
+          doc.moveTo(x0, y).lineTo(x0, y + rows * rowH).stroke();
+          doc.moveTo(x0 + colW, y).lineTo(x0 + colW, y + rows * rowH).stroke();
+          doc.moveTo(x0 + colW + 20, y).lineTo(x0 + colW + 20, y + rows * rowH).stroke();
+          doc.moveTo(x0 + colW + 20 + colW, y).lineTo(x0 + colW + 20 + colW, y + rows * rowH).stroke();
+          // Fill body
           doc.font('Helvetica');
-          if (items.length === 0) { doc.text('—').moveDown(); return; }
-          items.forEach(i => doc.text(`• ${i}`));
-          doc.moveDown();
+          for (let i = 0; i < rows - 1; i++) {
+            const ly = y + (i + 1) * rowH + 4;
+            if (i < leftItems.length) doc.text(leftItems[i], x0 + 6, ly, { width: colW - 12, ellipsis: true });
+            if (i < rightItems.length) doc.text(rightItems[i], x0 + colW + 20 + 6, ly, { width: colW - 12, ellipsis: true });
+          }
+          doc.moveDown(rows * rowH / 14); // advance roughly rows height
         };
 
-        renderList('Starters', starters);
-        renderList('Mains', mains);
-        renderList('Desserts', desserts);
+        drawSideBySide('Starters', starters.map(i => i.replace(/\s*-\s*£.*$/,'')), 'Mains', mains.map(i => i.replace(/\s*-\s*£.*$/,'')));
+
+        // Desserts below as single column list
+        doc.font('Helvetica-Bold').text('Desserts').moveDown(0.3);
+        doc.font('Helvetica');
+        if (desserts.length === 0) { doc.text('—').moveDown(); }
+        else { desserts.forEach(i => doc.text(`• ${i.replace(/\s*-\s*£.*$/,'')}`)); doc.moveDown(); }
             }
             
             doc.end();

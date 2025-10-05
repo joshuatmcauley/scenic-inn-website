@@ -20,7 +20,7 @@ const dojoClient = axios.create({
     timeout: 10000
 });
 
-// Email configuration
+// Email configuration (SMTP fallback)
 const emailTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
@@ -43,6 +43,22 @@ async function verifyTransporter() {
         console.error('Nodemailer transporter verify failed:', e.message);
         return { ok: false, error: e.message };
     }
+}
+
+// HTTP email provider (Resend) - avoids SMTP port blocks on hosts
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+async function sendEmailViaResend({ from, to, subject, text, html, attachments }) {
+    if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not set');
+    const payload = { from, to, subject, text, html };
+    if (attachments && attachments.length) {
+        // Resend supports attachments as { filename, content } base64
+        payload.attachments = attachments.map(a => ({ filename: a.filename, content: a.content }));
+    }
+    const res = await axios.post('https://api.resend.com/emails', payload, {
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        timeout: 15000
+    });
+    return res.data;
 }
 
 // Generate PDF for preorder
@@ -119,11 +135,28 @@ function generatePreorderPDF(bookingData, preorderData) {
 
 // Send email with PDF attachment
 async function sendPreorderEmail(pdfPath, bookingData) {
+    const useResend = !!RESEND_API_KEY;
+    const subject = `Preorder for ${bookingData.firstName} ${bookingData.lastName} - ${bookingData.date}`;
+    const text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize}\nCustomer: ${bookingData.firstName} ${bookingData.lastName}\nEmail: ${bookingData.email}\nPhone: ${bookingData.phone}`;
+
+    if (useResend) {
+        const fs = require('fs');
+        const content = fs.readFileSync(pdfPath).toString('base64');
+        const result = await sendEmailViaResend({
+            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+            to: process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER,
+            subject,
+            text,
+            attachments: [{ filename: `preorder-${bookingData.date}-${bookingData.lastName}.pdf`, content }]
+        });
+        return { success: true, provider: 'resend', id: result.id };
+    }
+
     const mailOptions = {
         from: process.env.EMAIL_USER || 'your-email@gmail.com',
         to: process.env.RESTAURANT_EMAIL || 'restaurant@thescenicinn.com',
-        subject: `Preorder for ${bookingData.firstName} ${bookingData.lastName} - ${bookingData.date}`,
-        text: `New booking with preorder details attached.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize}\nCustomer: ${bookingData.firstName} ${bookingData.lastName}\nEmail: ${bookingData.email}\nPhone: ${bookingData.phone}`,
+        subject,
+        text,
         attachments: [
             {
                 filename: `preorder-${bookingData.date}-${bookingData.lastName}.pdf`,
@@ -131,15 +164,8 @@ async function sendPreorderEmail(pdfPath, bookingData) {
             }
         ]
     };
-    
-    try {
-        const info = await emailTransporter.sendMail(mailOptions);
-        console.log('Preorder email sent:', info.messageId);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error('Error sending preorder email:', error);
-        return { success: false, error: error.message };
-    }
+    const info = await emailTransporter.sendMail(mailOptions);
+    return { success: true, provider: 'smtp', messageId: info.messageId };
 }
 
 // Submit booking to Dojo (if they have booking endpoints)
@@ -232,18 +258,26 @@ router.post('/', async (req, res) => {
         
         // Step 4: Send confirmation email to customer
         try {
-            const verify = await verifyTransporter();
-            if (!verify.ok) {
-                console.warn('Email transporter not verified, continuing but email may fail');
+            if (RESEND_API_KEY) {
+                await sendEmailViaResend({
+                    from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+                    to: bookingData.email,
+                    subject: `Booking Confirmation - The Scenic Inn`,
+                    text: `Dear ${bookingData.firstName},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                });
+            } else {
+                const verify = await verifyTransporter();
+                if (!verify.ok) {
+                    console.warn('Email transporter not verified, continuing but email may fail');
+                }
+                const customerEmail = {
+                    from: process.env.EMAIL_USER || 'your-email@gmail.com',
+                    to: bookingData.email,
+                    subject: `Booking Confirmation - The Scenic Inn`,
+                    text: `Dear ${bookingData.firstName},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                };
+                await emailTransporter.sendMail(customerEmail);
             }
-            const customerEmail = {
-                from: process.env.EMAIL_USER || 'your-email@gmail.com',
-                to: bookingData.email,
-                subject: `Booking Confirmation - The Scenic Inn`,
-                text: `Dear ${bookingData.firstName},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
-            };
-            
-            await emailTransporter.sendMail(customerEmail);
         } catch (error) {
             console.error('Error sending customer confirmation:', error);
         }
@@ -284,18 +318,20 @@ module.exports = router;
 router.get('/test-email', async (req, res) => {
     const to = req.query.to || process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
     try {
-        // Cap total test duration to ~15s
-        const verify = await verifyTransporter();
-        if (!verify.ok) {
-            return res.status(500).json({ success: false, stage: 'verify', error: verify.error });
+        if (RESEND_API_KEY) {
+            const data = await sendEmailViaResend({
+                from: process.env.EMAIL_FROM || 'Scenic Inn <onboarding@resend.dev>',
+                to,
+                subject: 'Scenic Inn email test (Resend)',
+                text: 'This is a test email sent via Resend HTTPS API.'
+            });
+            return res.json({ success: true, provider: 'resend', id: data.id, to });
         }
-        const info = await emailTransporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to,
-            subject: 'Scenic Inn SMTP test',
-            text: 'This is a test email from Railway backend to confirm SMTP credentials.'
-        });
-        res.json({ success: true, messageId: info.messageId, to });
+        // Fallback to SMTP test
+        const verify = await verifyTransporter();
+        if (!verify.ok) return res.status(500).json({ success: false, stage: 'verify', error: verify.error });
+        const info = await emailTransporter.sendMail({ from: process.env.EMAIL_USER, to, subject: 'Scenic Inn SMTP test', text: 'SMTP test email.' });
+        res.json({ success: true, provider: 'smtp', messageId: info.messageId, to });
     } catch (e) {
         console.error('SMTP test failed:', e);
         res.status(500).json({ success: false, error: e.message });

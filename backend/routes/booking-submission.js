@@ -175,14 +175,18 @@ async function submitToDojo(bookingData) {
 }
 
 // Main booking submission endpoint
-router.post('/submit', async (req, res) => {
+// Accepts two shapes:
+// 1) { bookingData, preorderData }
+// 2) bookingData directly (from current frontend)
+router.post('/', async (req, res) => {
     try {
-        const { bookingData, preorderData } = req.body;
+        let bookingData = req.body?.bookingData || req.body;
+        const preorderData = req.body?.preorderData || req.body?.preorder || [];
         
         console.log('Received booking submission:', bookingData);
         
-        // Step 1: Try to submit basic booking to Dojo
-        const dojoResult = await submitToDojo(bookingData);
+        // Step 1: Skip Dojo for now per request; just prepare PDF + email
+        const dojoResult = { success: false, reason: 'Dojo disabled for beta' };
         
         // Step 2: Handle preorder if present
         let preorderResult = null;

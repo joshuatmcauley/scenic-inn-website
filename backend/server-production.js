@@ -58,6 +58,8 @@ app.use('/api/admin', require('./routes/admin-production'));
 app.use('/api/menu', require('./routes/menu-production'));
 app.use('/api/menus', require('./routes/menu-production'));
 app.use('/api/booking', require('./routes/booking-production'));
+// Booking submission (PDF + email) to match frontend `${API_BASE_URL}/booking-submission`
+app.use('/api/booking-submission', require('./routes/booking-submission'));
 app.use('/api/seed', require('./routes/seed-production')); // Temporary seeding endpoint
 
 // 404 handler

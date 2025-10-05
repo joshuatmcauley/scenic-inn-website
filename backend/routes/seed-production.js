@@ -100,3 +100,55 @@ router.post('/migrate-real-data', async (req, res) => {
 });
 
 module.exports = router;
+
+// Replace a specific menu's sections/items (idempotent)
+// Body: { menus: [menu?], sections: [...], items: [...] }
+router.post('/replace-menu/:menuId', async (req, res) => {
+  const { menuId } = req.params;
+  const { menus = [], sections = [], items = [] } = req.body;
+  try {
+    await pool.query('BEGIN');
+
+    // Ensure menu row exists (insert ignore duplicate)
+    const menu = menus.find(m => m.id === menuId);
+    if (menu) {
+      const pricing = menu.pricing || null;
+      const createdAt = menu.created_at || new Date().toISOString();
+      const updatedAt = menu.updated_at || new Date().toISOString();
+      await pool.query(
+        'INSERT INTO menus (id, name, schedule, pricing, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING',
+        [menu.id, menu.name, menu.schedule, pricing, createdAt, updatedAt]
+      );
+    }
+
+    // Remove existing data for this menu
+    await pool.query('DELETE FROM menu_items WHERE menu_id = $1', [menuId]);
+    await pool.query('DELETE FROM menu_sections WHERE menu_id = $1', [menuId]);
+
+    // Insert sections
+    for (const section of sections.filter(s => s.menu_id === menuId)) {
+      await pool.query(
+        'INSERT INTO menu_sections (menu_id, section_key, name) VALUES ($1,$2,$3)',
+        [section.menu_id, section.section_key, section.name]
+      );
+    }
+
+    // Insert items
+    for (const item of items.filter(i => i.menu_id === menuId)) {
+      const price = item.price && item.price !== '' ? parseFloat(item.price) : 0.0;
+      const createdAt = item.created_at || new Date().toISOString();
+      const updatedAt = item.updated_at || new Date().toISOString();
+      await pool.query(
+        'INSERT INTO menu_items (id, menu_id, section_key, name, description, price, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [item.id, item.menu_id, item.section_key, item.name, item.description, price, createdAt, updatedAt]
+      );
+    }
+
+    await pool.query('COMMIT');
+    res.json({ success: true, message: `Menu ${menuId} replaced`, sections: sections.length, items: items.length });
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error('❌ Error replacing menu:', error);
+    res.status(500).json({ success: false, message: 'Failed to replace menu', error: error.message });
+  }
+});

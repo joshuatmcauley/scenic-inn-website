@@ -5,7 +5,7 @@ const axios = require('axios');
 const dbPath = path.join(__dirname, 'scenic_inn.db');
 const db = new sqlite3.Database(dbPath);
 
-const RAILWAY_API = 'https://scenic-inn-website-production.up.railway.app/api/seed/migrate-real-data';
+const RAILWAY_API = 'https://scenic-inn-website-production.up.railway.app/api/seed/replace-menu/lunch';
 
 function all(query, params = []) {
   return new Promise((resolve, reject) => {

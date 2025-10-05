@@ -73,6 +73,12 @@ function pad(str, len) {
   return s.length >= len ? s.slice(0, len - 1) + '…' : s + ' '.repeat(len - s.length);
 }
 
+function cleanName(name) {
+  if (!name) return '';
+  // remove " - £xx.xx" or "- £xx" trailing price
+  return name.replace(/\s*-\s*£[0-9.,]+\s*$/i, '').trim();
+}
+
 // Generate PDF for preorder (table layout)
 function generatePreorderPDF(bookingData, preorderData) {
     return new Promise((resolve, reject) => {
@@ -132,8 +138,10 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .moveDown();
                 
         // Render a fixed-width table using Courier to keep columns aligned
+        // Compact widths to avoid wrapping
+        const W = { cust: 10, starter: 22, main: 22, dessert: 14 };
         doc.font('Courier-Bold');
-        doc.text(`${pad('Customer', 12)} | ${pad('Starter', 28)} | ${pad('Main', 28)} | ${pad('Dessert', 20)}`);
+        doc.text(`${pad('Customer', W.cust)} | ${pad('Starter', W.starter)} | ${pad('Main', W.main)} | ${pad('Dessert', W.dessert)}`);
         doc.font('Courier');
         doc.moveDown(0.5);
 
@@ -142,20 +150,20 @@ function generatePreorderPDF(bookingData, preorderData) {
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
               const course = (sel.course_type || 'item').toLowerCase();
-              const name = sel.item_name || sel.name || sel.menu_item_id || '';
+              const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
               rows.push([course, name]);
             });
           } else {
-            rows.push(['starter', person.starter || 'Not selected']);
-            rows.push(['main', person.main || 'Not selected']);
-            if (person.dessert) rows.push(['dessert', person.dessert]);
+            rows.push(['starter', cleanName(person.starter || 'Not selected')]);
+            rows.push(['main', cleanName(person.main || 'Not selected')]);
+            if (person.dessert) rows.push(['dessert', cleanName(person.dessert)]);
           }
 
           const starter = (rows.find(r => r[0] === 'starter') || ['', ''])[1] || '—';
           const main = (rows.find(r => r[0] === 'main') || ['', ''])[1] || '—';
           const dessert = (rows.find(r => r[0] === 'dessert') || ['', ''])[1] || '—';
           const label = `Person ${person.person_number || index + 1}`;
-          const line = `${pad(label, 12)} | ${pad(starter, 28)} | ${pad(main, 28)} | ${pad(dessert, 20)}`;
+          const line = `${pad(label, W.cust)} | ${pad(starter, W.starter)} | ${pad(main, W.main)} | ${pad(dessert, W.dessert)}`;
           doc.text(line);
         });
         doc.moveDown();

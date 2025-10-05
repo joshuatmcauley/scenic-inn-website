@@ -421,12 +421,14 @@ async function loadMenuItems() {
         showLoading(true);
         console.log('Fetching menu items from:', `${API_BASE_URL}/menus/${bookingData.experience_id}/items`);
         const response = await fetch(`${API_BASE_URL}/menus/${bookingData.experience_id}/items`);
-        const data = await response.json();
+        let data = await response.json();
         console.log('Menu items response:', data);
         
         if (response.ok && data) {
             // Handle both shapes: { success, data: [...] } or direct array
-            const raw = Array.isArray(data) ? data : (data.data || []);
+            let raw = Array.isArray(data) ? data : (data.data || []);
+
+            // No client-side fallback: if lunch is empty we will show an error so we can fix data
 
             // Some endpoints return a flat list of items with section_key/section_name
             // Normalize into categories grouped by section_key

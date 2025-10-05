@@ -34,41 +34,41 @@ router.post('/migrate-real-data', async (req, res) => {
 
     // Insert REAL menus first (required for foreign keys)
     console.log('📝 Inserting REAL menus...');
-    for (const menu of menus) {
+        for (const menu of menus) {
       // Handle null pricing and timestamps
       const pricing = menu.pricing || null;
       const createdAt = menu.created_at || new Date().toISOString();
       const updatedAt = menu.updated_at || new Date().toISOString();
       
-      await pool.query(
-        'INSERT INTO menus (id, name, schedule, pricing, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
-        [menu.id, menu.name, menu.schedule, pricing, createdAt, updatedAt]
-      );
+          await pool.query(
+            'INSERT INTO menus (id, name, schedule, pricing, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING',
+            [menu.id, menu.name, menu.schedule, pricing, createdAt, updatedAt]
+          );
       console.log(`   ✅ Menu: ${menu.name}`);
     }
 
     // Insert REAL menu sections second
     console.log('📝 Inserting REAL menu sections...');
-    for (const section of sections) {
-      await pool.query(
-        'INSERT INTO menu_sections (menu_id, section_key, name) VALUES ($1, $2, $3)',
-        [section.menu_id, section.section_key, section.name]
-      );
+        for (const section of sections) {
+          await pool.query(
+            'INSERT INTO menu_sections (menu_id, section_key, name) VALUES ($1, $2, $3) ON CONFLICT (menu_id, section_key) DO NOTHING',
+            [section.menu_id, section.section_key, section.name]
+          );
       console.log(`   ✅ Section: ${section.name} for ${section.menu_id}`);
     }
 
     // Insert REAL menu items last (depends on menus and sections)
     console.log('📝 Inserting REAL menu items...');
-    for (const item of items) {
+        for (const item of items) {
       // Handle empty or null prices and timestamps
       const price = item.price && item.price !== '' ? parseFloat(item.price) : 0.00;
       const createdAt = item.created_at || new Date().toISOString();
       const updatedAt = item.updated_at || new Date().toISOString();
       
-      await pool.query(
-        'INSERT INTO menu_items (id, menu_id, section_key, name, description, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [item.id, item.menu_id, item.section_key, item.name, item.description, price, createdAt, updatedAt]
-      );
+          await pool.query(
+            'INSERT INTO menu_items (id, menu_id, section_key, name, description, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING',
+            [item.id, item.menu_id, item.section_key, item.name, item.description, price, createdAt, updatedAt]
+          );
       console.log(`   ✅ Item: ${item.name} - £${price}`);
     }
 

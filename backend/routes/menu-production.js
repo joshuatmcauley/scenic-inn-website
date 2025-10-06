@@ -49,7 +49,12 @@ router.get('/:menuId', async (req, res) => {
 router.get('/:menuId/items', async (req, res) => {
   try {
     const { menuId } = req.params;
-    const items = await dbHelpers.getMenuItems(menuId);
+    const { forPreorder } = req.query;
+    
+    // Use filtered items for preorder, all items for admin/display
+    const items = forPreorder === 'true' 
+      ? await dbHelpers.getMenuItemsForPreorder(menuId)
+      : await dbHelpers.getMenuItems(menuId);
     
     res.json({
       success: true,
@@ -60,6 +65,37 @@ router.get('/:menuId/items', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch menu items'
+    });
+  }
+});
+
+// Get menu pricing information
+router.get('/:menuId/pricing', async (req, res) => {
+  try {
+    const { menuId } = req.params;
+    const menu = await dbHelpers.getMenuById(menuId);
+    
+    if (!menu) {
+      return res.status(404).json({
+        success: false,
+        message: 'Menu not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: menu.id,
+        name: menu.name,
+        pricing_type: menu.pricing_type,
+        pricing: menu.pricing ? JSON.parse(menu.pricing) : null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching menu pricing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch menu pricing'
     });
   }
 });

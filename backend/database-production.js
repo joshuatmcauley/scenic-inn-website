@@ -193,11 +193,38 @@ const dbHelpers = {
     const result = await pool.query(`
       SELECT 
         mi.*, 
-        COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name
+        COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name,
+        m.pricing_type
       FROM menu_items mi
       LEFT JOIN menu_sections ms
         ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key
+      LEFT JOIN menus m
+        ON mi.menu_id = m.id
       WHERE mi.menu_id = $1
+      ORDER BY mi.section_key, mi.name
+    `, [menuId]);
+    return result.rows;
+  },
+
+  // Get menu items for preorder (excludes dips/sauces)
+  getMenuItemsForPreorder: async (menuId) => {
+    const result = await pool.query(`
+      SELECT 
+        mi.*, 
+        COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name,
+        m.pricing_type
+      FROM menu_items mi
+      LEFT JOIN menu_sections ms
+        ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key
+      LEFT JOIN menus m
+        ON mi.menu_id = m.id
+      WHERE mi.menu_id = $1
+        AND LOWER(mi.section_key) NOT IN ('dips', 'sauces', 'dip', 'sauce')
+        AND LOWER(mi.name) NOT LIKE '%dip%'
+        AND LOWER(mi.name) NOT LIKE '%sauce%'
+        AND LOWER(mi.name) NOT LIKE '%gravy%'
+        AND LOWER(mi.name) NOT LIKE '%mayo%'
+        AND LOWER(mi.name) NOT LIKE '%aioli%'
       ORDER BY mi.section_key, mi.name
     `, [menuId]);
     return result.rows;

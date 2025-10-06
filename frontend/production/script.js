@@ -556,6 +556,28 @@ function populateMenuSelection() {
     const container = document.getElementById('menu-selection');
     container.innerHTML = '';
     
+    // Update menu name and description
+    const menuNameElement = document.getElementById('selected-menu-name');
+    const menuDescriptionElement = document.getElementById('selected-menu-description');
+    
+    if (menuNameElement && menuDescriptionElement && menuItems.pricing_info) {
+        menuNameElement.textContent = menuItems.pricing_info.name || 'Menu';
+        
+        // Create description based on pricing type
+        let description = '';
+        if (menuItems.pricing_info.pricing_type === 'course' && menuItems.pricing_info.pricing) {
+            const pricingOptions = Object.entries(menuItems.pricing_info.pricing)
+                .map(([courses, price]) => `${courses}: £${price}`)
+                .join(', ');
+            description = `Fixed price menu - ${pricingOptions}`;
+        } else if (menuItems.pricing_info.pricing_type === 'individual') {
+            description = 'Individual item pricing - each item priced separately';
+        } else {
+            description = 'Menu items available for selection';
+        }
+        menuDescriptionElement.textContent = description;
+    }
+    
     // Only show menu selection for parties of 11+ with preorder enabled
     if (bookingData.party_size < 11) {
         container.innerHTML = '<p class="text-center">No preorder required for parties under 11 people.</p>';

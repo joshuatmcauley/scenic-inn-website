@@ -339,7 +339,7 @@ function handlePreorderToggle() {
 function handleDateChange() {
     const date = document.getElementById('booking-date').value;
     if (date) {
-        // Populate time slots directly from sample data
+        // Populate time slots
         populateTimeSelect();
     }
 }
@@ -373,7 +373,7 @@ async function loadExperiences() {
         }
     } catch (error) {
         console.error('Error loading experiences:', error);
-        // Use sample data as fallback - no error popup
+        // Load time slots
         availableExperiences = [
             { id: 'tea-time', name: 'Tea Time Menu', description: 'Monday-Thursday 5pm-8:30pm', price: { '2-courses': 22, '3-courses': 25 } },
             { id: 'weekend', name: 'Weekend Evening Menu', description: 'Friday-Sunday 5pm-9pm', price: null },
@@ -419,8 +419,15 @@ async function loadMenuItems() {
     
     try {
         showLoading(true);
-        console.log('Fetching menu items from:', `${API_BASE_URL}/menus/${bookingData.experience_id}/items`);
-        const response = await fetch(`${API_BASE_URL}/menus/${bookingData.experience_id}/items`);
+        
+        // First, get menu pricing information
+        const pricingResponse = await fetch(`${API_BASE_URL}/menus/${bookingData.experience_id}/pricing`);
+        let pricingData = await pricingResponse.json();
+        console.log('Menu pricing response:', pricingData);
+        
+        // Then get menu items
+        console.log('Fetching menu items from:', `${API_BASE_URL}/menus/${bookingData.experience_id}/items?forPreorder=true`);
+        const response = await fetch(`${API_BASE_URL}/menus/${bookingData.experience_id}/items?forPreorder=true`);
         let data = await response.json();
         console.log('Menu items response:', data);
         
@@ -443,7 +450,8 @@ async function loadMenuItems() {
                         id: item.id,
                         name: item.name,
                         description: item.description || '',
-                        price: item.price ? `£${item.price}` : ''
+                        price: item.price,
+                        pricing_type: item.pricing_type
                     });
                 });
                 menuItems = { categories: Object.values(grouped) };
@@ -457,31 +465,26 @@ async function loadMenuItems() {
                             id: item.id,
                             name: item.name,
                             description: item.description || '',
-                            price: item.price ? `£${item.price}` : ''
+                            price: item.price,
+                            pricing_type: item.pricing_type
                         }))
                     }))
                 };
             }
-            console.log('Menu items loaded:', menuItems);
-            populateMenuSelection();
-        } else {
-            // Fallback to sample data
-            menuItems = SAMPLE_MENU_DATA[bookingData.experience_id] || null;
-            if (menuItems) {
-                populateMenuSelection();
-            } else {
-                showError('Failed to load menu items');
+            
+            // Store pricing information
+            if (pricingResponse.ok && pricingData.success) {
+                menuItems.pricing_info = pricingData.data;
             }
-        }
-    } catch (error) {
-        console.error('Error loading menu items:', error);
-        // Fallback to sample data
-        menuItems = SAMPLE_MENU_DATA[bookingData.experience_id] || null;
-        if (menuItems) {
+            
+            console.log('Menu items loaded:', menuItems);
             populateMenuSelection();
         } else {
             showError('Failed to load menu items');
         }
+    } catch (error) {
+        console.error('Error loading menu items:', error);
+        showError('Failed to load menu items');
     } finally {
         showLoading(false);
     }
@@ -530,7 +533,7 @@ function populateTimeSelect() {
             const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
             console.log('Day name:', dayName);
             
-            const timeSlots = TIME_SLOTS_BY_DAY[dayName] || SAMPLE_AVAILABLE_SLOTS.map(slot => slot.time);
+            const timeSlots = ['12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'];
             console.log('Time slots for', dayName, ':', timeSlots);
             
             // Remove duplicates and sort
@@ -630,14 +633,18 @@ function generateMenuCategories(personNumber) {
     const hasDesserts = desserts.length > 0;
     const hasSides = sides.length > 0;
     
+    // Add pricing information header
+    const pricingInfo = getPricingInfoDisplay();
+    
     return `
         <div class="course-selection">
+            ${pricingInfo}
             <div class="course-group">
                 <label for="person-${personNumber}-starter">Starter:</label>
                 <select id="person-${personNumber}-starter" name="person-${personNumber}-starter">
                     <option value="">Select a starter</option>
                     ${starters.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
                 </select>
             </div>
@@ -647,7 +654,7 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-main" name="person-${personNumber}-main">
                     <option value="">Select a main course</option>
                     ${mains.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
                 </select>
             </div>
@@ -658,7 +665,7 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-side" name="person-${personNumber}-side">
                     <option value="">Select a side (optional)</option>
                     ${sides.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
                 </select>
             </div>
@@ -670,13 +677,60 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-dessert" name="person-${personNumber}-dessert">
                     <option value="">Select a dessert</option>
                     ${desserts.map(item => `
-                        <option value="${item.id}">${item.name}${item.price ? ' - £' + item.price : ''}</option>
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
                 </select>
             </div>
             ` : ''}
         </div>
     `;
+}
+
+// Helper function to display pricing information
+function getPricingInfoDisplay() {
+    const pricingInfo = menuItems.pricing_info;
+    
+    if (!pricingInfo) {
+        return '';
+    }
+    
+    if (pricingInfo.pricing_type === 'course' && pricingInfo.pricing) {
+        // Show course pricing options
+        const pricingOptions = Object.entries(pricingInfo.pricing)
+            .map(([courses, price]) => `${courses}: £${price}`)
+            .join(', ');
+        return `
+            <div class="pricing-info">
+                <h4>Menu Pricing: ${pricingOptions}</h4>
+                <p><em>Select your courses below - pricing is per person for the full meal</em></p>
+            </div>
+        `;
+    } else if (pricingInfo.pricing_type === 'individual') {
+        return `
+            <div class="pricing-info">
+                <h4>Individual Item Pricing</h4>
+                <p><em>Each item is priced individually as shown</em></p>
+            </div>
+        `;
+    }
+    
+    return '';
+}
+
+// Helper function to display item pricing based on menu pricing type
+function getItemPriceDisplay(item) {
+    const pricingType = menuItems.pricing_info?.pricing_type;
+    
+    if (pricingType === 'course') {
+        // For course pricing, don't show individual item prices
+        return '';
+    } else if (pricingType === 'individual') {
+        // For individual pricing, show the item price
+        return item.price ? ` - £${item.price}` : '';
+    } else {
+        // Fallback to showing price if available
+        return item.price ? ` - £${item.price}` : '';
+    }
 }
 
 // Data Collection
@@ -925,7 +979,7 @@ function handleEventDateChange() {
     const date = document.getElementById('event-date').value;
     const partySize = parseInt(document.getElementById('event-party-size').value);
     if (date && partySize) {
-        // Populate time slots directly from sample data
+        // Populate time slots
         populateEventTimeSelect();
     }
     
@@ -954,7 +1008,7 @@ async function loadEventAvailableSlots() {
     try {
         showLoading(true);
         
-        // For now, just populate with sample times
+        // Populate with available times
         // Later this will connect to Dojo API
         populateEventTimeSelect();
         
@@ -987,7 +1041,7 @@ function populateEventTimeSelect() {
     console.log('Event day name:', dayName);
     
     // Get appropriate time slots for the day
-    const timeSlots = TIME_SLOTS_BY_DAY[dayName] || SAMPLE_AVAILABLE_SLOTS.map(slot => slot.time);
+    const timeSlots = ['12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'];
     console.log('Event time slots for', dayName, ':', timeSlots);
     
     // Remove duplicates and sort
@@ -1078,10 +1132,6 @@ function getMenuForDateTime(date, time) {
     return null; // No menu available for this time
 }
 
-function getMockMenuData(menuType) {
-    // Use sample data from the external file
-    return SAMPLE_MENU_DATA[menuType] || null;
-}
 
 // Load menu schedule from menu-schedule.txt (for future use)
 async function loadMenuSchedule() {

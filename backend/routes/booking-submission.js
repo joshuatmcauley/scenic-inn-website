@@ -142,23 +142,21 @@ function generatePreorderPDF(bookingData, preorderData) {
         const desserts = [];
 
         preorderData.forEach((person, index) => {
-          const label = `Person ${person.person_number || index + 1}`;
+          const personNumber = person.person_number || index + 1;
           const personNotes = person.special_instructions || '';
           
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
               const course = (sel.course_type || '').toLowerCase();
               const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
-              const notes = personNotes ? ` (Notes: ${personNotes})` : '';
-              if (course === 'starter') starters.push(`${label}: ${name}${notes}`);
-              else if (course === 'main') mains.push(`${label}: ${name}${notes}`);
-              else if (course === 'dessert') desserts.push(`${label}: ${name}${notes}`);
+              if (course === 'starter') starters.push({ person: personNumber, item: name, notes: personNotes });
+              else if (course === 'main') mains.push({ person: personNumber, item: name, notes: personNotes });
+              else if (course === 'dessert') desserts.push({ person: personNumber, item: name, notes: personNotes });
             });
           } else {
-            const notes = personNotes ? ` (Notes: ${personNotes})` : '';
-            if (person.starter) starters.push(`${label}: ${cleanName(person.starter)}${notes}`);
-            if (person.main) mains.push(`${label}: ${cleanName(person.main)}${notes}`);
-            if (person.dessert) desserts.push(`${label}: ${cleanName(person.dessert)}${notes}`);
+            if (person.starter) starters.push({ person: personNumber, item: cleanName(person.starter), notes: personNotes });
+            if (person.main) mains.push({ person: personNumber, item: cleanName(person.main), notes: personNotes });
+            if (person.dessert) desserts.push({ person: personNumber, item: cleanName(person.dessert), notes: personNotes });
           }
         });
 
@@ -195,10 +193,14 @@ function generatePreorderPDF(bookingData, preorderData) {
           doc.font('Helvetica');
           for (let i = 0; i < items.length; i++) {
             const ly = y + (i + 1) * rowH + 2;
-            const cleanItem = items[i].replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
-            doc.text(`${i + 1}`, x0 + 3, ly, { width: personW - 6 });
-            doc.text(cleanItem, x0 + personW + 3, ly, { width: itemW - 6 });
-            doc.text('', x0 + personW + itemW + 3, ly, { width: notesW - 6 }); // Empty notes column
+            const item = items[i];
+            const personNum = typeof item === 'object' ? item.person : i + 1;
+            const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            const notes = typeof item === 'object' ? item.notes : '';
+            
+            doc.text(`${personNum}`, x0 + 3, ly, { width: personW - 6 });
+            doc.text(itemName, x0 + personW + 3, ly, { width: itemW - 6 });
+            doc.text(notes, x0 + personW + itemW + 3, ly, { width: notesW - 6 });
           }
           doc.moveDown(rows * rowH / 14 + 0.3); // advance roughly rows height + spacing
         };

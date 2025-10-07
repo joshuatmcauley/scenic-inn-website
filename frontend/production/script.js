@@ -704,6 +704,13 @@ function generateMenuCategories(personNumber) {
                 </select>
             </div>
             ` : ''}
+            
+            <div class="course-group">
+                <label for="person-${personNumber}-notes">Special Instructions/Notes:</label>
+                <textarea id="person-${personNumber}-notes" name="person-${personNumber}-notes" 
+                    placeholder="Any dietary requirements, allergies, or special requests for this person..." 
+                    rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;"></textarea>
+            </div>
         </div>
     `;
 }
@@ -810,10 +817,15 @@ function collectPreorderData() {
             });
         }
         
-        if (items.length > 0) {
+        // Get notes for this person
+        const notesElement = document.getElementById(`person-${i}-notes`);
+        const personNotes = notesElement ? notesElement.value.trim() : '';
+        
+        if (items.length > 0 || personNotes) {
             preorderData.push({
                 person_number: i,
-                items: items
+                items: items,
+                special_instructions: personNotes
             });
         }
     }

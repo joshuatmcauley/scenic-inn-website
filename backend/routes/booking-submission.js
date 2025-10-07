@@ -143,18 +143,22 @@ function generatePreorderPDF(bookingData, preorderData) {
 
         preorderData.forEach((person, index) => {
           const label = `Person ${person.person_number || index + 1}`;
+          const personNotes = person.special_instructions || '';
+          
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
               const course = (sel.course_type || '').toLowerCase();
               const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
-              if (course === 'starter') starters.push(`${label}: ${name}`);
-              else if (course === 'main') mains.push(`${label}: ${name}`);
-              else if (course === 'dessert') desserts.push(`${label}: ${name}`);
+              const notes = personNotes ? ` (Notes: ${personNotes})` : '';
+              if (course === 'starter') starters.push(`${label}: ${name}${notes}`);
+              else if (course === 'main') mains.push(`${label}: ${name}${notes}`);
+              else if (course === 'dessert') desserts.push(`${label}: ${name}${notes}`);
             });
           } else {
-            if (person.starter) starters.push(`${label}: ${cleanName(person.starter)}`);
-            if (person.main) mains.push(`${label}: ${cleanName(person.main)}`);
-            if (person.dessert) desserts.push(`${label}: ${cleanName(person.dessert)}`);
+            const notes = personNotes ? ` (Notes: ${personNotes})` : '';
+            if (person.starter) starters.push(`${label}: ${cleanName(person.starter)}${notes}`);
+            if (person.main) mains.push(`${label}: ${cleanName(person.main)}${notes}`);
+            if (person.dessert) desserts.push(`${label}: ${cleanName(person.dessert)}${notes}`);
           }
         });
 

@@ -31,6 +31,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:8080',
     'https://scenic-inn-website.vercel.app',
+    'https://*.vercel.app',
     'https://joshuatmcauley.github.io'
   ],
   credentials: true

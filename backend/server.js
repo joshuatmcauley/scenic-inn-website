@@ -32,7 +32,9 @@ app.use(cors({
     'http://localhost:8081',
     'http://127.0.0.1:8081',
     'null', // For file:// protocol
-    'https://kipaxe.co.uk'
+    'https://kipaxe.co.uk',
+    'https://scenic-inn-website.vercel.app',
+    'https://joshuatmcauley.github.io'
   ],
   credentials: true
 }));

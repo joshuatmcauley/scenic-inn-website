@@ -788,32 +788,22 @@ function toggleSideDropdown(personNumber) {
     console.log('comesWithSide value:', comesWithSide);
     console.log('data-comes-with-side attribute:', selectedOption ? selectedOption.getAttribute('data-comes-with-side') : 'no option');
     
+    // Remove any existing side note
+    const mainGroup = mainSelect.closest('.course-group');
+    let sideNote = mainGroup.querySelector('.side-note');
+    if (sideNote) {
+        sideNote.remove();
+    }
+
     if (comesWithSide) {
-        // Hide side dropdown and clear selection
+        // Show side dropdown - customer can choose which side they want
+        sideGroup.style.display = 'block';
+        console.log('Showing sides dropdown - customer can choose a side');
+    } else {
+        // Hide side dropdown and clear selection - item doesn't come with a side
         sideGroup.style.display = 'none';
         sideSelect.value = '';
-        
-        // Add a small note that this item comes with a side
-        const mainGroup = mainSelect.closest('.course-group');
-        let sideNote = mainGroup.querySelector('.side-note');
-        if (!sideNote) {
-            sideNote = document.createElement('small');
-            sideNote.className = 'side-note';
-            sideNote.style.color = '#666';
-            sideNote.style.fontStyle = 'italic';
-            mainGroup.appendChild(sideNote);
-        }
-        sideNote.textContent = ' (This item comes with a side)';
-        console.log('Hiding sides dropdown - item comes with side');
-    } else {
-        // Show side dropdown and remove any side note
-        sideGroup.style.display = 'block';
-        const mainGroup = mainSelect.closest('.course-group');
-        const sideNote = mainGroup.querySelector('.side-note');
-        if (sideNote) {
-            sideNote.remove();
-        }
-        console.log('Showing sides dropdown - item does not come with side');
+        console.log('Hiding sides dropdown - item does not come with a side');
     }
 }
 

@@ -644,7 +644,7 @@ function generateMenuCategories(personNumber) {
             console.log(`  → Added to desserts: ${category.items.map(item => item.name).join(', ')}`);
         }
         // Sides - separate category
-        else if (sectionKey === 'sides' || sectionKey === 'dips' || sectionKey === 'sauces') {
+        else if (sectionKey === 'sides' || sectionKey === 'side-orders' || sectionKey === 'dips' || sectionKey === 'sauces') {
             sides.push(...category.items);
             console.log(`  → Added to sides: ${category.items.map(item => item.name).join(', ')}`);
         }

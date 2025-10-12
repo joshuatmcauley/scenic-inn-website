@@ -39,6 +39,8 @@ app.use(cors({
   credentials: true
 }));
 
+console.log('CORS configured for Vercel and GitHub Pages');
+
 // Logging
 app.use(morgan('combined'));
 

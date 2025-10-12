@@ -673,16 +673,16 @@ function generateMenuCategories(personNumber) {
             
             <div class="course-group">
                 <label for="person-${personNumber}-main">Main Course:</label>
-                <select id="person-${personNumber}-main" name="person-${personNumber}-main">
+                <select id="person-${personNumber}-main" name="person-${personNumber}-main" onchange="toggleSideDropdown(${personNumber})">
                     <option value="">Select a main course</option>
                     ${mains.map(item => `
-                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
+                        <option value="${item.id}" data-comes-with-side="${item.comes_with_side || false}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
                 </select>
             </div>
             
             ${hasSides ? `
-            <div class="course-group">
+            <div class="course-group" id="person-${personNumber}-side-group" style="display: none;">
                 <label for="person-${personNumber}-side">Side (Optional):</label>
                 <select id="person-${personNumber}-side" name="person-${personNumber}-side">
                     <option value="">Select a side (optional)</option>
@@ -759,6 +759,44 @@ function getItemPriceDisplay(item) {
     } else {
         // Fallback to showing price if available
         return item.price ? ` - £${item.price}` : '';
+    }
+}
+
+// Function to toggle side dropdown based on selected main course
+function toggleSideDropdown(personNumber) {
+    const mainSelect = document.getElementById(`person-${personNumber}-main`);
+    const sideGroup = document.getElementById(`person-${personNumber}-side-group`);
+    const sideSelect = document.getElementById(`person-${personNumber}-side`);
+    
+    if (!mainSelect || !sideGroup || !sideSelect) return;
+    
+    const selectedOption = mainSelect.options[mainSelect.selectedIndex];
+    const comesWithSide = selectedOption ? selectedOption.getAttribute('data-comes-with-side') === 'true' : false;
+    
+    if (comesWithSide) {
+        // Hide side dropdown and clear selection
+        sideGroup.style.display = 'none';
+        sideSelect.value = '';
+        
+        // Add a small note that this item comes with a side
+        const mainGroup = mainSelect.closest('.course-group');
+        let sideNote = mainGroup.querySelector('.side-note');
+        if (!sideNote) {
+            sideNote = document.createElement('small');
+            sideNote.className = 'side-note';
+            sideNote.style.color = '#666';
+            sideNote.style.fontStyle = 'italic';
+            mainGroup.appendChild(sideNote);
+        }
+        sideNote.textContent = ' (This item comes with a side)';
+    } else {
+        // Show side dropdown and remove any side note
+        sideGroup.style.display = 'block';
+        const mainGroup = mainSelect.closest('.course-group');
+        const sideNote = mainGroup.querySelector('.side-note');
+        if (sideNote) {
+            sideNote.remove();
+        }
     }
 }
 

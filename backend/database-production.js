@@ -194,7 +194,8 @@ const dbHelpers = {
       SELECT 
         mi.*, 
         COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name,
-        m.pricing_type
+        m.pricing_type,
+        COALESCE(mi.comes_with_side, false) AS comes_with_side
       FROM menu_items mi
       LEFT JOIN menu_sections ms
         ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key
@@ -212,7 +213,8 @@ const dbHelpers = {
       SELECT 
         mi.*, 
         COALESCE(ms.name, INITCAP(REPLACE(mi.section_key, '-', ' '))) AS section_name,
-        m.pricing_type
+        m.pricing_type,
+        COALESCE(mi.comes_with_side, false) AS comes_with_side
       FROM menu_items mi
       LEFT JOIN menu_sections ms
         ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key

@@ -451,10 +451,13 @@ async function loadMenuItems() {
                         name: item.name,
                         description: item.description || '',
                         price: item.price,
-                        pricing_type: item.pricing_type
+                        pricing_type: item.pricing_type,
+                        comes_with_side: item.comes_with_side
                     });
                 });
                 menuItems = { categories: Object.values(grouped) };
+                console.log('Menu items grouped:', menuItems);
+                console.log('Main course items:', grouped['main-courses'] || grouped['main']);
             } else {
                 // Already grouped by sections with items
                 menuItems = {
@@ -768,10 +771,22 @@ function toggleSideDropdown(personNumber) {
     const sideGroup = document.getElementById(`person-${personNumber}-side-group`);
     const sideSelect = document.getElementById(`person-${personNumber}-side`);
     
-    if (!mainSelect || !sideGroup || !sideSelect) return;
+    console.log('toggleSideDropdown called for person', personNumber);
+    console.log('mainSelect:', mainSelect);
+    console.log('sideGroup:', sideGroup);
+    console.log('sideSelect:', sideSelect);
+    
+    if (!mainSelect || !sideGroup || !sideSelect) {
+        console.log('Missing elements - returning early');
+        return;
+    }
     
     const selectedOption = mainSelect.options[mainSelect.selectedIndex];
     const comesWithSide = selectedOption ? selectedOption.getAttribute('data-comes-with-side') === 'true' : false;
+    
+    console.log('Selected option:', selectedOption);
+    console.log('comesWithSide value:', comesWithSide);
+    console.log('data-comes-with-side attribute:', selectedOption ? selectedOption.getAttribute('data-comes-with-side') : 'no option');
     
     if (comesWithSide) {
         // Hide side dropdown and clear selection
@@ -789,6 +804,7 @@ function toggleSideDropdown(personNumber) {
             mainGroup.appendChild(sideNote);
         }
         sideNote.textContent = ' (This item comes with a side)';
+        console.log('Hiding sides dropdown - item comes with side');
     } else {
         // Show side dropdown and remove any side note
         sideGroup.style.display = 'block';
@@ -797,6 +813,7 @@ function toggleSideDropdown(personNumber) {
         if (sideNote) {
             sideNote.remove();
         }
+        console.log('Showing sides dropdown - item does not come with side');
     }
 }
 

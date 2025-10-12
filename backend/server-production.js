@@ -29,10 +29,14 @@ app.use(cors({
     'https://*.netlify.app',
     'https://kipaxe.co.uk',
     'http://localhost:3000',
-    'http://localhost:8080'
+    'http://localhost:8080',
+    'https://scenic-inn-website.vercel.app',
+    'https://joshuatmcauley.github.io'
   ],
   credentials: true
 }));
+
+console.log('CORS configured for Vercel and GitHub Pages');
 
 // Logging
 app.use(morgan('combined'));

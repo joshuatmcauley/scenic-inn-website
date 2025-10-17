@@ -214,11 +214,11 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Try the Payments API instead of Bookings API
+      // Try the EPOS Data API (required for Dojo Bookings)
       const testURL = 'https://api.dojo.tech';
       const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
       
-      console.log('Testing Payments API endpoints...');
+      console.log('Testing EPOS Data API endpoints (required for Dojo Bookings)...');
       
       const client = axios.create({
         baseURL: testURL,
@@ -227,22 +227,23 @@ class DojoAPI {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-          'version': '2025-09-10'
+          'version': '2025-09-10',
+          'reseller-id': this.vendorId,
+          'software-house-id': this.restaurantId
         },
         timeout: 15000
       });
 
-      // Try Payments API endpoints
-      const paymentEndpoints = [
-        '/v1/payments',
-        '/v1/transactions',
-        '/v1/refunds',
-        '/v1/customers',
-        '/v1/products',
+      // Try EPOS Data API endpoints (from the documentation)
+      const eposEndpoints = [
+        '/v1/areas',
+        '/v1/tables',
+        '/v1/reservations',
+        '/v1/parties',
         '/v1/orders'
       ];
       
-      for (const endpoint of paymentEndpoints) {
+      for (const endpoint of eposEndpoints) {
         try {
           console.log(`Testing ${endpoint} endpoint...`);
           const response = await client.get(endpoint);
@@ -261,16 +262,17 @@ class DojoAPI {
         }
       }
       
-      // If Payments API also fails, return detailed error
+      // If EPOS Data API also fails, return detailed error
       return {
         connected: false,
-        error: 'Both Bookings and Payments API endpoints failed',
+        error: 'EPOS Data API endpoints failed',
         baseURL: testURL,
         authMethod: 'Basic Auth',
         details: {
-          message: 'Your Dojo account may not have API access enabled',
-          suggestion: 'Contact Dojo support to enable API access for your account',
-          tested_endpoints: paymentEndpoints
+          message: 'EPOS Data API access required for Dojo Bookings',
+          suggestion: 'You need a POS system that supports Dojo EPOS Data API, or contact Dojo support to enable API access',
+          tested_endpoints: eposEndpoints,
+          note: 'Dojo Bookings requires integration with a compatible POS system'
         }
       };
     } catch (error) {

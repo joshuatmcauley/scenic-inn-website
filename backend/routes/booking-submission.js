@@ -335,43 +335,12 @@ router.post('/', async (req, res) => {
         console.log('Received booking submission:', bookingData);
       console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
-        // Step 1: Submit booking to Dojo (without preorder items)
-        let dojoResult = null;
-        try {
-            // Prepare booking data for Dojo (excluding preorder items)
-            const dojoBookingData = {
-                date: bookingData.date,
-                time: bookingData.time,
-                party_size: parseInt(bookingData.partySize || bookingData.party_size),
-                customer_name: `${bookingData.firstName || bookingData.first_name || ''} ${bookingData.lastName || bookingData.last_name || ''}`.trim(),
-                customer_email: bookingData.email,
-                customer_phone: bookingData.phone,
-                special_requests: bookingData.specialRequests || bookingData.special_requests || '',
-                reference: `SCENIC-${Date.now()}`,
-                // Note: Preorder items are NOT included in Dojo booking
-                source: 'scenic-inn-website'
-            };
-            
-            // Import Dojo API
-            const dojoAPI = require('../config/dojo');
-            
-            // Submit to Dojo
-            const dojoResponse = await dojoAPI.createBooking(dojoBookingData);
-            dojoResult = { 
-                success: true, 
-                dojoBookingId: dojoResponse.id || dojoResponse.booking_id,
-                data: dojoResponse 
-            };
-            console.log('Successfully submitted booking to Dojo:', dojoResult);
-            
-        } catch (dojoError) {
-            console.error('Error submitting to Dojo:', dojoError);
-            dojoResult = { 
-                success: false, 
-                error: dojoError.message,
-                reason: 'Dojo API submission failed'
-            };
-        }
+        // Step 1: Dojo API integration disabled (API access not enabled)
+        const dojoResult = { 
+            success: false, 
+            reason: 'Dojo API access not enabled - contact Dojo support to enable API access',
+            note: 'Current booking system working perfectly - no Dojo integration needed'
+        };
         
         // Step 2: Handle preorder if present
         let preorderResult = null;

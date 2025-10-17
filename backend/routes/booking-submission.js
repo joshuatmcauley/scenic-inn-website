@@ -335,8 +335,43 @@ router.post('/', async (req, res) => {
         console.log('Received booking submission:', bookingData);
       console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
-        // Step 1: Skip Dojo for now per request; just prepare PDF + email
-        const dojoResult = { success: false, reason: 'Dojo disabled for beta' };
+        // Step 1: Submit booking to Dojo (without preorder items)
+        let dojoResult = null;
+        try {
+            // Prepare booking data for Dojo (excluding preorder items)
+            const dojoBookingData = {
+                date: bookingData.date,
+                time: bookingData.time,
+                party_size: parseInt(bookingData.partySize || bookingData.party_size),
+                customer_name: `${bookingData.firstName || bookingData.first_name || ''} ${bookingData.lastName || bookingData.last_name || ''}`.trim(),
+                customer_email: bookingData.email,
+                customer_phone: bookingData.phone,
+                special_requests: bookingData.specialRequests || bookingData.special_requests || '',
+                reference: `SCENIC-${Date.now()}`,
+                // Note: Preorder items are NOT included in Dojo booking
+                source: 'scenic-inn-website'
+            };
+            
+            // Import Dojo API
+            const dojoAPI = require('../config/dojo');
+            
+            // Submit to Dojo
+            const dojoResponse = await dojoAPI.createBooking(dojoBookingData);
+            dojoResult = { 
+                success: true, 
+                dojoBookingId: dojoResponse.id || dojoResponse.booking_id,
+                data: dojoResponse 
+            };
+            console.log('Successfully submitted booking to Dojo:', dojoResult);
+            
+        } catch (dojoError) {
+            console.error('Error submitting to Dojo:', dojoError);
+            dojoResult = { 
+                success: false, 
+                error: dojoError.message,
+                reason: 'Dojo API submission failed'
+            };
+        }
         
         // Step 2: Handle preorder if present
         let preorderResult = null;
@@ -398,7 +433,8 @@ router.post('/', async (req, res) => {
             message: 'Booking submitted successfully',
             dojoResult,
             preorderResult,
-            bookingReference: `SCENIC-${Date.now()}`
+            bookingReference: `SCENIC-${Date.now()}`,
+            dojoBookingId: dojoResult?.dojoBookingId || null
         });
         
     } catch (error) {
@@ -418,6 +454,30 @@ router.get('/test', (req, res) => {
         message: 'Booking submission system is working',
         timestamp: new Date().toISOString()
     });
+});
+
+// Test Dojo API connection
+router.get('/test-dojo', async (req, res) => {
+    try {
+        const dojoAPI = require('../config/dojo');
+        
+        // Test connection
+        const connectionTest = await dojoAPI.testConnection();
+        
+        res.json({
+            success: true,
+            message: 'Dojo API test completed',
+            connectionTest,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Dojo API test failed',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 module.exports = router;

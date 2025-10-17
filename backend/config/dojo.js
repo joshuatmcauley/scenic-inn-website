@@ -3,8 +3,8 @@ require('dotenv').config();
 
 class DojoAPI {
   constructor() {
-    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech/v1';
-    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech/v1';
+    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech';
+    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech';
     this.apiKey = process.env.DOJO_API_KEY || 'demo-key';
     this.vendorId = process.env.DOJO_VENDOR_ID || 'demo-vendor';
     this.restaurantId = process.env.DOJO_RESTAURANT_ID || 'demo-restaurant';
@@ -57,7 +57,9 @@ class DojoAPI {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-          'version': '2022-04-07'
+          'version': '2025-09-10',
+          'reseller-id': this.vendorId,
+          'software-house-id': this.restaurantId
         },
         timeout: 10000
       });
@@ -212,11 +214,11 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test the actual API endpoint (not the docs site)
-      const testURL = 'https://api.dojo.tech/v1';
+      // Test the actual API endpoint (correct base URL)
+      const testURL = 'https://api.dojo.tech';
       const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
       
-      console.log('Testing with Basic Auth on api.dojo.tech/v1 (actual API)');
+      console.log('Testing with Basic Auth on api.dojo.tech (correct API)');
       
       const client = axios.create({
         baseURL: testURL,
@@ -225,7 +227,9 @@ class DojoAPI {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-          'version': '2022-04-07'
+          'version': '2025-09-10',
+          'reseller-id': this.vendorId,
+          'software-house-id': this.restaurantId
         },
         timeout: 15000
       });

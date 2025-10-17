@@ -3,8 +3,8 @@ require('dotenv').config();
 
 class DojoAPI {
   constructor() {
-    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech';
-    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech';
+    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.com';
+    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.com';
     this.apiKey = process.env.DOJO_API_KEY || 'demo-key';
     this.vendorId = process.env.DOJO_VENDOR_ID || 'demo-vendor';
     this.restaurantId = process.env.DOJO_RESTAURANT_ID || 'demo-restaurant';
@@ -208,8 +208,11 @@ class DojoAPI {
     try {
       // First, let's test basic connectivity with different authentication methods
       const possibleBaseURLs = [
-        'https://api.dojo.tech',
         'https://api.dojo.com',
+        'https://api.dojopayments.com',
+        'https://api.dojo.tech/v1',
+        'https://api.dojo.tech/api',
+        'https://api.dojo.tech/api/v1',
         'https://epos-data-api.dojo.tech',
         'https://epos-api.dojo.tech'
       ];

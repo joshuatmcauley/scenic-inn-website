@@ -206,55 +206,77 @@ class DojoAPI {
   // Test API connection
   async testConnection() {
     try {
-      // Try different possible base URLs for EPOS Data API
+      // First, let's test basic connectivity with different authentication methods
       const possibleBaseURLs = [
-        this.eposBaseURL,
         'https://api.dojo.tech',
         'https://api.dojo.com',
         'https://epos-data-api.dojo.tech',
         'https://epos-api.dojo.tech'
       ];
 
+      const authMethods = [
+        { name: 'Bearer Token', header: `Bearer ${this.apiKey}` },
+        { name: 'API Key', header: this.apiKey },
+        { name: 'X-API-Key', header: this.apiKey, headerName: 'X-API-Key' }
+      ];
+
       const testEndpoints = [
+        '/',
+        '/health',
+        '/status',
         '/v1/areas',
         '/v1/tables',
-        '/v1/reservations/search'
+        '/v1/reservations/search',
+        '/bookings',
+        '/reservations'
       ];
       
       for (const baseURL of possibleBaseURLs) {
         console.log(`Testing base URL: ${baseURL}`);
         
-        const eposClient = axios.create({
-          baseURL: baseURL,
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+        for (const authMethod of authMethods) {
+          console.log(`Testing auth method: ${authMethod.name}`);
+          
+          const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'User-Agent': 'TheScenicInn-BookingSystem/1.0'
-          },
-          timeout: 10000
-        });
+          };
+          
+          if (authMethod.headerName) {
+            headers[authMethod.headerName] = authMethod.header;
+          } else {
+            headers['Authorization'] = authMethod.header;
+          }
+          
+          const client = axios.create({
+            baseURL: baseURL,
+            headers: headers,
+            timeout: 10000
+          });
 
-        for (const endpoint of testEndpoints) {
-          try {
-            const response = await eposClient.get(endpoint);
-            return {
-              connected: true,
-              status: response.status,
-              endpoint: endpoint,
-              baseURL: baseURL,
-              data: response.data
-            };
-          } catch (endpointError) {
-            console.log(`Endpoint ${endpoint} failed on ${baseURL}:`, endpointError.response?.status, endpointError.message);
-            continue;
+          for (const endpoint of testEndpoints) {
+            try {
+              const response = await client.get(endpoint);
+              return {
+                connected: true,
+                status: response.status,
+                endpoint: endpoint,
+                baseURL: baseURL,
+                authMethod: authMethod.name,
+                data: response.data
+              };
+            } catch (endpointError) {
+              console.log(`Endpoint ${endpoint} failed on ${baseURL} with ${authMethod.name}:`, endpointError.response?.status, endpointError.message);
+              continue;
+            }
           }
         }
       }
       
-      throw new Error('All EPOS Data API endpoints failed on all base URLs');
+      throw new Error('All endpoints failed on all base URLs with all auth methods');
     } catch (error) {
-      console.error('Dojo EPOS Data API connection test failed:', error.response?.data || error.message);
+      console.error('Dojo API connection test failed:', error.response?.data || error.message);
       return {
         connected: false,
         error: error.message,

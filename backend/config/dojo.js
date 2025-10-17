@@ -207,86 +207,94 @@ class DojoAPI {
   // Test API connection
   async testConnection() {
     try {
-      // First, let's test basic connectivity with different authentication methods
-      const possibleBaseURLs = [
-        'https://api.dojo.com',
-        'https://api.dojopayments.com',
-        'https://api.dojo.tech/v1',
-        'https://api.dojo.tech/api',
-        'https://api.dojo.tech/api/v1',
-        'https://epos-data-api.dojo.tech',
-        'https://epos-api.dojo.tech'
-      ];
-
-      const authMethods = [
-        { name: 'Basic Auth', header: `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}` },
-        { name: 'Bearer Token', header: `Bearer ${this.apiKey}` },
-        { name: 'API Key', header: this.apiKey },
-        { name: 'X-API-Key', header: this.apiKey, headerName: 'X-API-Key' }
-      ];
-
-      const testEndpoints = [
-        '/',
-        '/health',
-        '/status',
-        '/v1/areas',
-        '/v1/tables',
-        '/v1/reservations/search',
-        '/bookings',
-        '/reservations'
-      ];
+      console.log('=== DOJO API DEBUG TEST ===');
+      console.log('API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
+      console.log('Vendor ID:', this.vendorId);
+      console.log('Restaurant ID:', this.restaurantId);
       
-      for (const baseURL of possibleBaseURLs) {
-        console.log(`Testing base URL: ${baseURL}`);
-        
-        for (const authMethod of authMethods) {
-          console.log(`Testing auth method: ${authMethod.name}`);
-          
-          const headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-            'version': '2022-04-07'
-          };
-          
-          if (authMethod.headerName) {
-            headers[authMethod.headerName] = authMethod.header;
-          } else {
-            headers['Authorization'] = authMethod.header;
-          }
-          
-          const client = axios.create({
-            baseURL: baseURL,
-            headers: headers,
-            timeout: 10000
-          });
+      // Test the most likely working combination first
+      const testURL = 'https://api.dojo.tech';
+      const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
+      
+      console.log('Testing with Basic Auth on api.dojo.tech');
+      
+      const client = axios.create({
+        baseURL: testURL,
+        headers: {
+          'Authorization': basicAuth,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'TheScenicInn-BookingSystem/1.0',
+          'version': '2022-04-07'
+        },
+        timeout: 15000
+      });
 
-          for (const endpoint of testEndpoints) {
-            try {
-              const response = await client.get(endpoint);
-              return {
-                connected: true,
-                status: response.status,
-                endpoint: endpoint,
-                baseURL: baseURL,
-                authMethod: authMethod.name,
-                data: response.data
-              };
-            } catch (endpointError) {
-              console.log(`Endpoint ${endpoint} failed on ${baseURL} with ${authMethod.name}:`, endpointError.response?.status, endpointError.message);
-              continue;
-            }
+      // Try a simple endpoint first
+      try {
+        console.log('Testing /v1/areas endpoint...');
+        const response = await client.get('/v1/areas');
+        return {
+          connected: true,
+          status: response.status,
+          endpoint: '/v1/areas',
+          baseURL: testURL,
+          authMethod: 'Basic Auth',
+          data: response.data
+        };
+      } catch (error) {
+        console.log('v1/areas failed:', error.response?.status, error.response?.data);
+        
+        // Try a different endpoint
+        try {
+          console.log('Testing /v1/tables endpoint...');
+          const response = await client.get('/v1/tables');
+          return {
+            connected: true,
+            status: response.status,
+            endpoint: '/v1/tables',
+            baseURL: testURL,
+            authMethod: 'Basic Auth',
+            data: response.data
+          };
+        } catch (error2) {
+          console.log('v1/tables failed:', error2.response?.status, error2.response?.data);
+          
+          // Try root endpoint
+          try {
+            console.log('Testing root / endpoint...');
+            const response = await client.get('/');
+            return {
+              connected: true,
+              status: response.status,
+              endpoint: '/',
+              baseURL: testURL,
+              authMethod: 'Basic Auth',
+              data: response.data
+            };
+          } catch (error3) {
+            console.log('Root endpoint failed:', error3.response?.status, error3.response?.data);
+            
+            return {
+              connected: false,
+              error: 'All test endpoints failed',
+              baseURL: testURL,
+              authMethod: 'Basic Auth',
+              details: {
+                v1_areas_error: error.response?.data || error.message,
+                v1_tables_error: error2.response?.data || error2.message,
+                root_error: error3.response?.data || error3.message
+              }
+            };
           }
         }
       }
-      
-      throw new Error('All endpoints failed on all base URLs with all auth methods');
     } catch (error) {
-      console.error('Dojo API connection test failed:', error.response?.data || error.message);
+      console.error('Dojo API connection test failed:', error);
       return {
         connected: false,
         error: error.message,
-        baseURL: this.eposBaseURL,
+        baseURL: 'https://api.dojo.tech',
         details: error.response?.data || 'No additional details'
       };
     }

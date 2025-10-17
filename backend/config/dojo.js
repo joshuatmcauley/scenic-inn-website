@@ -214,92 +214,64 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test different possible API endpoints
-      const possibleURLs = [
-        'https://api.dojo.tech',
-        'https://api.dojo.com',
-        'https://api.dojopayments.com',
-        'https://sandbox-api.dojo.tech'
+      // Try the Payments API instead of Bookings API
+      const testURL = 'https://api.dojo.tech';
+      const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
+      
+      console.log('Testing Payments API endpoints...');
+      
+      const client = axios.create({
+        baseURL: testURL,
+        headers: {
+          'Authorization': basicAuth,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'TheScenicInn-BookingSystem/1.0',
+          'version': '2025-09-10'
+        },
+        timeout: 15000
+      });
+
+      // Try Payments API endpoints
+      const paymentEndpoints = [
+        '/v1/payments',
+        '/v1/transactions',
+        '/v1/refunds',
+        '/v1/customers',
+        '/v1/products',
+        '/v1/orders'
       ];
       
-      for (const testURL of possibleURLs) {
-        console.log(`Testing URL: ${testURL}`);
-        const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
-        
-        console.log('Testing with Basic Auth on', testURL);
-        
-        const client = axios.create({
-          baseURL: testURL,
-          headers: {
-            'Authorization': basicAuth,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-            'version': '2025-09-10',
-            'reseller-id': this.vendorId,
-            'software-house-id': this.restaurantId
-          },
-          timeout: 15000
-        });
-
-        // Try the actual booking endpoint first
+      for (const endpoint of paymentEndpoints) {
         try {
-          console.log('Testing /v1/reservations endpoint...');
-          const response = await client.get('/v1/reservations');
+          console.log(`Testing ${endpoint} endpoint...`);
+          const response = await client.get(endpoint);
           return {
             connected: true,
             status: response.status,
-            endpoint: '/v1/reservations',
+            endpoint: endpoint,
             baseURL: testURL,
             authMethod: 'Basic Auth',
-            data: response.data
+            data: response.data,
+            note: 'Connected to Payments API - Bookings API may not be available'
           };
         } catch (error) {
-          console.log('v1/reservations failed:', error.response?.status, error.response?.data);
-          
-          // Try a different endpoint
-          try {
-            console.log('Testing /v1/areas endpoint...');
-            const response = await client.get('/v1/areas');
-            return {
-              connected: true,
-              status: response.status,
-              endpoint: '/v1/areas',
-              baseURL: testURL,
-              authMethod: 'Basic Auth',
-              data: response.data
-            };
-          } catch (error2) {
-            console.log('v1/areas failed:', error2.response?.status, error2.response?.data);
-            
-            // Try a different endpoint
-            try {
-              console.log('Testing /v1/tables endpoint...');
-              const response = await client.get('/v1/tables');
-              return {
-                connected: true,
-                status: response.status,
-                endpoint: '/v1/tables',
-                baseURL: testURL,
-                authMethod: 'Basic Auth',
-                data: response.data
-              };
-            } catch (error3) {
-              console.log('v1/tables failed:', error3.response?.status, error3.response?.data);
-              console.log('All endpoints failed on', testURL);
-              // Continue to next URL
-            }
-          }
+          console.log(`${endpoint} failed:`, error.response?.status, error.response?.data);
+          continue;
         }
       }
       
-      // If we get here, all URLs failed
+      // If Payments API also fails, return detailed error
       return {
         connected: false,
-        error: 'All URLs and endpoints failed',
-        baseURL: 'Multiple URLs tested',
+        error: 'Both Bookings and Payments API endpoints failed',
+        baseURL: testURL,
         authMethod: 'Basic Auth',
-        details: 'Tested multiple base URLs and endpoints - all failed'
+        details: {
+          message: 'Your Dojo account may not have API access enabled',
+          suggestion: 'Contact Dojo support to enable API access for your account',
+          tested_endpoints: paymentEndpoints
+        }
       };
     } catch (error) {
       console.error('Dojo API connection test failed:', error);

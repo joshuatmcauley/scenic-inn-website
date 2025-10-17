@@ -4,7 +4,7 @@ require('dotenv').config();
 class DojoAPI {
   constructor() {
     this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech';
-    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://epos-data-api.dojo.tech';
+    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech';
     this.apiKey = process.env.DOJO_API_KEY || 'demo-key';
     this.vendorId = process.env.DOJO_VENDOR_ID || 'demo-vendor';
     this.restaurantId = process.env.DOJO_RESTAURANT_ID || 'demo-restaurant';
@@ -206,17 +206,14 @@ class DojoAPI {
   // Test API connection
   async testConnection() {
     try {
-      // Test EPOS Data API endpoints for bookings
-      const eposClient = axios.create({
-        baseURL: this.eposBaseURL,
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'TheScenicInn-BookingSystem/1.0'
-        },
-        timeout: 10000
-      });
+      // Try different possible base URLs for EPOS Data API
+      const possibleBaseURLs = [
+        this.eposBaseURL,
+        'https://api.dojo.tech',
+        'https://api.dojo.com',
+        'https://epos-data-api.dojo.tech',
+        'https://epos-api.dojo.tech'
+      ];
 
       const testEndpoints = [
         '/v1/areas',
@@ -224,23 +221,38 @@ class DojoAPI {
         '/v1/reservations/search'
       ];
       
-      for (const endpoint of testEndpoints) {
-        try {
-          const response = await eposClient.get(endpoint);
-          return {
-            connected: true,
-            status: response.status,
-            endpoint: endpoint,
-            baseURL: this.eposBaseURL,
-            data: response.data
-          };
-        } catch (endpointError) {
-          console.log(`EPOS endpoint ${endpoint} failed:`, endpointError.response?.status, endpointError.message);
-          continue;
+      for (const baseURL of possibleBaseURLs) {
+        console.log(`Testing base URL: ${baseURL}`);
+        
+        const eposClient = axios.create({
+          baseURL: baseURL,
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'TheScenicInn-BookingSystem/1.0'
+          },
+          timeout: 10000
+        });
+
+        for (const endpoint of testEndpoints) {
+          try {
+            const response = await eposClient.get(endpoint);
+            return {
+              connected: true,
+              status: response.status,
+              endpoint: endpoint,
+              baseURL: baseURL,
+              data: response.data
+            };
+          } catch (endpointError) {
+            console.log(`Endpoint ${endpoint} failed on ${baseURL}:`, endpointError.response?.status, endpointError.message);
+            continue;
+          }
         }
       }
       
-      throw new Error('All EPOS Data API endpoints failed');
+      throw new Error('All EPOS Data API endpoints failed on all base URLs');
     } catch (error) {
       console.error('Dojo EPOS Data API connection test failed:', error.response?.data || error.message);
       return {

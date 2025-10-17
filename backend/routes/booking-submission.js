@@ -335,11 +335,11 @@ router.post('/', async (req, res) => {
         console.log('Received booking submission:', bookingData);
       console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
-        // Step 1: Dojo API integration disabled (API access not enabled)
+        // Step 1: Dojo API integration not available
         const dojoResult = { 
             success: false, 
-            reason: 'Dojo API access not enabled - contact Dojo support to enable API access',
-            note: 'Current booking system working perfectly - no Dojo integration needed'
+            reason: 'Dojo API access not available for this account',
+            note: 'Current booking system working perfectly - no external integration needed'
         };
         
         // Step 2: Handle preorder if present

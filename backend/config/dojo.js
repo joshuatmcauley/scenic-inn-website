@@ -214,11 +214,11 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Try the EPOS Data API (required for Dojo Bookings)
+      // Test the actual Dojo Bookings flow endpoints
       const testURL = 'https://api.dojo.tech';
       const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
       
-      console.log('Testing EPOS Data API endpoints (required for Dojo Bookings)...');
+      console.log('Testing Dojo Bookings API endpoints (as per documentation)...');
       
       const client = axios.create({
         baseURL: testURL,
@@ -234,16 +234,16 @@ class DojoAPI {
         timeout: 15000
       });
 
-      // Try EPOS Data API endpoints (from the documentation)
-      const eposEndpoints = [
-        '/v1/areas',
-        '/v1/tables',
-        '/v1/reservations',
-        '/v1/parties',
-        '/v1/orders'
+      // Test the exact endpoints from the Dojo Bookings documentation
+      const bookingEndpoints = [
+        '/v1/reservations',           // CreateReservation
+        '/v1/parties',               // CreateParty  
+        '/v1/areas',                 // ListAreas
+        '/v1/tables',                // SearchTables
+        '/v1/orders'                 // SearchOrders
       ];
       
-      for (const endpoint of eposEndpoints) {
+      for (const endpoint of bookingEndpoints) {
         try {
           console.log(`Testing ${endpoint} endpoint...`);
           const response = await client.get(endpoint);
@@ -262,17 +262,17 @@ class DojoAPI {
         }
       }
       
-      // If EPOS Data API also fails, return detailed error
+      // If Dojo Bookings API fails, return detailed error
       return {
         connected: false,
-        error: 'EPOS Data API endpoints failed',
+        error: 'Dojo Bookings API endpoints failed',
         baseURL: testURL,
         authMethod: 'Basic Auth',
         details: {
-          message: 'EPOS Data API access required for Dojo Bookings',
-          suggestion: 'You need a POS system that supports Dojo EPOS Data API, or contact Dojo support to enable API access',
-          tested_endpoints: eposEndpoints,
-          note: 'Dojo Bookings requires integration with a compatible POS system'
+          message: 'Dojo Bookings API endpoints not accessible',
+          suggestion: 'Your POS system may need to be configured to support Dojo EPOS Data API endpoints',
+          tested_endpoints: bookingEndpoints,
+          note: 'Check if your POS system supports Dojo EPOS Data API integration'
         }
       };
     } catch (error) {

@@ -53,10 +53,11 @@ class DojoAPI {
       const eposClient = axios.create({
         baseURL: this.eposBaseURL,
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'TheScenicInn-BookingSystem/1.0'
+          'User-Agent': 'TheScenicInn-BookingSystem/1.0',
+          'version': '2022-04-07'
         },
         timeout: 10000
       });
@@ -218,6 +219,7 @@ class DojoAPI {
       ];
 
       const authMethods = [
+        { name: 'Basic Auth', header: `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}` },
         { name: 'Bearer Token', header: `Bearer ${this.apiKey}` },
         { name: 'API Key', header: this.apiKey },
         { name: 'X-API-Key', header: this.apiKey, headerName: 'X-API-Key' }
@@ -243,7 +245,8 @@ class DojoAPI {
           const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'User-Agent': 'TheScenicInn-BookingSystem/1.0'
+            'User-Agent': 'TheScenicInn-BookingSystem/1.0',
+            'version': '2022-04-07'
           };
           
           if (authMethod.headerName) {

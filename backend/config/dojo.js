@@ -214,11 +214,19 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test the actual API endpoint (correct base URL)
-      const testURL = 'https://api.dojo.tech';
-      const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
+      // Test different possible API endpoints
+      const possibleURLs = [
+        'https://api.dojo.tech',
+        'https://api.dojo.com',
+        'https://api.dojopayments.com',
+        'https://sandbox-api.dojo.tech'
+      ];
       
-      console.log('Testing with Basic Auth on api.dojo.tech (correct API)');
+      for (const testURL of possibleURLs) {
+        console.log(`Testing URL: ${testURL}`);
+        const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
+        
+        console.log('Testing with Basic Auth on', testURL);
       
       const client = axios.create({
         baseURL: testURL,
@@ -234,65 +242,65 @@ class DojoAPI {
         timeout: 15000
       });
 
-      // Try a simple endpoint first
+      // Try the actual booking endpoint first
       try {
-        console.log('Testing /v1/areas endpoint...');
-        const response = await client.get('/v1/areas');
+        console.log('Testing /v1/reservations endpoint...');
+        const response = await client.get('/v1/reservations');
         return {
           connected: true,
           status: response.status,
-          endpoint: '/v1/areas',
+          endpoint: '/v1/reservations',
           baseURL: testURL,
           authMethod: 'Basic Auth',
           data: response.data
         };
       } catch (error) {
-        console.log('v1/areas failed:', error.response?.status, error.response?.data);
+        console.log('v1/reservations failed:', error.response?.status, error.response?.data);
         
         // Try a different endpoint
         try {
-          console.log('Testing /v1/tables endpoint...');
-          const response = await client.get('/v1/tables');
+          console.log('Testing /v1/areas endpoint...');
+          const response = await client.get('/v1/areas');
           return {
             connected: true,
             status: response.status,
-            endpoint: '/v1/tables',
+            endpoint: '/v1/areas',
             baseURL: testURL,
             authMethod: 'Basic Auth',
             data: response.data
           };
         } catch (error2) {
-          console.log('v1/tables failed:', error2.response?.status, error2.response?.data);
+          console.log('v1/areas failed:', error2.response?.status, error2.response?.data);
           
-          // Try root endpoint
+          // Try a different endpoint
           try {
-            console.log('Testing root / endpoint...');
-            const response = await client.get('/');
+            console.log('Testing /v1/tables endpoint...');
+            const response = await client.get('/v1/tables');
             return {
               connected: true,
               status: response.status,
-              endpoint: '/',
+              endpoint: '/v1/tables',
               baseURL: testURL,
               authMethod: 'Basic Auth',
               data: response.data
             };
           } catch (error3) {
-            console.log('Root endpoint failed:', error3.response?.status, error3.response?.data);
+            console.log('v1/tables failed:', error3.response?.status, error3.response?.data);
             
-            return {
-              connected: false,
-              error: 'All test endpoints failed',
-              baseURL: testURL,
-              authMethod: 'Basic Auth',
-              details: {
-                v1_areas_error: error.response?.data || error.message,
-                v1_tables_error: error2.response?.data || error2.message,
-                root_error: error3.response?.data || error3.message
-              }
-            };
+            console.log('All endpoints failed on', testURL);
+            continue; // Try next URL
           }
         }
       }
+      
+      // If we get here, all URLs failed
+      return {
+        connected: false,
+        error: 'All URLs and endpoints failed',
+        baseURL: 'Multiple URLs tested',
+        authMethod: 'Basic Auth',
+        details: 'Tested multiple base URLs and endpoints - all failed'
+      };
     } catch (error) {
       console.error('Dojo API connection test failed:', error);
       return {

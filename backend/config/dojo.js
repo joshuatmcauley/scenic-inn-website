@@ -3,8 +3,8 @@ require('dotenv').config();
 
 class DojoAPI {
   constructor() {
-    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.com';
-    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.com';
+    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech/v1';
+    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech/v1';
     this.apiKey = process.env.DOJO_API_KEY || 'demo-key';
     this.vendorId = process.env.DOJO_VENDOR_ID || 'demo-vendor';
     this.restaurantId = process.env.DOJO_RESTAURANT_ID || 'demo-restaurant';
@@ -212,11 +212,11 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test the most likely working combination first
-      const testURL = 'https://api.dojo.tech';
+      // Test the actual API endpoint (not the docs site)
+      const testURL = 'https://api.dojo.tech/v1';
       const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
       
-      console.log('Testing with Basic Auth on api.dojo.tech');
+      console.log('Testing with Basic Auth on api.dojo.tech/v1 (actual API)');
       
       const client = axios.create({
         baseURL: testURL,

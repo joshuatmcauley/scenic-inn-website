@@ -139,6 +139,7 @@ function generatePreorderPDF(bookingData, preorderData) {
                 
         const starters = [];
         const mains = [];
+        const sides = [];
         const desserts = [];
 
         preorderData.forEach((person, index) => {
@@ -151,22 +152,27 @@ function generatePreorderPDF(bookingData, preorderData) {
               const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
               if (course === 'starter') starters.push({ person: personNumber, item: name, notes: personNotes });
               else if (course === 'main') mains.push({ person: personNumber, item: name, notes: personNotes });
+              else if (course === 'side') sides.push({ person: personNumber, item: name, notes: personNotes });
               else if (course === 'dessert') desserts.push({ person: personNumber, item: name, notes: personNotes });
             });
           } else {
             if (person.starter) starters.push({ person: personNumber, item: cleanName(person.starter), notes: personNotes });
             if (person.main) mains.push({ person: personNumber, item: cleanName(person.main), notes: personNotes });
+            if (person.side) sides.push({ person: personNumber, item: cleanName(person.side), notes: personNotes });
             if (person.dessert) desserts.push({ person: personNumber, item: cleanName(person.dessert), notes: personNotes });
           }
         });
 
-        // Draw table with Person, Item, Notes columns
-        const drawTable = (title, items) => {
+        // Draw table with Person, Item, Sides, Notes columns
+        const drawTable = (title, items, showSides = false) => {
+          if (items.length === 0) return; // Don't draw empty tables
+          
           const x0 = doc.x;
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
           const personW = 50;
-          const itemW = totalW - personW - 70; // Notes column gets 70px
+          const sidesW = showSides ? 80 : 0;
+          const itemW = totalW - personW - sidesW - 70; // Notes column gets 70px
           const notesW = 70;
           const rowH = 14;
           const rows = items.length + 1; // + header
@@ -175,7 +181,10 @@ function generatePreorderPDF(bookingData, preorderData) {
           doc.font('Helvetica-Bold');
           doc.text('Person', x0 + 3, y + 2, { width: personW - 6 });
           doc.text('Item', x0 + personW + 3, y + 2, { width: itemW - 6 });
-          doc.text('Notes', x0 + personW + itemW + 3, y + 2, { width: notesW - 6 });
+          if (showSides) {
+            doc.text('Sides', x0 + personW + itemW + 3, y + 2, { width: sidesW - 6 });
+          }
+          doc.text('Notes', x0 + personW + itemW + sidesW + 3, y + 2, { width: notesW - 6 });
           
           // Grid lines
           doc.lineWidth(0.5);
@@ -187,6 +196,9 @@ function generatePreorderPDF(bookingData, preorderData) {
           doc.moveTo(x0, y).lineTo(x0, y + rows * rowH).stroke();
           doc.moveTo(x0 + personW, y).lineTo(x0 + personW, y + rows * rowH).stroke();
           doc.moveTo(x0 + personW + itemW, y).lineTo(x0 + personW + itemW, y + rows * rowH).stroke();
+          if (showSides) {
+            doc.moveTo(x0 + personW + itemW + sidesW, y).lineTo(x0 + personW + itemW + sidesW, y + rows * rowH).stroke();
+          }
           doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + rows * rowH).stroke();
           
           // Fill body
@@ -196,34 +208,54 @@ function generatePreorderPDF(bookingData, preorderData) {
             const item = items[i];
             const personNum = typeof item === 'object' ? item.person : i + 1;
             const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            const sideName = typeof item === 'object' ? (item.side || '') : '';
             const notes = typeof item === 'object' ? item.notes : '';
             
             doc.text(`${personNum}`, x0 + 3, ly, { width: personW - 6 });
             doc.text(itemName, x0 + personW + 3, ly, { width: itemW - 6 });
-            doc.text(notes, x0 + personW + itemW + 3, ly, { width: notesW - 6 });
+            if (showSides) {
+              doc.text(sideName, x0 + personW + itemW + 3, ly, { width: sidesW - 6 });
+            }
+            doc.text(notes, x0 + personW + itemW + sidesW + 3, ly, { width: notesW - 6 });
           }
           doc.moveDown(rows * rowH / 14 + 0.3); // advance roughly rows height + spacing
         };
 
-        doc.font('Helvetica-Bold').text('Starters').moveDown(0.2);
-        drawTable('Starters', starters);
-        
-        // Check if we need a new page for mains
-        if (doc.y > doc.page.height - 200) {
-          doc.addPage();
+        // Only show sections that have data
+        if (starters.length > 0) {
+          doc.font('Helvetica-Bold').text('Starters').moveDown(0.2);
+          drawTable('Starters', starters);
+          doc.moveDown(0.3);
         }
         
-        doc.font('Helvetica-Bold').text('Mains').moveDown(0.2);
-        drawTable('Mains', mains);
+        if (mains.length > 0) {
+          // Check if we need a new page for mains
+          if (doc.y > doc.page.height - 200) {
+            doc.addPage();
+          }
+          doc.font('Helvetica-Bold').text('Mains').moveDown(0.2);
+          drawTable('Mains', mains, true); // Show sides column for mains
+          doc.moveDown(0.3);
+        }
 
-        // Check if we need a new page for desserts
-        if (doc.y > doc.page.height - 200) {
-          doc.addPage();
+        if (sides.length > 0) {
+          // Check if we need a new page for sides
+          if (doc.y > doc.page.height - 200) {
+            doc.addPage();
+          }
+          doc.font('Helvetica-Bold').text('Sides').moveDown(0.2);
+          drawTable('Sides', sides);
+          doc.moveDown(0.3);
         }
         
-        // Desserts table
-        doc.font('Helvetica-Bold').text('Desserts').moveDown(0.2);
-        drawTable('Desserts', desserts);
+        if (desserts.length > 0) {
+          // Check if we need a new page for desserts
+          if (doc.y > doc.page.height - 200) {
+            doc.addPage();
+          }
+          doc.font('Helvetica-Bold').text('Desserts').moveDown(0.2);
+          drawTable('Desserts', desserts);
+        }
             }
             
             doc.end();

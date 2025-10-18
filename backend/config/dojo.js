@@ -231,23 +231,46 @@ class DojoAPI {
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test if we can access Dojo's main API
+      // Test actual Dojo Bookings API endpoints
+      const bookingEndpoints = [
+        '/v1/reservations',
+        '/v1/bookings', 
+        '/bookings',
+        '/reservations',
+        '/api/v1/reservations',
+        '/api/v1/bookings'
+      ];
+
+      for (const endpoint of bookingEndpoints) {
+        try {
+          console.log(`Testing Dojo Bookings endpoint: ${endpoint}`);
+          const response = await this.client.get(endpoint);
+          
+          // Check if we got JSON response (not HTML)
+          if (response.data && typeof response.data === 'object') {
+            return {
+              connected: true,
+              status: response.status,
+              endpoint: endpoint,
+              baseURL: this.baseURL,
+              authMethod: 'Bearer Token',
+              data: response.data,
+              note: 'Dojo Bookings API endpoint found and working!'
+            };
+          }
+          
+          console.log(`Endpoint ${endpoint} returned non-JSON response`);
+          continue;
+        } catch (error) {
+          console.log(`Endpoint ${endpoint} failed:`, error.response?.status, error.response?.data);
+          continue;
+        }
+      }
+      
+      // If no booking endpoints work, return the main API status
       try {
         console.log('Testing Dojo main API access...');
         const response = await this.client.get('/');
-        
-        if (response.data && typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
-          return {
-            connected: true,
-            status: response.status,
-            endpoint: '/',
-            baseURL: this.baseURL,
-            authMethod: 'Bearer Token',
-            data: 'HTML response received',
-            note: 'Dojo API accessible but returns HTML (documentation site)',
-            suggestion: 'Your Dojo account may not have API access enabled, or you need to use iframe/embed integration instead'
-          };
-        }
         
         return {
           connected: true,
@@ -255,8 +278,10 @@ class DojoAPI {
           endpoint: '/',
           baseURL: this.baseURL,
           authMethod: 'Bearer Token',
-          data: response.data,
-          note: 'Dojo API accessible'
+          data: 'HTML response received (documentation site)',
+          note: 'Dojo API accessible but no Bookings API endpoints found',
+          suggestion: 'Your Dojo account may not have Bookings API access enabled',
+          tested_endpoints: bookingEndpoints
         };
       } catch (error) {
         console.log('Dojo main API failed:', error.response?.status, error.response?.data);

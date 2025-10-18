@@ -47,60 +47,51 @@ class DojoAPI {
     }
   }
 
-  // Create a booking (reservation) using Dojo Bookings API
+  // Create a booking (reservation) - API access not available, use iframe integration
   async createBooking(bookingData) {
     try {
       console.log('Creating Dojo booking with data:', bookingData);
       
-      // Map booking data to Dojo Bookings API format
-      const reservationPayload = {
-        startTime: `${bookingData.date}T${bookingData.time}:00.000Z`,
-        covers: parseInt(bookingData.party_size),
-        customerName: bookingData.customer_name,
-        customerEmail: bookingData.customer_email,
-        customerPhone: bookingData.customer_phone,
-        specialRequests: bookingData.special_requests || '',
-        reference: bookingData.reference || `SCENIC-${Date.now()}`
-      };
-
-      console.log('Creating Dojo reservation with payload:', reservationPayload);
-
-      // Try different Dojo Bookings API endpoints
-      const bookingEndpoints = [
-        '/v1/reservations',
-        '/bookings',
-        '/reservations',
-        '/api/v1/reservations',
-        '/api/bookings'
-      ];
-
-      for (const endpoint of bookingEndpoints) {
-        try {
-          console.log(`Trying Dojo Bookings endpoint: ${endpoint}`);
-          
-          // Use the main client with Bearer token for Dojo Bookings API
-          const response = await this.client.post(endpoint, reservationPayload);
-          
-          console.log(`Success with Dojo Bookings endpoint: ${endpoint}`, response.data);
-          return {
-            success: true,
-            dojoBookingId: response.data.id || response.data.reservationId,
-            data: response.data
-          };
-        } catch (endpointError) {
-          console.log(`Failed with Dojo Bookings endpoint: ${endpoint}`, endpointError.response?.status, endpointError.response?.data);
-          continue;
-        }
-      }
+      // Since API access is not available, we'll use iframe integration
+      // This generates a URL that can be used to redirect to Dojo's booking form
+      const iframeUrl = this.generateDojoBookingUrl(bookingData);
       
-      throw new Error('All Dojo Bookings API endpoints failed');
+      console.log('Dojo API access not available - using iframe integration');
+      return {
+        success: true,
+        method: 'iframe',
+        dojoBookingUrl: iframeUrl,
+        note: 'Use iframe integration since API access is not available',
+        data: {
+          iframeUrl: iframeUrl,
+          bookingData: bookingData
+        }
+      };
     } catch (error) {
-      console.error('Error creating Dojo reservation:', error.response?.data || error.message);
+      console.error('Error creating Dojo booking:', error.message);
       return {
         success: false,
-        error: error.response?.data || error.message
+        error: error.message
       };
     }
+  }
+
+  // Generate Dojo booking URL for iframe integration
+  generateDojoBookingUrl(bookingData) {
+    const baseUrl = 'https://bookings.dojo.tech';
+    const params = new URLSearchParams({
+      vendor_id: this.vendorId,
+      restaurant_id: this.restaurantId,
+      party_size: bookingData.party_size,
+      date: bookingData.date,
+      time: bookingData.time,
+      customer_name: bookingData.customer_name,
+      customer_email: bookingData.customer_email,
+      customer_phone: bookingData.customer_phone,
+      special_requests: bookingData.special_requests || ''
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
   }
 
   // Get booking details

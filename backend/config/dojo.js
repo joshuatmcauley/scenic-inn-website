@@ -3,8 +3,9 @@ require('dotenv').config();
 
 class DojoAPI {
   constructor() {
-    this.baseURL = process.env.DOJO_API_BASE_URL || 'https://api.dojo.tech';
-    this.eposBaseURL = process.env.DOJO_EPOS_BASE_URL || 'https://api.dojo.tech';
+    // Force correct Dojo API domain (override any incorrect env vars)
+    this.baseURL = 'https://api.dojo.tech';
+    this.eposBaseURL = 'https://api.dojo.tech';
     this.apiKey = process.env.DOJO_API_KEY || 'demo-key';
     this.vendorId = process.env.DOJO_VENDOR_ID || 'demo-vendor';
     this.restaurantId = process.env.DOJO_RESTAURANT_ID || 'demo-restaurant';

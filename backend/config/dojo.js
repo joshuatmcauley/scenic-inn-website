@@ -46,25 +46,12 @@ class DojoAPI {
     }
   }
 
-  // Create a booking (reservation)
+  // Create a booking (reservation) using Dojo Bookings API
   async createBooking(bookingData) {
     try {
-      // Create EPOS client for booking operations
-      const eposClient = axios.create({
-        baseURL: this.eposBaseURL,
-        headers: {
-          'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-          'version': '2025-09-10',
-          'reseller-id': this.vendorId,
-          'software-house-id': this.restaurantId
-        },
-        timeout: 10000
-      });
-
-      // Map booking data to Dojo reservation format
+      console.log('Creating Dojo booking with data:', bookingData);
+      
+      // Map booking data to Dojo Bookings API format
       const reservationPayload = {
         startTime: `${bookingData.date}T${bookingData.time}:00.000Z`,
         covers: parseInt(bookingData.party_size),
@@ -77,12 +64,41 @@ class DojoAPI {
 
       console.log('Creating Dojo reservation with payload:', reservationPayload);
 
-      // Create reservation using EPOS Data API
-      const response = await eposClient.post('/v1/reservations', reservationPayload);
-      return response.data;
+      // Try different Dojo Bookings API endpoints
+      const bookingEndpoints = [
+        '/v1/reservations',
+        '/bookings',
+        '/reservations',
+        '/api/v1/reservations',
+        '/api/bookings'
+      ];
+
+      for (const endpoint of bookingEndpoints) {
+        try {
+          console.log(`Trying Dojo Bookings endpoint: ${endpoint}`);
+          
+          // Use the main client with Bearer token for Dojo Bookings API
+          const response = await this.client.post(endpoint, reservationPayload);
+          
+          console.log(`Success with Dojo Bookings endpoint: ${endpoint}`, response.data);
+          return {
+            success: true,
+            dojoBookingId: response.data.id || response.data.reservationId,
+            data: response.data
+          };
+        } catch (endpointError) {
+          console.log(`Failed with Dojo Bookings endpoint: ${endpoint}`, endpointError.response?.status, endpointError.response?.data);
+          continue;
+        }
+      }
+      
+      throw new Error('All Dojo Bookings API endpoints failed');
     } catch (error) {
       console.error('Error creating Dojo reservation:', error.response?.data || error.message);
-      throw new Error('Failed to create Dojo reservation');
+      return {
+        success: false,
+        error: error.response?.data || error.message
+      };
     }
   }
 
@@ -209,88 +225,65 @@ class DojoAPI {
   // Test API connection
   async testConnection() {
     try {
-      console.log('=== DOJO API DEBUG TEST ===');
+      console.log('=== DOJO BOOKINGS API TEST ===');
       console.log('API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
       console.log('Vendor ID:', this.vendorId);
       console.log('Restaurant ID:', this.restaurantId);
       
-      // Test EPOS Data API integration status
-      const testURL = 'https://api.dojo.tech';
-      const basicAuth = `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`;
+      console.log('Testing Dojo Bookings API endpoints...');
       
-      console.log('Checking EPOS Data API integration status...');
-      
-      const client = axios.create({
-        baseURL: testURL,
-        headers: {
-          'Authorization': basicAuth,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'TheScenicInn-BookingSystem/1.0',
-          'software-house-id': this.restaurantId
-        },
-        timeout: 15000
-      });
+      // Test different Dojo Bookings API endpoints
+      const bookingEndpoints = [
+        '/v1/reservations',
+        '/bookings',
+        '/reservations',
+        '/api/v1/reservations',
+        '/api/bookings',
+        '/v1/availability',
+        '/availability'
+      ];
 
-      // First, check if capabilities are registered
-      try {
-        console.log('Checking registered EPOS capabilities...');
-        const response = await client.get('/epos/integrations');
-        return {
-          connected: true,
-          status: response.status,
-          endpoint: '/epos/integrations',
-          baseURL: testURL,
-          authMethod: 'Basic Auth',
-          data: response.data,
-          note: 'EPOS capabilities check successful'
-        };
-      } catch (error) {
-        console.log('EPOS capabilities check failed:', error.response?.status, error.response?.data);
-        
-        // Try the EPOS tester tool
+      for (const endpoint of bookingEndpoints) {
         try {
-          console.log('Testing EPOS tester tool...');
-          const testerResponse = await client.get('/epos-tester-tool/flows');
+          console.log(`Testing Dojo Bookings endpoint: ${endpoint}`);
+          
+          // Use GET request to test endpoint availability
+          const response = await this.client.get(endpoint);
+          
+          console.log(`Success with Dojo Bookings endpoint: ${endpoint}`, response.status);
           return {
             connected: true,
-            status: testerResponse.status,
-            endpoint: '/epos-tester-tool/flows',
-            baseURL: testURL,
-            authMethod: 'Basic Auth',
-            data: testerResponse.data,
-            note: 'EPOS tester tool accessible'
+            status: response.status,
+            endpoint: endpoint,
+            baseURL: this.baseURL,
+            authMethod: 'Bearer Token',
+            data: response.data,
+            note: 'Dojo Bookings API accessible'
           };
-        } catch (testerError) {
-          console.log('EPOS tester tool failed:', testerError.response?.status, testerError.response?.data);
-          
-          return {
-            connected: false,
-            error: 'EPOS Data API integration not configured',
-            baseURL: testURL,
-            authMethod: 'Basic Auth',
-            details: {
-              message: 'EPOS capabilities not registered or tester tool not accessible',
-              suggestion: 'You need to register your EPOS capabilities using PUT /epos/integrations/rest',
-              steps: [
-                '1. Register capabilities: PUT /epos/integrations/rest',
-                '2. Check capabilities: GET /epos/integrations', 
-                '3. Test integration: Use EPOS tester tool'
-              ],
-              error_details: {
-                capabilities_error: error.response?.data || error.message,
-                tester_error: testerError.response?.data || testerError.message
-              }
-            }
-          };
+        } catch (error) {
+          console.log(`Failed with Dojo Bookings endpoint: ${endpoint}`, error.response?.status, error.response?.data);
+          continue;
         }
       }
+      
+      return {
+        connected: false,
+        error: 'Dojo Bookings API endpoints not accessible',
+        baseURL: this.baseURL,
+        authMethod: 'Bearer Token',
+        details: {
+          message: 'Dojo Bookings API endpoints not found',
+          suggestion: 'Check if your Dojo account has Bookings API access enabled',
+          tested_endpoints: bookingEndpoints,
+          note: 'You may need to contact Dojo support to enable Bookings API access'
+        }
+      };
     } catch (error) {
       console.error('Dojo API connection test failed:', error);
       return {
         connected: false,
         error: error.message,
-        baseURL: 'https://api.dojo.tech',
+        baseURL: this.baseURL,
         details: error.response?.data || 'No additional details'
       };
     }

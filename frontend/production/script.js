@@ -676,11 +676,24 @@ function generateMenuCategories(personNumber) {
             
             <div class="course-group">
                 <label for="person-${personNumber}-main">Main Course:</label>
-                <select id="person-${personNumber}-main" name="person-${personNumber}-main" onchange="toggleSideDropdown(${personNumber})">
+                <select id="person-${personNumber}-main" name="person-${personNumber}-main" onchange="toggleSideDropdown(${personNumber}); toggleSteakRarity(${personNumber})">
                     <option value="">Select a main course</option>
                     ${mains.map(item => `
-                        <option value="${item.id}" data-comes-with-side="${item.comes_with_side || false}">${item.name}${getItemPriceDisplay(item)}</option>
+                        <option value="${item.id}" data-comes-with-side="${item.comes_with_side || false}" data-is-steak="${item.is_steak || false}">${item.name}${getItemPriceDisplay(item)}</option>
                     `).join('')}
+                </select>
+            </div>
+            
+            <div class="course-group" id="person-${personNumber}-steak-rarity-group" style="display: none;">
+                <label for="person-${personNumber}-steak-rarity">How would you like your steak cooked?</label>
+                <select id="person-${personNumber}-steak-rarity" name="person-${personNumber}-steak-rarity">
+                    <option value="">Select cooking preference</option>
+                    <option value="WD">Well Done (WD)</option>
+                    <option value="MW">Medium Well (MW)</option>
+                    <option value="M">Medium (M)</option>
+                    <option value="MR">Medium Rare (MR)</option>
+                    <option value="R">Rare (R)</option>
+                    <option value="B">Blue (B)</option>
                 </select>
             </div>
             
@@ -807,6 +820,39 @@ function toggleSideDropdown(personNumber) {
     }
 }
 
+// Function to toggle steak rarity dropdown based on selected main course
+function toggleSteakRarity(personNumber) {
+    const mainSelect = document.getElementById(`person-${personNumber}-main`);
+    const steakRarityGroup = document.getElementById(`person-${personNumber}-steak-rarity-group`);
+    const steakRaritySelect = document.getElementById(`person-${personNumber}-steak-rarity`);
+    
+    console.log('toggleSteakRarity called for person', personNumber);
+    
+    if (!mainSelect || !steakRarityGroup || !steakRaritySelect) {
+        console.log('Missing steak rarity elements - returning early');
+        return;
+    }
+    
+    const selectedOption = mainSelect.options[mainSelect.selectedIndex];
+    const isSteak = selectedOption ? selectedOption.getAttribute('data-is-steak') === 'true' : false;
+    
+    console.log('Selected option:', selectedOption);
+    console.log('isSteak value:', isSteak);
+    
+    if (isSteak) {
+        // Show steak rarity dropdown
+        steakRarityGroup.style.display = 'block';
+        steakRaritySelect.required = true;
+        console.log('Showing steak rarity dropdown - item is a steak');
+    } else {
+        // Hide steak rarity dropdown
+        steakRarityGroup.style.display = 'none';
+        steakRaritySelect.value = ''; // Clear selection
+        steakRaritySelect.required = false;
+        console.log('Hiding steak rarity dropdown - item is not a steak');
+    }
+}
+
 // Data Collection
 function collectPreorderData() {
     const preorderData = [];
@@ -829,12 +875,21 @@ function collectPreorderData() {
         // Get main course selection
         const mainSelect = document.getElementById(`person-${i}-main`);
         if (mainSelect && mainSelect.value) {
+            let itemName = mainSelect.options[mainSelect.selectedIndex]?.text || '';
+            
+            // Check if this is a steak and get rarity
+            const steakRaritySelect = document.getElementById(`person-${i}-steak-rarity`);
+            if (steakRaritySelect && steakRaritySelect.value) {
+                itemName += ` (${steakRaritySelect.value})`;
+            }
+            
             items.push({
                 menu_item_id: mainSelect.value,
                 course_type: 'main',
-                item_name: mainSelect.options[mainSelect.selectedIndex]?.text || '',
+                item_name: itemName,
                 quantity: 1,
-                special_instructions: ''
+                special_instructions: '',
+                steak_rarity: steakRaritySelect ? steakRaritySelect.value : null
             });
         }
         

@@ -178,6 +178,13 @@ function generatePreorderPDF(bookingData, preorderData) {
         const drawTable = (title, items, showSides = false) => {
           if (items.length === 0) return; // Don't draw empty tables
           
+          // Sort items by item name to group identical items together
+          items.sort((a, b) => {
+            const itemA = typeof a === 'object' ? a.item : a.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            const itemB = typeof b === 'object' ? b.item : b.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            return itemA.localeCompare(itemB);
+          });
+          
           const x0 = doc.x;
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -188,14 +195,15 @@ function generatePreorderPDF(bookingData, preorderData) {
           const rowH = 14;
           const rows = items.length + 1; // + header
           
-          // Headers
-          doc.font('Helvetica-Bold');
+          // Headers with smaller font
+          doc.font('Helvetica-Bold').fontSize(9); // Smaller header font
           doc.text('Person', x0 + 3, y + 2, { width: personW - 6 });
           doc.text('Item', x0 + personW + 3, y + 2, { width: itemW - 6 });
           if (showSides) {
             doc.text('Sides', x0 + personW + itemW + 3, y + 2, { width: sidesW - 6 });
           }
           doc.text('Notes', x0 + personW + itemW + sidesW + 3, y + 2, { width: notesW - 6 });
+          doc.fontSize(8); // Reset to body font size
           
           // Grid lines
           doc.lineWidth(0.5);

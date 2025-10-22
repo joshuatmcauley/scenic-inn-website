@@ -685,7 +685,7 @@ function generateMenuCategories(personNumber) {
             </div>
             
             ${hasSides ? `
-            <div class="course-group" id="person-${personNumber}-side-group" style="display: none;">
+            <div class="course-group" id="person-${personNumber}-side-group">
                 <label for="person-${personNumber}-side">Side (Optional):</label>
                 <select id="person-${personNumber}-side" name="person-${personNumber}-side">
                     <option value="">Select a side (optional)</option>

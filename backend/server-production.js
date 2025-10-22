@@ -28,10 +28,12 @@ app.use(cors({
     'https://scenic-inn.netlify.app',
     'https://*.netlify.app',
     'https://kipaxe.co.uk',
+    'https://www.kipaxe.co.uk',
     'http://localhost:3000',
     'http://localhost:8080',
     'https://scenic-inn-website.vercel.app',
     'https://scenic-inn-website-git-master-joshua-mcauleys-projects.vercel.app',
+    'https://scenic-inn-website-8cevkgxdc-joshua-mcauleys-projects.vercel.app',
     'https://*.vercel.app',
     'https://joshuatmcauley.github.io'
   ],

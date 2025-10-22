@@ -146,21 +146,32 @@ function generatePreorderPDF(bookingData, preorderData) {
           const personNumber = person.person_number || index + 1;
           const personNotes = person.special_instructions || '';
           
+          // Collect items by person to match sides with mains
+          let personStarter = null;
+          let personMain = null;
+          let personSide = null;
+          let personDessert = null;
+          
           if (person.items && Array.isArray(person.items)) {
             person.items.forEach(sel => {
               const course = (sel.course_type || '').toLowerCase();
               const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
-              if (course === 'starter') starters.push({ person: personNumber, item: name, notes: personNotes });
-              else if (course === 'main') mains.push({ person: personNumber, item: name, notes: personNotes });
-              else if (course === 'side') sides.push({ person: personNumber, item: name, notes: personNotes });
-              else if (course === 'dessert') desserts.push({ person: personNumber, item: name, notes: personNotes });
+              if (course === 'starter') personStarter = name;
+              else if (course === 'main') personMain = name;
+              else if (course === 'side') personSide = name;
+              else if (course === 'dessert') personDessert = name;
             });
           } else {
-            if (person.starter) starters.push({ person: personNumber, item: cleanName(person.starter), notes: personNotes });
-            if (person.main) mains.push({ person: personNumber, item: cleanName(person.main), notes: personNotes });
-            if (person.side) sides.push({ person: personNumber, item: cleanName(person.side), notes: personNotes });
-            if (person.dessert) desserts.push({ person: personNumber, item: cleanName(person.dessert), notes: personNotes });
+            if (person.starter) personStarter = cleanName(person.starter);
+            if (person.main) personMain = cleanName(person.main);
+            if (person.side) personSide = cleanName(person.side);
+            if (person.dessert) personDessert = cleanName(person.dessert);
           }
+          
+          // Add to arrays with side matched to main
+          if (personStarter) starters.push({ person: personNumber, item: personStarter, notes: personNotes });
+          if (personMain) mains.push({ person: personNumber, item: personMain, side: personSide, notes: personNotes });
+          if (personDessert) desserts.push({ person: personNumber, item: personDessert, notes: personNotes });
         });
 
         // Draw table with Person, Item, Sides, Notes columns
@@ -201,8 +212,8 @@ function generatePreorderPDF(bookingData, preorderData) {
           }
           doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + rows * rowH).stroke();
           
-          // Fill body
-          doc.font('Helvetica');
+          // Fill body with smaller font
+          doc.font('Helvetica').fontSize(8); // Smaller font for better fit
           for (let i = 0; i < items.length; i++) {
             const ly = y + (i + 1) * rowH + 2;
             const item = items[i];
@@ -218,6 +229,7 @@ function generatePreorderPDF(bookingData, preorderData) {
             }
             doc.text(notes, x0 + personW + itemW + sidesW + 3, ly, { width: notesW - 6 });
           }
+          doc.fontSize(12); // Reset font size
           doc.moveDown(rows * rowH / 14 + 0.3); // advance roughly rows height + spacing
         };
 
@@ -238,15 +250,7 @@ function generatePreorderPDF(bookingData, preorderData) {
           doc.moveDown(0.3);
         }
 
-        if (sides.length > 0) {
-          // Check if we need a new page for sides
-          if (doc.y > doc.page.height - 200) {
-            doc.addPage();
-          }
-          doc.font('Helvetica-Bold').text('Sides').moveDown(0.2);
-          drawTable('Sides', sides);
-          doc.moveDown(0.3);
-        }
+        // Sides are now included in the mains table, no separate table needed
         
         if (desserts.length > 0) {
           // Check if we need a new page for desserts

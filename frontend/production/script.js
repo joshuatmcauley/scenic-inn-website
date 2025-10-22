@@ -880,6 +880,9 @@ function collectPreorderData() {
         if (mainSelect && mainSelect.value) {
             let itemName = mainSelect.options[mainSelect.selectedIndex]?.text || '';
             
+            // Remove price from item name (for steaks especially)
+            itemName = itemName.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
+            
             // Check if this is a steak and get rarity
             const steakRaritySelect = document.getElementById(`person-${i}-steak-rarity`);
             if (steakRaritySelect && steakRaritySelect.value) {

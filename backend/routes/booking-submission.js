@@ -171,9 +171,9 @@ function generatePreorderPDF(bookingData, preorderData) {
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
           const personW = 50;
-          const sidesW = showSides ? 80 : 0;
-          const itemW = totalW - personW - sidesW - 70; // Notes column gets 70px
-          const notesW = 70;
+          const sidesW = showSides ? 100 : 0; // Increased sides width
+          const notesW = 80; // Increased notes width
+          const itemW = totalW - personW - sidesW - notesW; // Item gets remaining space
           const rowH = 14;
           const rows = items.length + 1; // + header
           

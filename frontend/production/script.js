@@ -452,7 +452,8 @@ async function loadMenuItems() {
                         description: item.description || '',
                         price: item.price,
                         pricing_type: item.pricing_type,
-                        comes_with_side: item.comes_with_side
+                        comes_with_side: item.comes_with_side,
+                        is_steak: item.is_steak
                     });
                 });
                 menuItems = { categories: Object.values(grouped) };
@@ -469,7 +470,9 @@ async function loadMenuItems() {
                             name: item.name,
                             description: item.description || '',
                             price: item.price,
-                            pricing_type: item.pricing_type
+                            pricing_type: item.pricing_type,
+                            comes_with_side: item.comes_with_side,
+                            is_steak: item.is_steak
                         }))
                     }))
                 };

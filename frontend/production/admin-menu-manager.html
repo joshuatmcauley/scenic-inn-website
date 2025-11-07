@@ -508,15 +508,15 @@
                         </div>
                     </div>
                     <div class="sections-list">
-                        ${Object.entries(menu.sections).map(([sectionId, section]) => `
+                        ${menu.sections && typeof menu.sections === 'object' ? Object.entries(menu.sections).map(([sectionId, section]) => `
                             <div class="section-item">
                                 <div>
                                     <div class="section-name">${section.name}</div>
-                                    <div class="section-count">${section.items.length} items</div>
+                                    <div class="section-count">${section.items ? section.items.length : 0} items</div>
                                 </div>
                                 <button class="btn btn-secondary" onclick="manageSection('${menu.id}', '${sectionId}')">Manage</button>
                             </div>
-                        `).join('')}
+                        `).join('') : '<p style="color: #666; text-align: center; padding: 20px;">Click "Edit" to manage menu items</p>'}
                     </div>
                 </div>
             `).join('');

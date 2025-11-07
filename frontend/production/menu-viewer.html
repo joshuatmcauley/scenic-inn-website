@@ -270,8 +270,6 @@
 
         <div class="controls">
             <button class="btn" onclick="loadAllMenus()">🔄 Load All Menus</button>
-            <button class="btn btn-secondary" onclick="loadFromDojo()">🔗 Load from Dojo API</button>
-            <button class="btn btn-secondary" onclick="loadSampleData()">📋 Load Sample Data</button>
             <span id="status" class="status loading">Ready to load menus</span>
         </div>
 
@@ -292,95 +290,73 @@
         let currentDataSource = 'none';
 
         async function loadAllMenus() {
-            updateStatus('loading', 'Loading menus...');
+            updateStatus('loading', 'Loading menus from database...');
             hideDataSource();
             
             try {
-                // ONLY try real Dojo API - NO FALLBACKS
-                const response = await fetch(`${API_BASE_URL}/dojo/experiences`);
+                // Load menus from Railway database
+                const response = await fetch(`${API_BASE_URL}/menus`);
                 const data = await response.json();
                 
                 if (!response.ok || !data.success || !data.data) {
-                    throw new Error(data.error || data.message || 'Failed to load experiences from Dojo API');
+                    throw new Error(data.message || 'Failed to load menus from database');
                 }
 
-                // Convert experiences to menu format
-                const menuData = {};
-                data.data.forEach(exp => {
-                    menuData[exp.id] = {
-                        name: exp.name,
-                        price: exp.price,
-                        description: exp.description,
-                        status: exp.status
-                    };
-                });
-                
-                displayMenus(menuData, 'Real Dojo API');
-                currentDataSource = 'dojo';
-            } catch (error) {
-                updateStatus('error', `Dojo API Error: ${error.message}`);
-                showError(`Failed to load from Dojo API: ${error.message}`);
-            }
-        }
-
-        async function loadFromDojo() {
-            updateStatus('loading', 'Loading from Real Dojo API...');
-            hideDataSource();
-            
-            try {
-                // Load experiences
-                const experiencesResponse = await fetch(`${API_BASE_URL}/dojo/experiences`);
-                const experiencesData = await experiencesResponse.json();
-                
-                if (!experiencesResponse.ok || !experiencesData.success || !experiencesData.data) {
-                    throw new Error(experiencesData.error || experiencesData.message || 'Failed to load from Dojo API');
-                }
-
-                // Load products for each experience
+                // Load menu items for each menu
                 const menuData = {};
                 
-                for (const exp of experiencesData.data) {
+                for (const menu of data.data) {
                     try {
-                        const productsResponse = await fetch(`${API_BASE_URL}/dojo/menu-items?experienceId=${exp.id}`);
-                        const productsData = await productsResponse.json();
+                        const itemsResponse = await fetch(`${API_BASE_URL}/menus/${menu.id}/items`);
+                        const itemsData = await itemsResponse.json();
                         
-                        menuData[exp.id] = {
-                            name: exp.name,
-                            price: exp.price,
-                            description: exp.description,
-                            status: exp.status,
+                        // Group items by section
+                        const sections = {};
+                        if (itemsData.success && itemsData.data) {
+                            itemsData.data.forEach(item => {
+                                const sectionKey = item.section_key || 'other';
+                                const sectionName = item.section_name || 'Other Items';
+                                
+                                if (!sections[sectionKey]) {
+                                    sections[sectionKey] = {
+                                        name: sectionName,
+                                        items: []
+                                    };
+                                }
+                                
+                                sections[sectionKey].items.push({
+                                    name: item.name,
+                                    description: item.description || '',
+                                    price: item.price ? `£${parseFloat(item.price).toFixed(2)}` : 'N/A'
+                                });
+                            });
+                        }
+                        
+                        menuData[menu.id] = {
+                            name: menu.name,
+                            schedule: menu.schedule || '',
+                            description: menu.description || '',
                             items: {
-                                categories: [
-                                    {
-                                        name: 'Menu Items',
-                                        items: productsData.data || []
-                                    }
-                                ]
+                                categories: Object.values(sections)
                             }
                         };
                     } catch (error) {
-                        console.error(`Error loading products for ${exp.id}:`, error);
-                        menuData[exp.id] = {
-                            name: exp.name,
-                            price: exp.price,
-                            description: exp.description,
-                            status: exp.status,
+                        console.error(`Error loading items for menu ${menu.id}:`, error);
+                        menuData[menu.id] = {
+                            name: menu.name,
+                            schedule: menu.schedule || '',
+                            description: menu.description || '',
                             items: { categories: [] }
                         };
                     }
                 }
                 
-                displayMenus(menuData, 'Real Dojo API');
-                currentDataSource = 'dojo';
+                displayMenus(menuData, 'Railway Database');
+                currentDataSource = 'database';
             } catch (error) {
-                updateStatus('error', `Dojo API Error: ${error.message}`);
-                showError(`Failed to load from Dojo API: ${error.message}`);
+                updateStatus('error', `Database Error: ${error.message}`);
+                showError(`Failed to load menus: ${error.message}`);
             }
-        }
-
-        function loadSampleData() {
-            updateStatus('error', 'Sample data disabled - only real Dojo data allowed');
-            showError('Sample data has been disabled. Please use "Load from Dojo API" to get real menu data.');
         }
 
         function displayMenus(menuData, source) {
@@ -398,7 +374,7 @@
                     <div class="menu-card">
                         <div class="menu-header">
                             <h3>${menu.name || 'Unknown Menu'}</h3>
-                            <p>${menu.price || 'Price not set'}</p>
+                            <p>${menu.schedule || 'Schedule not set'}</p>
                         </div>
                         <div class="menu-content">
                 `;
@@ -468,9 +444,9 @@
             `;
         }
 
-        // Auto-load Dojo data on page load
+        // Auto-load menus on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadFromDojo();
+            loadAllMenus();
         });
     </script>
 </body>

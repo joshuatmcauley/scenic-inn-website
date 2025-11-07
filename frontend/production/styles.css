@@ -311,6 +311,30 @@ body {
     color: #333;
     font-family: 'Cormorant Garamond', serif;
     letter-spacing: 0.3px;
+    margin-right: 15px;
+}
+
+.person-name-input {
+    flex: 1;
+    max-width: 250px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: 'Cormorant Garamond', serif;
+    color: #333;
+    transition: border-color 0.3s ease;
+}
+
+.person-name-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.person-name-input::placeholder {
+    color: #999;
+    font-style: italic;
 }
 
 .menu-categories {

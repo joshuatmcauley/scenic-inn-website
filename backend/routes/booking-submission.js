@@ -144,7 +144,11 @@ function generatePreorderPDF(bookingData, preorderData) {
 
         preorderData.forEach((person, index) => {
           const personNumber = person.person_number || index + 1;
+          const personName = person.person_name || null;
           const personNotes = person.special_instructions || '';
+          
+          // Format person identifier: use name if available, otherwise use number
+          const personLabel = personName ? `${personNumber} (${personName})` : personNumber;
           
           // Collect items by person to match sides with mains
           let personStarter = null;
@@ -169,9 +173,9 @@ function generatePreorderPDF(bookingData, preorderData) {
           }
           
           // Add to arrays with side matched to main
-          if (personStarter) starters.push({ person: personNumber, item: personStarter, notes: personNotes });
-          if (personMain) mains.push({ person: personNumber, item: personMain, side: personSide, notes: personNotes });
-          if (personDessert) desserts.push({ person: personNumber, item: personDessert, notes: personNotes });
+          if (personStarter) starters.push({ person: personLabel, item: personStarter, notes: personNotes });
+          if (personMain) mains.push({ person: personLabel, item: personMain, side: personSide, notes: personNotes });
+          if (personDessert) desserts.push({ person: personLabel, item: personDessert, notes: personNotes });
         });
 
         // Draw table with Person, Item, Sides, Notes columns

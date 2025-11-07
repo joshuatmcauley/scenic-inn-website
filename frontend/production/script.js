@@ -603,6 +603,12 @@ function populateMenuSelection() {
             <div class="person-header">
                 <div class="person-avatar">${i}</div>
                 <div class="person-name">Person ${i}</div>
+                <input type="text" 
+                       class="person-name-input" 
+                       id="person-${i}-name" 
+                       name="person-${i}-name" 
+                       placeholder="Enter name (optional)" 
+                       maxlength="50">
             </div>
             <div class="menu-categories">
                 ${generateMenuCategories(i)}
@@ -923,9 +929,14 @@ function collectPreorderData() {
         const notesElement = document.getElementById(`person-${i}-notes`);
         const personNotes = notesElement ? notesElement.value.trim() : '';
         
+        // Get person name (optional)
+        const nameElement = document.getElementById(`person-${i}-name`);
+        const personName = nameElement ? nameElement.value.trim() : '';
+        
         if (items.length > 0 || personNotes) {
             preorderData.push({
                 person_number: i,
+                person_name: personName || null,
                 items: items,
                 special_instructions: personNotes
             });

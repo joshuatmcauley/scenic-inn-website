@@ -754,12 +754,8 @@ function getPricingInfoDisplay() {
             </div>
         `;
     } else if (pricingInfo.pricing_type === 'individual') {
-        return `
-            <div class="pricing-info">
-                <h4>Individual Item Pricing</h4>
-                <p><em>Each item is priced individually as shown</em></p>
-            </div>
-        `;
+        // Individual pricing info is already shown at the top, no need to repeat for each person
+        return '';
     }
     
     return '';

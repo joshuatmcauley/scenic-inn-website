@@ -41,6 +41,7 @@ app.use(cors({
 }));
 
 console.log('CORS configured for Vercel and GitHub Pages');
+// Server ready for Railway deployment
 
 // Logging
 app.use(morgan('combined'));

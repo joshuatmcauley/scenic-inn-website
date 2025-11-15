@@ -1148,12 +1148,145 @@
             }
         });
 
-        // Show delete items view (placeholder)
+        // Show delete items view
         async function showDeleteItems(menuId, menu) {
-            showStatus('info', `Delete items functionality for ${menu.name} - Coming soon!`);
-            setTimeout(() => {
-                window.location.href = 'admin-dashboard.html';
-            }, 2000);
+            try {
+                // Hide menu grid
+                document.getElementById('menu-grid').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
+                
+                // Load items for this menu
+                const token = localStorage.getItem('adminToken');
+                const itemsResponse = await fetch(`${API_BASE_URL}/menus/${menuId}/items`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const itemsData = await itemsResponse.json();
+                
+                if (!itemsData.success) {
+                    throw new Error(itemsData.message || 'Failed to load items');
+                }
+
+                const items = itemsData.data || [];
+                
+                // Create items container
+                const container = document.querySelector('.container');
+                const existingContainer = document.getElementById('items-container');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
+
+                const itemsContainer = document.createElement('div');
+                itemsContainer.id = 'items-container';
+                itemsContainer.className = 'items-container';
+                itemsContainer.innerHTML = `
+                    <div class="items-header">
+                        <div>
+                            <h2 style="color: #dc3545;">Delete Items - ${menu.name}</h2>
+                            <p style="color: #666; margin-top: 5px;">Select items to delete (this action cannot be undone)</p>
+                        </div>
+                        <button class="back-btn" onclick="window.location.href='admin-dashboard.html'">← Back to Dashboard</button>
+                    </div>
+                    <div class="items-list" id="items-list">
+                        ${items.length === 0 ? '<p style="text-align: center; color: #666;">No items found in this menu.</p>' : ''}
+                        ${items.map((item, index) => `
+                            <div class="item-card">
+                                <input type="checkbox" id="delete-item-${index}" data-item-id="${item.id}" onchange="updateDeleteSelection()">
+                                <div class="item-info">
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-details">
+                                        <span class="item-section">${item.section_name || item.section_key}</span>
+                                        ${item.description ? `<span>${item.description}</span>` : ''}
+                                        ${item.price ? `<span style="font-weight: 600; color: #752f15;">£${parseFloat(item.price).toFixed(2)}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="selected-items-actions" id="delete-actions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="clearDeleteSelection()">Clear Selection</button>
+                        <button class="btn btn-danger" onclick="confirmDeleteItems()">Delete Selected Items</button>
+                    </div>
+                `;
+                
+                container.insertBefore(itemsContainer, container.firstChild);
+            } catch (error) {
+                console.error('Error showing delete items:', error);
+                showStatus('error', 'Failed to load items: ' + error.message);
+            }
+        }
+
+        // Update delete selection count
+        function updateDeleteSelection() {
+            const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
+            const actionsDiv = document.getElementById('delete-actions');
+            
+            if (checkboxes.length > 0) {
+                actionsDiv.style.display = 'flex';
+            } else {
+                actionsDiv.style.display = 'none';
+            }
+        }
+
+        // Clear delete selection
+        function clearDeleteSelection() {
+            document.querySelectorAll('#items-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateDeleteSelection();
+        }
+
+        // Confirm and delete selected items
+        async function confirmDeleteItems() {
+            const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-item-id'));
+            
+            if (selectedIds.length === 0) {
+                showStatus('error', 'Please select at least one item to delete');
+                return;
+            }
+
+            // Show confirmation dialog
+            const itemNames = Array.from(checkboxes).map(cb => {
+                const card = cb.closest('.item-card');
+                return card.querySelector('.item-name').textContent;
+            });
+
+            const confirmMessage = `Are you sure you want to delete ${selectedIds.length} item(s)?\n\n${itemNames.slice(0, 5).join('\n')}${itemNames.length > 5 ? `\n...and ${itemNames.length - 5} more` : ''}\n\nThis action cannot be undone!`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menus/items`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ itemIds: selectedIds })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', data.message || `Successfully deleted ${data.data.length} item(s)`);
+                    
+                    // Reload items list
+                    const params = getUrlParams();
+                    if (params.menu && params.action === 'delete') {
+                        setTimeout(() => {
+                            handleAction(params.menu, params.action);
+                        }, 1000);
+                    }
+                } else {
+                    showStatus('error', data.message || 'Failed to delete items');
+                }
+            } catch (error) {
+                console.error('Error deleting items:', error);
+                showStatus('error', 'Failed to delete items: ' + error.message);
+            }
         }
 
         // Load all menus

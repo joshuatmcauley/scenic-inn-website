@@ -234,4 +234,59 @@ router.post('/menus/items', async (req, res) => {
   }
 });
 
+// Delete menu item (admin)
+router.delete('/menus/items/:itemId', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const deletedItem = await dbHelpers.deleteMenuItem(itemId);
+
+    if (!deletedItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Menu item not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Menu item deleted successfully',
+      data: deletedItem
+    });
+  } catch (error) {
+    console.error('Error deleting menu item:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete menu item: ' + error.message
+    });
+  }
+});
+
+// Delete multiple menu items (admin)
+router.delete('/menus/items', async (req, res) => {
+  try {
+    const { itemIds } = req.body;
+
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No item IDs provided for deletion'
+      });
+    }
+
+    const deletedItems = await dbHelpers.deleteMenuItems(itemIds);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedItems.length} item(s)`,
+      data: deletedItems
+    });
+  } catch (error) {
+    console.error('Error deleting menu items:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete menu items: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

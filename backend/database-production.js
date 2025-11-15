@@ -341,6 +341,28 @@ const dbHelpers = {
     return result.rows;
   },
 
+  // Delete menu item
+  deleteMenuItem: async (itemId) => {
+    const result = await pool.query(
+      'DELETE FROM menu_items WHERE id = $1 RETURNING *',
+      [itemId]
+    );
+    return result.rows[0];
+  },
+
+  // Delete multiple menu items
+  deleteMenuItems: async (itemIds) => {
+    if (!Array.isArray(itemIds) || itemIds.length === 0) {
+      throw new Error('No item IDs provided');
+    }
+
+    const result = await pool.query(
+      `DELETE FROM menu_items WHERE id = ANY($1::text[]) RETURNING *`,
+      [itemIds]
+    );
+    return result.rows;
+  },
+
   // Create admin user
   createAdminUser: async (username, passwordHash, email) => {
     const result = await pool.query(

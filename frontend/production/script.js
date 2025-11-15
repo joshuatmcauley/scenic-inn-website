@@ -584,11 +584,8 @@ function populateMenuSelection() {
         menuDescriptionElement.textContent = description;
     }
     
-    // Only show menu selection for parties of 11+ with preorder enabled
-    if (bookingData.party_size < 11) {
-        container.innerHTML = '<p class="text-center">No preorder required for parties under 11 people.</p>';
-        return;
-    }
+    // Party size is now always >= 11 (minimum enforced in HTML)
+    // All bookings now support preorders
     
     if (!bookingData.preorder_enabled) {
         container.innerHTML = '<p class="text-center">Preorder is not enabled for this booking. You can order when you arrive.</p>';

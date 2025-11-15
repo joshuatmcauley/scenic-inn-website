@@ -192,57 +192,98 @@ function generatePreorderPDF(bookingData, preorderData) {
           const x0 = doc.x;
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-          const personW = 50;
-          const sidesW = showSides ? 100 : 0; // Increased sides width
-          const notesW = 80; // Increased notes width
+          const personW = 60;
+          const sidesW = showSides ? 100 : 0;
+          const notesW = 100; // Increased notes width for better wrapping
           const itemW = totalW - personW - sidesW - notesW; // Item gets remaining space
-          const rowH = 14;
-          const rows = items.length + 1; // + header
+          const minRowH = 12; // Minimum row height
+          const cellPadding = 3;
+          const fontSize = 8;
           
-          // Headers with smaller font
-          doc.font('Helvetica-Bold').fontSize(9); // Smaller header font
-          doc.text('Person', x0 + 3, y + 2, { width: personW - 6 });
-          doc.text('Item', x0 + personW + 3, y + 2, { width: itemW - 6 });
-          if (showSides) {
-            doc.text('Sides', x0 + personW + itemW + 3, y + 2, { width: sidesW - 6 });
-          }
-          doc.text('Notes', x0 + personW + itemW + sidesW + 3, y + 2, { width: notesW - 6 });
-          doc.fontSize(8); // Reset to body font size
+          // Set font for height calculations
+          doc.font('Helvetica').fontSize(fontSize);
           
-          // Grid lines
-          doc.lineWidth(0.5);
-          for (let r = 0; r <= rows; r++) {
-            const yy = y + r * rowH;
-            doc.moveTo(x0, yy).lineTo(x0 + totalW, yy).stroke();
-          }
-          // Vertical borders
-          doc.moveTo(x0, y).lineTo(x0, y + rows * rowH).stroke();
-          doc.moveTo(x0 + personW, y).lineTo(x0 + personW, y + rows * rowH).stroke();
-          doc.moveTo(x0 + personW + itemW, y).lineTo(x0 + personW + itemW, y + rows * rowH).stroke();
-          if (showSides) {
-            doc.moveTo(x0 + personW + itemW + sidesW, y).lineTo(x0 + personW + itemW + sidesW, y + rows * rowH).stroke();
-          }
-          doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + rows * rowH).stroke();
+          // Calculate row heights first by measuring text
+          const rowHeights = [];
+          const headerH = 12; // Header row height
           
-          // Fill body with smaller font
-          doc.font('Helvetica').fontSize(8); // Smaller font for better fit
           for (let i = 0; i < items.length; i++) {
-            const ly = y + (i + 1) * rowH + 2;
             const item = items[i];
-            const personNum = typeof item === 'object' ? item.person : i + 1;
+            const personText = typeof item === 'object' ? (item.person || '') : '';
             const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
             const sideName = typeof item === 'object' ? (item.side || '') : '';
-            const notes = typeof item === 'object' ? item.notes : '';
+            const notes = typeof item === 'object' ? (item.notes || '') : '';
             
-            doc.text(`${personNum}`, x0 + 3, ly, { width: personW - 6 });
-            doc.text(itemName, x0 + personW + 3, ly, { width: itemW - 6 });
-            if (showSides) {
-              doc.text(sideName, x0 + personW + itemW + 3, ly, { width: sidesW - 6 });
-            }
-            doc.text(notes, x0 + personW + itemW + sidesW + 3, ly, { width: notesW - 6 });
+            // Calculate height needed for each cell
+            const personHeight = doc.heightOfString(personText || '', { width: personW - cellPadding * 2 });
+            const itemHeight = doc.heightOfString(itemName || '', { width: itemW - cellPadding * 2 });
+            const sideHeight = showSides ? doc.heightOfString(sideName || '', { width: sidesW - cellPadding * 2 }) : 0;
+            const notesHeight = doc.heightOfString(notes || '', { width: notesW - cellPadding * 2 });
+            
+            // Row height is the maximum of all cell heights
+            const rowH = Math.max(minRowH, personHeight, itemHeight, sideHeight, notesHeight) + 4; // +4 for padding
+            rowHeights.push(rowH);
           }
+          
+          // Draw header
+          doc.font('Helvetica-Bold').fontSize(9);
+          const headerY = y + 2;
+          doc.text('Person', x0 + cellPadding, headerY, { width: personW - cellPadding * 2 });
+          doc.text('Item', x0 + personW + cellPadding, headerY, { width: itemW - cellPadding * 2 });
+          if (showSides) {
+            doc.text('Sides', x0 + personW + itemW + cellPadding, headerY, { width: sidesW - cellPadding * 2 });
+          }
+          doc.text('Notes', x0 + personW + itemW + sidesW + cellPadding, headerY, { width: notesW - cellPadding * 2 });
+          
+          // Calculate total table height
+          const totalHeight = headerH + rowHeights.reduce((sum, h) => sum + h, 0);
+          
+          // Draw grid lines
+          doc.lineWidth(0.5);
+          // Horizontal lines
+          let currentY = y;
+          doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke(); // Top border
+          currentY += headerH;
+          doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke(); // Header bottom
+          for (let i = 0; i < rowHeights.length; i++) {
+            currentY += rowHeights[i];
+            doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke();
+          }
+          // Vertical borders
+          doc.moveTo(x0, y).lineTo(x0, y + totalHeight).stroke(); // Left
+          doc.moveTo(x0 + personW, y).lineTo(x0 + personW, y + totalHeight).stroke();
+          doc.moveTo(x0 + personW + itemW, y).lineTo(x0 + personW + itemW, y + totalHeight).stroke();
+          if (showSides) {
+            doc.moveTo(x0 + personW + itemW + sidesW, y).lineTo(x0 + personW + itemW + sidesW, y + totalHeight).stroke();
+          }
+          doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + totalHeight).stroke(); // Right
+          
+          // Fill body with text that wraps
+          doc.font('Helvetica').fontSize(fontSize);
+          currentY = y + headerH + 2;
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const personText = typeof item === 'object' ? (item.person || '') : '';
+            const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
+            const sideName = typeof item === 'object' ? (item.side || '') : '';
+            const notes = typeof item === 'object' ? (item.notes || '') : '';
+            
+            // Center text vertically in row
+            const rowH = rowHeights[i];
+            const textY = currentY + (rowH - doc.heightOfString(personText || 'A', { width: personW - cellPadding * 2 })) / 2;
+            
+            doc.text(personText, x0 + cellPadding, textY, { width: personW - cellPadding * 2, align: 'left' });
+            doc.text(itemName, x0 + personW + cellPadding, textY, { width: itemW - cellPadding * 2, align: 'left' });
+            if (showSides) {
+              doc.text(sideName, x0 + personW + itemW + cellPadding, textY, { width: sidesW - cellPadding * 2, align: 'left' });
+            }
+            doc.text(notes, x0 + personW + itemW + sidesW + cellPadding, textY, { width: notesW - cellPadding * 2, align: 'left' });
+            
+            currentY += rowH;
+          }
+          
           doc.fontSize(12); // Reset font size
-          doc.moveDown(rows * rowH / 14 + 0.3); // advance roughly rows height + spacing
+          doc.moveDown(totalHeight / 14 + 0.3); // advance roughly table height + spacing
         };
 
         // Only show sections that have data

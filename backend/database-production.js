@@ -245,6 +245,66 @@ const dbHelpers = {
     return result.rows;
   },
 
+  // Update menu item
+  updateMenuItem: async (itemId, itemData) => {
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (itemData.name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(itemData.name);
+    }
+    if (itemData.description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(itemData.description);
+    }
+    if (itemData.price !== undefined) {
+      updates.push(`price = $${paramCount++}`);
+      values.push(parseFloat(itemData.price));
+    }
+    if (itemData.section_key !== undefined) {
+      updates.push(`section_key = $${paramCount++}`);
+      values.push(itemData.section_key);
+    }
+    if (itemData.comes_with_side !== undefined) {
+      updates.push(`comes_with_side = $${paramCount++}`);
+      values.push(itemData.comes_with_side);
+    }
+    if (itemData.is_steak !== undefined) {
+      updates.push(`is_steak = $${paramCount++}`);
+      values.push(itemData.is_steak);
+    }
+
+    if (updates.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(itemId);
+
+    const query = `
+      UPDATE menu_items 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  },
+
+  // Get menu item by ID
+  getMenuItemById: async (itemId) => {
+    const result = await pool.query(`
+      SELECT mi.*, ms.name as section_name 
+      FROM menu_items mi 
+      LEFT JOIN menu_sections ms ON mi.menu_id = ms.menu_id AND mi.section_key = ms.section_key 
+      WHERE mi.id = $1
+    `, [itemId]);
+    return result.rows[0];
+  },
+
   // Create admin user
   createAdminUser: async (username, passwordHash, email) => {
     const result = await pool.query(

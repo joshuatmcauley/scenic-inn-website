@@ -518,6 +518,23 @@
         </div>
     </div>
 
+    <!-- Edit Items Modal -->
+    <div id="editItemsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Menu Items</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div id="edit-items-form-container">
+                <!-- Items will be loaded here -->
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveItemEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
         let currentEditingMenu = null;
@@ -691,7 +708,7 @@
         }
 
         // Edit selected items
-        function editSelectedItems() {
+        async function editSelectedItems() {
             const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
             const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-item-id'));
             
@@ -700,11 +717,158 @@
                 return;
             }
 
-            // Store selected items and navigate to edit form
-            localStorage.setItem('selectedItemIds', JSON.stringify(selectedIds));
+            // Load full item data for selected items
+            try {
+                const token = localStorage.getItem('adminToken');
+                const itemsToEdit = [];
+                
+                for (const itemId of selectedIds) {
+                    const response = await fetch(`${API_BASE_URL}/admin/menus/items/${itemId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        itemsToEdit.push(data.data);
+                    }
+                }
+
+                if (itemsToEdit.length === 0) {
+                    showStatus('error', 'Failed to load item data');
+                    return;
+                }
+
+                // Show edit form modal
+                showEditForm(itemsToEdit);
+            } catch (error) {
+                console.error('Error loading items for edit:', error);
+                showStatus('error', 'Failed to load items: ' + error.message);
+            }
+        }
+
+        // Show edit form with items
+        function showEditForm(items) {
+            const container = document.getElementById('edit-items-form-container');
             const params = getUrlParams();
-            // TODO: Navigate to item edit form or show edit modal
-            showStatus('success', `${selectedIds.length} item(s) selected. Edit form coming soon!`);
+            
+            // Get available sections for this menu
+            const sections = [...new Set(items.map(item => item.section_key))];
+            
+            container.innerHTML = `
+                <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                    ${items.map((item, index) => `
+                        <div class="item-edit-form" style="border: 2px solid #752f15; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: rgba(117, 47, 21, 0.05);">
+                            <h3 style="color: #752f15; margin-bottom: 15px; font-family: 'Playfair Display', serif;">${item.name}</h3>
+                            <input type="hidden" class="item-id" value="${item.id}">
+                            
+                            <div class="form-group">
+                                <label>Item Name</label>
+                                <input type="text" class="item-name" value="${item.name || ''}" placeholder="Item name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea class="item-description" rows="3" placeholder="Item description">${item.description || ''}</textarea>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="form-group">
+                                    <label>Price (£)</label>
+                                    <input type="number" class="item-price" step="0.01" value="${item.price || ''}" placeholder="0.00">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Section</label>
+                                    <input type="text" class="item-section" value="${item.section_key || ''}" placeholder="e.g., starters, main-course">
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px; margin-top: 15px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" class="item-comes-with-side" ${item.comes_with_side ? 'checked' : ''}>
+                                    <span>Comes with side</span>
+                                </label>
+                                
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" class="item-is-steak" ${item.is_steak ? 'checked' : ''}>
+                                    <span>Is steak</span>
+                                </label>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('editItemsModal').style.display = 'block';
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editItemsModal').style.display = 'none';
+        }
+
+        // Save item edits
+        async function saveItemEdits() {
+            const forms = document.querySelectorAll('.item-edit-form');
+            const itemsToUpdate = [];
+            
+            forms.forEach(form => {
+                const itemId = form.querySelector('.item-id').value;
+                const name = form.querySelector('.item-name').value.trim();
+                const description = form.querySelector('.item-description').value.trim();
+                const price = form.querySelector('.item-price').value;
+                const section_key = form.querySelector('.item-section').value.trim();
+                const comes_with_side = form.querySelector('.item-comes-with-side').checked;
+                const is_steak = form.querySelector('.item-is-steak').checked;
+                
+                const updateData = {};
+                if (name) updateData.name = name;
+                if (description !== undefined) updateData.description = description;
+                if (price) updateData.price = parseFloat(price);
+                if (section_key) updateData.section_key = section_key;
+                updateData.comes_with_side = comes_with_side;
+                updateData.is_steak = is_steak;
+                
+                itemsToUpdate.push({ id: itemId, ...updateData });
+            });
+
+            if (itemsToUpdate.length === 0) {
+                showStatus('error', 'No changes to save');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menus/items`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ items: itemsToUpdate })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', data.message || `Successfully updated ${data.data.length} item(s)`);
+                    closeEditModal();
+                    
+                    // Reload items list
+                    const params = getUrlParams();
+                    if (params.menu && params.action === 'edit') {
+                        setTimeout(() => {
+                            handleAction(params.menu, params.action);
+                        }, 1000);
+                    }
+                } else {
+                    showStatus('error', data.message || 'Failed to update items');
+                }
+            } catch (error) {
+                console.error('Error saving edits:', error);
+                showStatus('error', 'Failed to save changes: ' + error.message);
+            }
         }
 
         // Show add item view (placeholder)
@@ -919,9 +1083,13 @@
 
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('menuModal');
-            if (event.target === modal) {
+            const menuModal = document.getElementById('menuModal');
+            const editModal = document.getElementById('editItemsModal');
+            if (event.target === menuModal) {
                 closeModal();
+            }
+            if (event.target === editModal) {
+                closeEditModal();
             }
         }
     </script>

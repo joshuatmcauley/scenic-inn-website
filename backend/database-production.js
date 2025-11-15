@@ -305,6 +305,42 @@ const dbHelpers = {
     return result.rows[0];
   },
 
+  // Create menu item
+  createMenuItem: async (itemData) => {
+    // Generate a unique ID if not provided
+    const itemId = itemData.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const result = await pool.query(`
+      INSERT INTO menu_items (
+        id, menu_id, section_key, name, description, price, 
+        comes_with_side, is_steak, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [
+      itemId,
+      itemData.menu_id,
+      itemData.section_key,
+      itemData.name,
+      itemData.description || null,
+      parseFloat(itemData.price),
+      itemData.comes_with_side || false,
+      itemData.is_steak || false
+    ]);
+    
+    return result.rows[0];
+  },
+
+  // Get available sections for a menu
+  getMenuSections: async (menuId) => {
+    const result = await pool.query(`
+      SELECT section_key, name 
+      FROM menu_sections 
+      WHERE menu_id = $1 
+      ORDER BY section_key
+    `, [menuId]);
+    return result.rows;
+  },
+
   // Create admin user
   createAdminUser: async (username, passwordHash, email) => {
     const result = await pool.query(

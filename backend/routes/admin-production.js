@@ -186,4 +186,52 @@ router.put('/menus/items', async (req, res) => {
   }
 });
 
+// Get menu sections (admin)
+router.get('/menus/:menuId/sections', async (req, res) => {
+  try {
+    const { menuId } = req.params;
+    const sections = await dbHelpers.getMenuSections(menuId);
+    
+    res.json({
+      success: true,
+      data: sections
+    });
+  } catch (error) {
+    console.error('Error fetching menu sections:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch menu sections'
+    });
+  }
+});
+
+// Create menu item (admin)
+router.post('/menus/items', async (req, res) => {
+  try {
+    const itemData = req.body;
+
+    // Validate required fields
+    if (!itemData.menu_id || !itemData.section_key || !itemData.name || itemData.price === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: menu_id, section_key, name, and price are required'
+      });
+    }
+
+    const newItem = await dbHelpers.createMenuItem(itemData);
+
+    res.json({
+      success: true,
+      message: 'Menu item created successfully',
+      data: newItem
+    });
+  } catch (error) {
+    console.error('Error creating menu item:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create menu item: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

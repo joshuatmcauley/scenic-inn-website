@@ -381,9 +381,22 @@
         }
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #752f15;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
         }
 
         .form-group textarea {
@@ -532,6 +545,59 @@
                 <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveItemEdits()">Save Changes</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="addItemModalTitle">Add New Item</h2>
+                <span class="close" onclick="closeAddItemModal()">&times;</span>
+            </div>
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label for="itemName">Item Name *</label>
+                    <input type="text" id="itemName" name="name" required placeholder="e.g., Grilled Chicken">
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemDescription">Description</label>
+                    <textarea id="itemDescription" name="description" rows="3" placeholder="Item description (optional)"></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="itemPrice">Price (£) *</label>
+                        <input type="number" id="itemPrice" name="price" step="0.01" min="0" required placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="itemSection">Section *</label>
+                        <select id="itemSection" name="section_key" required>
+                            <option value="">Select section...</option>
+                            <!-- Sections will be loaded here -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 20px; margin-top: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="itemComesWithSide" name="comes_with_side">
+                        <span>Comes with side</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="itemIsSteak" name="is_steak">
+                        <span>Is steak</span>
+                    </label>
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddItemModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -871,13 +937,216 @@
             }
         }
 
-        // Show add item view (placeholder)
-        function showAddItem(menuId, menu) {
-            showStatus('info', `Add item functionality for ${menu.name} - Coming soon!`);
-            setTimeout(() => {
-                window.location.href = 'admin-dashboard.html';
-            }, 2000);
+        // Show add item view
+        async function showAddItem(menuId, menu) {
+            try {
+                // Hide menu grid
+                document.getElementById('menu-grid').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
+                
+                // Load existing items to show context
+                const token = localStorage.getItem('adminToken');
+                const itemsResponse = await fetch(`${API_BASE_URL}/menus/${menuId}/items`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const itemsData = await itemsResponse.json();
+                const items = itemsData.success ? (itemsData.data || []) : [];
+                
+                // Load sections
+                const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const sectionsData = await sectionsResponse.json();
+                
+                if (!sectionsData.success) {
+                    throw new Error('Failed to load sections');
+                }
+
+                const sections = sectionsData.data || [];
+                
+                // Create items container similar to edit view
+                const container = document.querySelector('.container');
+                const existingContainer = document.getElementById('items-container');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
+
+                const itemsContainer = document.createElement('div');
+                itemsContainer.id = 'items-container';
+                itemsContainer.className = 'items-container';
+                itemsContainer.innerHTML = `
+                    <div class="items-header">
+                        <div>
+                            <h2>Add Items - ${menu.name}</h2>
+                            <p style="color: #666; margin-top: 5px;">Add new items to this menu</p>
+                        </div>
+                        <button class="back-btn" onclick="window.location.href='admin-dashboard.html'">← Back to Dashboard</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="openAddItemForm('${menuId}', '${menu.name}')" style="font-size: 1.1rem; padding: 12px 24px;">
+                            + Add New Item
+                        </button>
+                    </div>
+                    
+                    ${items.length > 0 ? `
+                        <div style="margin-top: 30px;">
+                            <h3 style="color: #752f15; margin-bottom: 15px; font-family: 'Playfair Display', serif;">Existing Items (${items.length})</h3>
+                            <div class="items-list">
+                                ${items.map((item, index) => `
+                                    <div class="item-card" style="opacity: 0.7;">
+                                        <div class="item-info">
+                                            <div class="item-name">${item.name}</div>
+                                            <div class="item-details">
+                                                <span class="item-section">${item.section_name || item.section_key}</span>
+                                                ${item.description ? `<span>${item.description}</span>` : ''}
+                                                ${item.price ? `<span style="font-weight: 600; color: #752f15;">£${parseFloat(item.price).toFixed(2)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : '<p style="text-align: center; color: #666; padding: 20px;">No items in this menu yet. Click "Add New Item" to get started!</p>'}
+                `;
+                
+                container.insertBefore(itemsContainer, container.firstChild);
+                
+                // Store menu info for add form
+                window.currentAddMenu = { id: menuId, name: menu.name, sections: sections };
+            } catch (error) {
+                console.error('Error showing add item view:', error);
+                showStatus('error', 'Failed to load menu data: ' + error.message);
+            }
         }
+
+        // Open add item form modal
+        async function openAddItemForm(menuId, menuName) {
+            if (!window.currentAddMenu || window.currentAddMenu.id !== menuId) {
+                // Load sections if not already loaded
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const sectionsData = await sectionsResponse.json();
+                    window.currentAddMenu = { 
+                        id: menuId, 
+                        name: menuName, 
+                        sections: sectionsData.success ? sectionsData.data : [] 
+                    };
+                } catch (error) {
+                    showStatus('error', 'Failed to load sections');
+                    return;
+                }
+            }
+
+            const sections = window.currentAddMenu.sections || [];
+            
+            // Populate section dropdown
+            const sectionSelect = document.getElementById('itemSection');
+            sectionSelect.innerHTML = '<option value="">Select section...</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.section_key;
+                option.textContent = section.name || section.section_key;
+                sectionSelect.appendChild(option);
+            });
+
+            // Set menu ID in form
+            const form = document.getElementById('addItemForm');
+            let menuIdInput = form.querySelector('input[name="menu_id"]');
+            if (!menuIdInput) {
+                menuIdInput = document.createElement('input');
+                menuIdInput.type = 'hidden';
+                menuIdInput.name = 'menu_id';
+                form.insertBefore(menuIdInput, form.firstChild);
+            }
+            menuIdInput.value = menuId;
+
+            // Update modal title
+            document.getElementById('addItemModalTitle').textContent = `Add New Item - ${menuName}`;
+            
+            // Reset form
+            form.reset();
+            menuIdInput.value = menuId;
+            
+            // Show modal
+            document.getElementById('addItemModal').style.display = 'block';
+        }
+
+        // Close add item modal
+        function closeAddItemModal() {
+            document.getElementById('addItemModal').style.display = 'none';
+            document.getElementById('addItemForm').reset();
+        }
+
+        // Handle add item form submission
+        document.getElementById('addItemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            const itemData = {
+                menu_id: formData.get('menu_id'),
+                section_key: formData.get('section_key'),
+                name: formData.get('name'),
+                description: formData.get('description') || null,
+                price: parseFloat(formData.get('price')),
+                comes_with_side: formData.get('comes_with_side') === 'on',
+                is_steak: formData.get('is_steak') === 'on'
+            };
+
+            // Validate
+            if (!itemData.menu_id || !itemData.section_key || !itemData.name || !itemData.price) {
+                showStatus('error', 'Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menus/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(itemData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', 'Item added successfully!');
+                    closeAddItemModal();
+                    
+                    // Reload items list if we're in add/edit view
+                    const params = getUrlParams();
+                    if (params.menu && (params.action === 'add' || params.action === 'edit')) {
+                        setTimeout(() => {
+                            handleAction(params.menu, params.action);
+                        }, 1000);
+                    } else {
+                        // If not in add/edit view, go back to dashboard
+                        setTimeout(() => {
+                            window.location.href = 'admin-dashboard.html';
+                        }, 1500);
+                    }
+                } else {
+                    showStatus('error', data.message || 'Failed to add item');
+                }
+            } catch (error) {
+                console.error('Error adding item:', error);
+                showStatus('error', 'Failed to add item: ' + error.message);
+            }
+        });
 
         // Show delete items view (placeholder)
         async function showDeleteItems(menuId, menu) {
@@ -1085,11 +1354,15 @@
         window.onclick = function(event) {
             const menuModal = document.getElementById('menuModal');
             const editModal = document.getElementById('editItemsModal');
+            const addModal = document.getElementById('addItemModal');
             if (event.target === menuModal) {
                 closeModal();
             }
             if (event.target === editModal) {
                 closeEditModal();
+            }
+            if (event.target === addModal) {
+                closeAddItemModal();
             }
         }
     </script>

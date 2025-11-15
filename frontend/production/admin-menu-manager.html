@@ -192,6 +192,106 @@
             font-size: 0.9rem;
         }
 
+        .items-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #752f15;
+        }
+
+        .items-header h2 {
+            font-family: 'Playfair Display', serif;
+            color: #2C2C2C;
+            font-size: 2rem;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: #545b62;
+        }
+
+        .items-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .item-card {
+            background: rgba(117, 47, 21, 0.05);
+            border: 2px solid rgba(117, 47, 21, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            border-color: #752f15;
+            background: rgba(117, 47, 21, 0.1);
+        }
+
+        .item-card input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #2C2C2C;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .item-details {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .item-section {
+            display: inline-block;
+            background: #752f15;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+
+        .selected-items-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #752f15;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
         .add-menu-btn {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
@@ -317,6 +417,13 @@
             border: 1px solid #f5c6cb;
         }
 
+        .status-message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -415,6 +522,15 @@
         const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
         let currentEditingMenu = null;
 
+        // Get URL parameters
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                menu: params.get('menu') || localStorage.getItem('selectedMenuId'),
+                action: params.get('action') || localStorage.getItem('selectedAction')
+            };
+        }
+
         // Check authentication on page load
         window.addEventListener('load', function() {
             const token = localStorage.getItem('adminToken');
@@ -439,7 +555,14 @@
                     // Show admin info
                     const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
                     document.getElementById('admin-info').textContent = `Welcome, ${adminUser.username}`;
-                    loadMenus();
+                    
+                    // Check if we're in edit/add/delete mode
+                    const params = getUrlParams();
+                    if (params.menu && params.action) {
+                        handleAction(params.menu, params.action);
+                    } else {
+                        loadMenus();
+                    }
                 }
             })
             .catch(error => {
@@ -457,6 +580,149 @@
             window.location.href = 'admin-login.html';
         }
 
+        // Handle action (edit/add/delete)
+        async function handleAction(menuId, action) {
+            // Hide menu grid, show items container
+            document.getElementById('menu-grid').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            
+            // Get menu info
+            try {
+                const menuResponse = await fetch(`${API_BASE_URL}/menus/${menuId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const menuData = await menuResponse.json();
+                
+                if (action === 'edit') {
+                    await showEditItems(menuId, menuData.data);
+                } else if (action === 'add') {
+                    showAddItem(menuId, menuData.data);
+                } else if (action === 'delete') {
+                    await showDeleteItems(menuId, menuData.data);
+                }
+            } catch (error) {
+                console.error('Error handling action:', error);
+                showStatus('error', 'Failed to load menu: ' + error.message);
+            }
+        }
+
+        // Show edit items view
+        async function showEditItems(menuId, menu) {
+            try {
+                // Load items for this menu
+                const itemsResponse = await fetch(`${API_BASE_URL}/menus/${menuId}/items`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const itemsData = await itemsResponse.json();
+                
+                if (!itemsData.success) {
+                    throw new Error(itemsData.message || 'Failed to load items');
+                }
+
+                const items = itemsData.data || [];
+                
+                // Create items container
+                const container = document.querySelector('.container');
+                const existingContainer = document.getElementById('items-container');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
+
+                const itemsContainer = document.createElement('div');
+                itemsContainer.id = 'items-container';
+                itemsContainer.className = 'items-container';
+                itemsContainer.innerHTML = `
+                    <div class="items-header">
+                        <div>
+                            <h2>Edit Items - ${menu.name}</h2>
+                            <p style="color: #666; margin-top: 5px;">Select items to edit</p>
+                        </div>
+                        <button class="back-btn" onclick="window.location.href='admin-dashboard.html'">← Back to Dashboard</button>
+                    </div>
+                    <div class="items-list" id="items-list">
+                        ${items.length === 0 ? '<p style="text-align: center; color: #666;">No items found in this menu.</p>' : ''}
+                        ${items.map((item, index) => `
+                            <div class="item-card">
+                                <input type="checkbox" id="item-${index}" data-item-id="${item.id}" onchange="updateSelectedItems()">
+                                <div class="item-info">
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-details">
+                                        <span class="item-section">${item.section_name || item.section_key}</span>
+                                        ${item.description ? `<span>${item.description}</span>` : ''}
+                                        ${item.price ? `<span style="font-weight: 600; color: #752f15;">£${parseFloat(item.price).toFixed(2)}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="selected-items-actions" id="selected-actions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="clearSelection()">Clear Selection</button>
+                        <button class="btn btn-primary" onclick="editSelectedItems()">Edit Selected Items</button>
+                    </div>
+                `;
+                
+                container.insertBefore(itemsContainer, container.firstChild);
+            } catch (error) {
+                console.error('Error showing edit items:', error);
+                showStatus('error', 'Failed to load items: ' + error.message);
+            }
+        }
+
+        // Update selected items count
+        function updateSelectedItems() {
+            const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
+            const actionsDiv = document.getElementById('selected-actions');
+            
+            if (checkboxes.length > 0) {
+                actionsDiv.style.display = 'flex';
+            } else {
+                actionsDiv.style.display = 'none';
+            }
+        }
+
+        // Clear selection
+        function clearSelection() {
+            document.querySelectorAll('#items-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelectedItems();
+        }
+
+        // Edit selected items
+        function editSelectedItems() {
+            const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-item-id'));
+            
+            if (selectedIds.length === 0) {
+                showStatus('error', 'Please select at least one item to edit');
+                return;
+            }
+
+            // Store selected items and navigate to edit form
+            localStorage.setItem('selectedItemIds', JSON.stringify(selectedIds));
+            const params = getUrlParams();
+            // TODO: Navigate to item edit form or show edit modal
+            showStatus('success', `${selectedIds.length} item(s) selected. Edit form coming soon!`);
+        }
+
+        // Show add item view (placeholder)
+        function showAddItem(menuId, menu) {
+            showStatus('info', `Add item functionality for ${menu.name} - Coming soon!`);
+            setTimeout(() => {
+                window.location.href = 'admin-dashboard.html';
+            }, 2000);
+        }
+
+        // Show delete items view (placeholder)
+        async function showDeleteItems(menuId, menu) {
+            showStatus('info', `Delete items functionality for ${menu.name} - Coming soon!`);
+            setTimeout(() => {
+                window.location.href = 'admin-dashboard.html';
+            }, 2000);
+        }
+
         // Load all menus
         async function loadMenus() {
             const loading = document.getElementById('loading');
@@ -466,7 +732,7 @@
             menuGrid.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/menu`, {
+                const response = await fetch(`${API_BASE_URL}/menus`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     }

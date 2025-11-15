@@ -147,8 +147,8 @@ function generatePreorderPDF(bookingData, preorderData) {
           const personName = person.person_name || null;
           const personNotes = person.special_instructions || '';
           
-          // Format person identifier: use name if available, otherwise use number
-          const personLabel = personName ? `${personNumber} (${personName})` : personNumber;
+          // Format person identifier: only show name if available, otherwise empty string
+          const personLabel = personName ? personName : '';
           
           // Collect items by person to match sides with mains
           let personStarter = null;
@@ -291,8 +291,19 @@ function generatePreorderPDF(bookingData, preorderData) {
 // Send email with PDF attachment
 async function sendPreorderEmail(pdfPath, bookingData) {
     const useResend = !!RESEND_API_KEY;
-    const subject = `Preorder for ${bookingData.firstName} ${bookingData.lastName} - ${bookingData.date}`;
-    const text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize}\nCustomer: ${bookingData.firstName} ${bookingData.lastName}\nEmail: ${bookingData.email}\nPhone: ${bookingData.phone}`;
+    
+    // Normalize fields to prevent undefined values
+    const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+    const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+    const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+    const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
+    const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
+    const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
+    const date = pick(bookingData, ['date'], 'N/A');
+    const time = pick(bookingData, ['time'], 'N/A');
+    
+    const subject = `Preorder for ${fullName} - ${date}`;
+    const text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
 
     if (useResend) {
         const fs = require('fs');
@@ -302,7 +313,7 @@ async function sendPreorderEmail(pdfPath, bookingData) {
             to: process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER,
             subject,
             text,
-            attachments: [{ filename: `preorder-${bookingData.date}-${bookingData.lastName}.pdf`, content }]
+            attachments: [{ filename: `preorder-${date}-${lastName || 'booking'}.pdf`, content }]
         });
         return { success: true, provider: 'resend', id: result.id };
     }
@@ -314,7 +325,7 @@ async function sendPreorderEmail(pdfPath, bookingData) {
         text,
         attachments: [
             {
-                filename: `preorder-${bookingData.date}-${bookingData.lastName}.pdf`,
+                filename: `preorder-${date}-${lastName || 'booking'}.pdf`,
                 path: pdfPath
             }
         ]

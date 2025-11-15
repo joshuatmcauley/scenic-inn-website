@@ -654,6 +654,13 @@ function generateMenuCategories(personNumber) {
             sides.push(...category.items);
             console.log(`  → Added to sides: ${category.items.map(item => item.name).join(', ')}`);
         }
+        // Specials - separate category (for special offers, chef's specials, etc.)
+        else if (sectionKey === 'specials') {
+            // Specials can be shown separately or grouped with mains depending on your preference
+            // For now, we'll add them to mains but log them separately
+            mains.push(...category.items);
+            console.log(`  → Added to mains (specials): ${category.items.map(item => item.name).join(', ')}`);
+        }
         else {
             console.warn(`  → Unknown section key: "${sectionKey}" - defaulting to mains`);
             mains.push(...category.items);

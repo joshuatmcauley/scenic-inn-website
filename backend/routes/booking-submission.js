@@ -109,6 +109,7 @@ function generatePreorderPDF(bookingData, preorderData) {
       const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
       const date = pick(bookingData, ['date'], '');
       const time = pick(bookingData, ['time'], '');
+      const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
 
       // Booking Information
             doc.fontSize(14)
@@ -123,11 +124,14 @@ function generatePreorderPDF(bookingData, preorderData) {
                .moveDown();
             
             // Special Requests
-            if (bookingData.specialRequests) {
+            if (specialRequests && specialRequests.trim()) {
                 doc.fontSize(14)
                    .text('Special Requests:', { underline: true })
                    .fontSize(12)
-                   .text(bookingData.specialRequests)
+                   .text(specialRequests, { 
+                     width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+                     align: 'left'
+                   })
                    .moveDown();
             }
             
@@ -342,9 +346,15 @@ async function sendPreorderEmail(pdfPath, bookingData) {
     const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
     const date = pick(bookingData, ['date'], 'N/A');
     const time = pick(bookingData, ['time'], 'N/A');
+    const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
     
     const subject = `Preorder for ${fullName} - ${date}`;
-    const text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
+    let text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
+    
+    // Add special requests if provided
+    if (specialRequests && specialRequests.trim()) {
+        text += `\n\nSpecial Requests:\n${specialRequests}`;
+    }
 
     if (useResend) {
         const fs = require('fs');

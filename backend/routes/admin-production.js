@@ -350,4 +350,78 @@ router.get('/specials', async (req, res) => {
   }
 });
 
+// Get menu schedule rules (admin)
+router.get('/menu-schedule-rules', async (req, res) => {
+  try {
+    const rules = await dbHelpers.getMenuScheduleRules();
+
+    res.json({
+      success: true,
+      data: rules
+    });
+  } catch (error) {
+    console.error('Error fetching menu schedule rules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch menu schedule rules: ' + error.message
+    });
+  }
+});
+
+// Create or update menu schedule rule (admin)
+router.post('/menu-schedule-rules', async (req, res) => {
+  try {
+    const ruleData = req.body;
+
+    // Validate required fields
+    if (!ruleData.menu_id || !ruleData.days_of_week || !ruleData.start_time || !ruleData.end_time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: menu_id, days_of_week, start_time, and end_time are required'
+      });
+    }
+
+    const rule = await dbHelpers.upsertMenuScheduleRule(ruleData);
+
+    res.json({
+      success: true,
+      message: ruleData.id ? 'Schedule rule updated successfully' : 'Schedule rule created successfully',
+      data: rule
+    });
+  } catch (error) {
+    console.error('Error saving menu schedule rule:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save menu schedule rule: ' + error.message
+    });
+  }
+});
+
+// Delete menu schedule rule (admin)
+router.delete('/menu-schedule-rules/:ruleId', async (req, res) => {
+  try {
+    const { ruleId } = req.params;
+    const deletedRule = await dbHelpers.deleteMenuScheduleRule(ruleId);
+
+    if (!deletedRule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Schedule rule not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Schedule rule deleted successfully',
+      data: deletedRule
+    });
+  } catch (error) {
+    console.error('Error deleting menu schedule rule:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete menu schedule rule: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

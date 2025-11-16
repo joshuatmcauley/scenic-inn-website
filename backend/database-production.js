@@ -71,6 +71,22 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create menu_schedule_rules table (defines which menu is active based on day/time)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS menu_schedule_rules (
+        id SERIAL PRIMARY KEY,
+        menu_id TEXT NOT NULL,
+        days_of_week TEXT NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        priority INTEGER DEFAULT 0,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (menu_id) REFERENCES menus (id) ON DELETE CASCADE
+      )
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS admin_users (
         id SERIAL PRIMARY KEY,
@@ -475,6 +491,64 @@ const dbHelpers = {
     }
 
     return specials;
+  },
+
+  // Get all menu schedule rules
+  getMenuScheduleRules: async () => {
+    const result = await pool.query(`
+      SELECT msr.*, m.name as menu_name
+      FROM menu_schedule_rules msr
+      INNER JOIN menus m ON msr.menu_id = m.id
+      WHERE msr.active = true
+      ORDER BY msr.priority DESC, msr.start_time ASC
+    `);
+    return result.rows;
+  },
+
+  // Create or update menu schedule rule
+  upsertMenuScheduleRule: async (ruleData) => {
+    if (ruleData.id) {
+      // Update existing rule
+      const result = await pool.query(`
+        UPDATE menu_schedule_rules
+        SET menu_id = $1, days_of_week = $2, start_time = $3, end_time = $4, 
+            priority = $5, active = $6, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $7
+        RETURNING *
+      `, [
+        ruleData.menu_id,
+        ruleData.days_of_week,
+        ruleData.start_time,
+        ruleData.end_time,
+        ruleData.priority || 0,
+        ruleData.active !== false,
+        ruleData.id
+      ]);
+      return result.rows[0];
+    } else {
+      // Create new rule
+      const result = await pool.query(`
+        INSERT INTO menu_schedule_rules (menu_id, days_of_week, start_time, end_time, priority, active)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `, [
+        ruleData.menu_id,
+        ruleData.days_of_week,
+        ruleData.start_time,
+        ruleData.end_time,
+        ruleData.priority || 0,
+        ruleData.active !== false
+      ]);
+      return result.rows[0];
+    }
+  },
+
+  // Delete menu schedule rule
+  deleteMenuScheduleRule: async (ruleId) => {
+    const result = await pool.query(`
+      DELETE FROM menu_schedule_rules WHERE id = $1 RETURNING *
+    `, [ruleId]);
+    return result.rows[0];
   },
 
   // Create admin user

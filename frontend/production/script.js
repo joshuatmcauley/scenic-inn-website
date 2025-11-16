@@ -231,8 +231,9 @@ async function showSelectedMenu() {
     } else if (menus.length === 1) {
         // Single menu - auto-select it
         const menu = menus[0];
-        bookingData.experience_id = menu.menu_id;
-        console.log('Set experience_id to:', menu.menu_id);
+        // Use menu_id from the response (this is the actual database ID)
+        bookingData.experience_id = menu.menu_id || menu.id;
+        console.log('Set experience_id to:', bookingData.experience_id, 'from menu:', menu);
         
         // Get menu data from available experiences (database)
         const menuData = availableExperiences.find(exp => exp.id === menu.menu_id);
@@ -270,7 +271,8 @@ async function showSelectedMenu() {
         
         // Show menu items if preorder is enabled
         if (bookingData.party_size >= 11 && bookingData.preorder_enabled) {
-            populateMenuSelection();
+            // Load menu items first, then populate
+            loadMenuItems();
         } else {
             // Just show a message that menu is determined
             const menuSelection = document.getElementById('menu-selection');
@@ -476,12 +478,27 @@ async function loadExperiences() {
         
         if (response.ok && data && data.success && data.data) {
             // Convert menu data to experience format
-            availableExperiences = data.data.map(menu => ({
-                id: menu.id,
-                name: menu.name,
-                description: menu.schedule,
-                price: menu.pricing ? (typeof menu.pricing === 'string' ? JSON.parse(menu.pricing) : menu.pricing) : null
-            }));
+            availableExperiences = data.data.map(menu => {
+                let price = null;
+                if (menu.pricing) {
+                    if (typeof menu.pricing === 'string') {
+                        try {
+                            price = JSON.parse(menu.pricing);
+                        } catch (e) {
+                            console.warn(`Invalid JSON in pricing for menu ${menu.id}:`, menu.pricing);
+                            price = null;
+                        }
+                    } else {
+                        price = menu.pricing;
+                    }
+                }
+                return {
+                    id: menu.id,
+                    name: menu.name,
+                    description: menu.schedule,
+                    price: price
+                };
+            });
             console.log('Menus loaded from local database:', availableExperiences);
             populateExperienceSelect();
         } else {
@@ -546,8 +563,9 @@ async function loadMenuItems() {
         const response = await fetch(`${API_BASE_URL}/menus/${bookingData.experience_id}/items?forPreorder=true`);
         let data = await response.json();
         console.log('Menu items response:', data);
+        console.log('Response status:', response.status, 'OK:', response.ok);
         
-        if (response.ok && data) {
+        if (response.ok && data && data.success !== false) {
             // Handle both shapes: { success, data: [...] } or direct array
             let raw = Array.isArray(data) ? data : (data.data || []);
 
@@ -600,9 +618,18 @@ async function loadMenuItems() {
             }
             
             console.log('Menu items loaded:', menuItems);
+            
+            // Check if we actually have items
+            if (!menuItems.categories || menuItems.categories.length === 0) {
+                console.warn('No menu items found in response');
+                showError('No menu items available for this menu. Please contact support.');
+                return;
+            }
+            
             populateMenuSelection();
         } else {
-            showError('Failed to load menu items');
+            console.error('Failed to load menu items. Status:', response.status, 'Data:', data);
+            showError(data.message || 'Failed to load menu items. Please try again or contact support.');
         }
     } catch (error) {
         console.error('Error loading menu items:', error);

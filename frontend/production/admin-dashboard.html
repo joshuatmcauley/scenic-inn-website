@@ -280,9 +280,7 @@
                             <div class="menu-name">${menu.name}</div>
                             <div class="menu-schedule">${menu.schedule || 'No schedule set'}</div>
                             <div class="menu-actions">
-                                <button class="action-btn btn-add" onclick="handleAdd('${menu.id}')">Add Item</button>
-                                <button class="action-btn btn-edit" onclick="handleEdit('${menu.id}')">Edit Items</button>
-                                <button class="action-btn btn-delete" onclick="handleDelete('${menu.id}')">Delete Items</button>
+                                <button class="action-btn btn-edit" onclick="handleEdit('${menu.id}')">Edit Menu</button>
                             </div>
                         </div>
                     `).join('')}
@@ -290,27 +288,11 @@
             `;
         }
 
-        // Handle Add button - navigate to menu manager with add action
-        function handleAdd(menuId) {
-            // Store the selected menu and action in localStorage
-            localStorage.setItem('selectedMenuId', menuId);
-            localStorage.setItem('selectedAction', 'add');
-            // Navigate to menu manager
-            window.location.href = `admin-menu-manager.html?menu=${menuId}&action=add`;
-        }
-
-        // Handle Edit button - navigate to menu manager with edit action
+        // Handle Edit button - navigate to menu manager
         function handleEdit(menuId) {
             localStorage.setItem('selectedMenuId', menuId);
             localStorage.setItem('selectedAction', 'edit');
             window.location.href = `admin-menu-manager.html?menu=${menuId}&action=edit`;
-        }
-
-        // Handle Delete button - navigate to menu manager with delete action
-        function handleDelete(menuId) {
-            localStorage.setItem('selectedMenuId', menuId);
-            localStorage.setItem('selectedAction', 'delete');
-            window.location.href = `admin-menu-manager.html?menu=${menuId}&action=delete`;
         }
 
         // Logout function

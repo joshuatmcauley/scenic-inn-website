@@ -242,6 +242,7 @@
             padding: 15px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 15px;
             transition: all 0.3s ease;
         }
@@ -678,13 +679,8 @@
                 });
                 const menuData = await menuResponse.json();
                 
-                if (action === 'edit') {
-                    await showEditItems(menuId, menuData.data);
-                } else if (action === 'add') {
-                    showAddItem(menuId, menuData.data);
-                } else if (action === 'delete') {
-                    await showDeleteItems(menuId, menuData.data);
-                }
+                // Always show edit view (which includes add/edit/delete functionality)
+                await showEditItems(menuId, menuData.data);
             } catch (error) {
                 console.error('Error handling action:', error);
                 showStatus('error', 'Failed to load menu: ' + error.message);
@@ -708,6 +704,18 @@
 
                 const items = itemsData.data || [];
                 
+                // Load sections for add form
+                const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const sectionsData = await sectionsResponse.json();
+                const sections = sectionsData.success ? (sectionsData.data || []) : [];
+                
+                // Store menu info for add form
+                window.currentAddMenu = { id: menuId, name: menu.name, sections: sections };
+                
                 // Create items container
                 const container = document.querySelector('.container');
                 const existingContainer = document.getElementById('items-container');
@@ -721,17 +729,23 @@
                 itemsContainer.innerHTML = `
                     <div class="items-header">
                         <div>
-                            <h2>Edit Items - ${menu.name}</h2>
-                            <p style="color: #666; margin-top: 5px;">Select items to edit</p>
+                            <h2>Edit Menu - ${menu.name}</h2>
+                            <p style="color: #666; margin-top: 5px;">Manage items for this menu</p>
                         </div>
                         <button class="back-btn" onclick="window.location.href='admin-dashboard.html'">← Back to Dashboard</button>
                     </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="openAddItemForm('${menuId}', '${menu.name}')" style="font-size: 1.1rem; padding: 12px 24px;">
+                            + Add New Item
+                        </button>
+                    </div>
+                    
                     <div class="items-list" id="items-list">
-                        ${items.length === 0 ? '<p style="text-align: center; color: #666;">No items found in this menu.</p>' : ''}
+                        ${items.length === 0 ? '<p style="text-align: center; color: #666; padding: 20px;">No items in this menu yet. Click "Add New Item" to get started!</p>' : ''}
                         ${items.map((item, index) => `
                             <div class="item-card">
-                                <input type="checkbox" id="item-${index}" data-item-id="${item.id}" onchange="updateSelectedItems()">
-                                <div class="item-info">
+                                <div class="item-info" style="flex: 1;">
                                     <div class="item-name">${item.name}</div>
                                     <div class="item-details">
                                         <span class="item-section">${item.section_name || item.section_key}</span>
@@ -739,12 +753,12 @@
                                         ${item.price ? `<span style="font-weight: 600; color: #752f15;">£${parseFloat(item.price).toFixed(2)}</span>` : ''}
                                     </div>
                                 </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <button class="btn btn-primary" onclick="editSingleItem('${item.id}')" style="padding: 8px 15px; font-size: 0.9rem;">Edit</button>
+                                    <button class="btn btn-danger" onclick="deleteSingleItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')" style="padding: 8px 15px; font-size: 0.9rem;">Delete</button>
+                                </div>
                             </div>
                         `).join('')}
-                    </div>
-                    <div class="selected-items-actions" id="selected-actions" style="display: none;">
-                        <button class="btn btn-secondary" onclick="clearSelection()">Clear Selection</button>
-                        <button class="btn btn-primary" onclick="editSelectedItems()">Edit Selected Items</button>
                     </div>
                 `;
                 
@@ -755,15 +769,61 @@
             }
         }
 
-        // Update selected items count
-        function updateSelectedItems() {
-            const checkboxes = document.querySelectorAll('#items-list input[type="checkbox"]:checked');
-            const actionsDiv = document.getElementById('selected-actions');
-            
-            if (checkboxes.length > 0) {
-                actionsDiv.style.display = 'flex';
-            } else {
-                actionsDiv.style.display = 'none';
+        // Edit a single item
+        async function editSingleItem(itemId) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menus/items/${itemId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load item');
+                }
+
+                const item = data.data || data;
+                showEditForm([item]);
+            } catch (error) {
+                console.error('Error loading item:', error);
+                showStatus('error', 'Failed to load item: ' + error.message);
+            }
+        }
+
+        // Delete a single item
+        async function deleteSingleItem(itemId, itemName) {
+            if (!confirm(`Are you sure you want to delete "${itemName}"?\n\nThis action cannot be undone!`)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menus/items/${itemId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', `Successfully deleted "${itemName}"`);
+                    
+                    // Reload items list
+                    const params = getUrlParams();
+                    if (params.menu) {
+                        setTimeout(() => {
+                            handleAction(params.menu, 'edit');
+                        }, 1000);
+                    }
+                } else {
+                    showStatus('error', data.message || 'Failed to delete item');
+                }
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                showStatus('error', 'Failed to delete item: ' + error.message);
             }
         }
 

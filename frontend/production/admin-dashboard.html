@@ -261,6 +261,22 @@
             font-size: 1.1em;
         }
 
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1em;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="number"]:focus {
+            outline: none;
+            border-color: #8b4513;
+        }
+
         .form-group textarea {
             width: 100%;
             padding: 16px;
@@ -410,8 +426,16 @@
             </div>
             <form id="addSpecialForm" onsubmit="submitSpecial(event)">
                 <div class="form-group">
-                    <label for="specialDescription">Special Details</label>
-                    <textarea id="specialDescription" name="description" placeholder="Enter special details (e.g., '2-for-1 on all starters every Tuesday', 'Happy Hour: 50% off drinks 5pm-7pm')" required></textarea>
+                    <label for="specialName">Dish Name</label>
+                    <input type="text" id="specialName" name="name" placeholder="Enter dish name (e.g., 'Chef's Special Steak', 'Daily Catch')" required style="width: 100%; padding: 16px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1.1em;">
+                </div>
+                <div class="form-group">
+                    <label for="specialDescription">Description</label>
+                    <textarea id="specialDescription" name="description" placeholder="Enter dish description (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="specialPrice">Price (£)</label>
+                    <input type="number" id="specialPrice" name="price" step="0.01" placeholder="0.00" style="width: 100%; padding: 16px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1.1em;">
                 </div>
                 <div class="form-group">
                     <label>Select Menus</label>
@@ -575,12 +599,14 @@
         async function submitSpecial(event) {
             event.preventDefault();
             
+            const name = document.getElementById('specialName').value.trim();
             const description = document.getElementById('specialDescription').value.trim();
+            const price = document.getElementById('specialPrice').value;
             const checkboxes = document.querySelectorAll('#menusCheckboxes input[type="checkbox"]:checked');
             const menuIds = Array.from(checkboxes).map(cb => cb.value);
             
-            if (!description) {
-                showStatus('error', 'Please enter special details');
+            if (!name) {
+                showStatus('error', 'Please enter dish name');
                 return;
             }
             
@@ -598,7 +624,9 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        description: description,
+                        name: name,
+                        description: description || null,
+                        price: price ? parseFloat(price) : null,
                         menu_ids: menuIds
                     })
                 });

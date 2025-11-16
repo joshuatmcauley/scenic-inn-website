@@ -48,11 +48,13 @@ async function initializeDatabase() {
       )
     `);
 
-    // Create specials table
+    // Create specials table (specials are dishes/items)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS specials (
         id TEXT PRIMARY KEY,
-        description TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -384,19 +386,21 @@ const dbHelpers = {
     return result.rows;
   },
 
-  // Create special
+  // Create special (dish/item)
   createSpecial: async (specialData) => {
     const specialId = specialData.id || `special-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Insert special
     const specialResult = await pool.query(`
       INSERT INTO specials (
-        id, description, created_at, updated_at
-      ) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        id, name, description, price, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *
     `, [
       specialId,
-      specialData.description || null
+      specialData.name || null,
+      specialData.description || null,
+      specialData.price ? parseFloat(specialData.price) : null
     ]);
 
     const special = specialResult.rows[0];

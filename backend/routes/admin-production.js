@@ -289,16 +289,16 @@ router.delete('/menus/items', async (req, res) => {
   }
 });
 
-// Create special (admin)
+// Create special (admin) - specials are dishes/items
 router.post('/specials', async (req, res) => {
   try {
-    const { description, menu_ids } = req.body;
+    const { name, description, price, menu_ids } = req.body;
 
     // Validate required fields
-    if (!description || !description.trim()) {
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Special description is required'
+        message: 'Dish name is required'
       });
     }
 
@@ -310,7 +310,9 @@ router.post('/specials', async (req, res) => {
     }
 
     const specialData = {
-      description: description.trim(),
+      name: name.trim(),
+      description: description ? description.trim() : null,
+      price: price ? parseFloat(price) : null,
       menu_ids: menu_ids
     };
 

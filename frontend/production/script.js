@@ -203,12 +203,15 @@ function validateStep3() {
 
 async function showSelectedMenu() {
     const date = bookingData.date;
-    const time = bookingData.time;
+    let time = bookingData.time;
     
     if (!date || !time) {
         console.error('Date or time not available');
         return;
     }
+    
+    // Ensure time is in HH:MM format (remove any seconds or extra characters)
+    time = time.split(':').slice(0, 2).join(':');
     
     // Get all available menus for this date and time (from database)
     const response = await fetch(`${API_BASE_URL}/menus/for-datetime/${date}/${time}`);
@@ -471,13 +474,13 @@ async function loadExperiences() {
         const response = await fetch(`${API_BASE_URL}/menus`);
         const data = await response.json();
         
-        if (response.ok && data) {
+        if (response.ok && data && data.success && data.data) {
             // Convert menu data to experience format
-            availableExperiences = data.map(menu => ({
+            availableExperiences = data.data.map(menu => ({
                 id: menu.id,
                 name: menu.name,
                 description: menu.schedule,
-                price: menu.pricing ? JSON.parse(menu.pricing) : null
+                price: menu.pricing ? (typeof menu.pricing === 'string' ? JSON.parse(menu.pricing) : menu.pricing) : null
             }));
             console.log('Menus loaded from local database:', availableExperiences);
             populateExperienceSelect();
@@ -1360,6 +1363,8 @@ async function loadEventMenuItems() {
 // Note: Use showSelectedMenu() for full menu selection with multiple menu support
 async function getMenuForDateTime(date, time) {
     try {
+        // Ensure time is in HH:MM format
+        time = time.split(':').slice(0, 2).join(':');
         console.log(`Checking menu for: ${date} at ${time}`);
         
         const response = await fetch(`${API_BASE_URL}/menus/for-datetime/${date}/${time}`);

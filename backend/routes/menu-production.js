@@ -19,6 +19,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get menu(s) by date/time using schedule rules from database
+// Returns array of all available menus (for selection if multiple)
+// IMPORTANT: This route must come BEFORE /:menuId routes to avoid route conflicts
+router.get('/for-datetime/:date/:time', async (req, res) => {
+  try {
+    const { date, time } = req.params;
+    const menus = await dbHelpers.getMenusForDateTime(date, time);
+    
+    if (!menus || menus.length === 0) {
+      return res.json({
+        success: false,
+        message: 'No menu available for this date and time',
+        data: []
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: menus.length === 1 ? menus[0] : menus, // Return single object if one menu, array if multiple
+      multiple: menus.length > 1
+    });
+  } catch (error) {
+    console.error('Get menu for date/time error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to determine menu: ' + error.message
+    });
+  }
+});
+
 // Get menu by ID
 router.get('/:menuId', async (req, res) => {
   try {

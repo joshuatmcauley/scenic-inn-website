@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { dbHelpers } = require('../database');
+const { dbHelpers } = require('../database-production');
 
 // Get all menus (public API for visitors)
 router.get('/', async (req, res) => {
@@ -45,7 +45,36 @@ router.get('/:menuId', async (req, res) => {
   }
 });
 
-// Get menu by day/time (helper endpoint for frontend)
+// Get menu(s) by date/time using schedule rules from database
+// Returns array of all available menus (for selection if multiple)
+router.get('/for-datetime/:date/:time', async (req, res) => {
+  try {
+    const { date, time } = req.params;
+    const menus = await dbHelpers.getMenusForDateTime(date, time);
+    
+    if (!menus || menus.length === 0) {
+      return res.json({
+        success: false,
+        message: 'No menu available for this date and time',
+        data: []
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: menus.length === 1 ? menus[0] : menus, // Return single object if one menu, array if multiple
+      multiple: menus.length > 1
+    });
+  } catch (error) {
+    console.error('Get menu for date/time error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to determine menu: ' + error.message
+    });
+  }
+});
+
+// Get menu by day/time (helper endpoint for frontend) - DEPRECATED: use /for-datetime instead
 router.get('/available/:day/:time', async (req, res) => {
   try {
     const { day, time } = req.params;

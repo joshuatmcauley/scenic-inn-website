@@ -424,4 +424,24 @@ router.delete('/menu-schedule-rules/:ruleId', async (req, res) => {
   }
 });
 
+// Ensure all menus have schedule rules (admin) - adds missing rules
+router.post('/menu-schedule-rules/ensure', async (req, res) => {
+  try {
+    const database = require('../database-production');
+    const count = await database.ensureMenuScheduleRules();
+
+    res.json({
+      success: true,
+      message: `Ensured schedule rules exist. ${count} rule(s) added.`,
+      data: { rulesAdded: count }
+    });
+  } catch (error) {
+    console.error('Error ensuring menu schedule rules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to ensure menu schedule rules: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

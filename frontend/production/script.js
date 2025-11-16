@@ -101,10 +101,9 @@ function nextStep() {
                 // Load time slots based on selected date
                 populateTimeSelect();
             } else if (currentStep === 3) {
-                // Show the automatically determined menu
+                // Show the menu(s) - will show selection if multiple, auto-select if single
                 showSelectedMenu();
-                // Load menu items for the selected experience
-                loadMenuItems();
+                // Load menu items will be called after menu is selected
             }
         }
     }
@@ -190,11 +189,19 @@ function validateStep2() {
 }
 
 function validateStep3() {
-    // Menu is automatically determined, so this step is always valid
+    // Check if menu has been selected (required for multiple menus)
+    if (!bookingData.experience_id) {
+        // Check if we're in menu selection mode
+        const menuChoiceSection = document.getElementById('menu-choice-section');
+        if (menuChoiceSection && menuChoiceSection.style.display !== 'none') {
+            alert('Please select a menu to continue');
+            return false;
+        }
+    }
     return true;
 }
 
-function showSelectedMenu() {
+async function showSelectedMenu() {
     const date = bookingData.date;
     const time = bookingData.time;
     
@@ -203,58 +210,164 @@ function showSelectedMenu() {
         return;
     }
     
-    // Determine which menu is available for this date and time
-    const menuType = getMenuForDateTime(date, time);
+    // Get all available menus for this date and time (from database)
+    const response = await fetch(`${API_BASE_URL}/menus/for-datetime/${date}/${time}`);
+    const data = await response.json();
     
-    if (!menuType) {
+    if (!data.success || !data.data) {
         console.error('No menu available for this date and time');
         return;
     }
     
-    // Store the selected menu type FIRST
-    bookingData.experience_id = menuType;
-    console.log('Set experience_id to:', menuType);
+    // Check if multiple menus are available
+    const menus = Array.isArray(data.data) ? data.data : [data.data];
     
-    // Get menu data from available experiences (database)
-    console.log('Looking for menu type:', menuType);
-    console.log('Available experiences:', availableExperiences);
-    const menuData = availableExperiences.find(exp => exp.id === menuType);
+    if (menus.length > 1) {
+        // Show menu selection page
+        showMenuSelection(menus);
+    } else if (menus.length === 1) {
+        // Single menu - auto-select it
+        const menu = menus[0];
+        bookingData.experience_id = menu.menu_id;
+        console.log('Set experience_id to:', menu.menu_id);
+        
+        // Get menu data from available experiences (database)
+        const menuData = availableExperiences.find(exp => exp.id === menu.menu_id);
+        
+        if (menuData) {
+            // Update the menu info card
+            const menuNameElement = document.getElementById('selected-menu-name');
+            const menuDescElement = document.getElementById('selected-menu-description');
+            
+            if (menuNameElement) {
+                menuNameElement.textContent = menuData.name;
+            }
+            
+            if (menuDescElement) {
+                menuDescElement.textContent = menuData.description;
+            }
+        } else {
+            // Use data from API response
+            const menuNameElement = document.getElementById('selected-menu-name');
+            const menuDescElement = document.getElementById('selected-menu-description');
+            
+            if (menuNameElement) {
+                menuNameElement.textContent = menu.menu_name;
+            }
+            
+            if (menuDescElement) {
+                menuDescElement.textContent = menu.menu_schedule || 'Menu available for your selected time';
+            }
+        }
+        
+        // Show single menu section, hide menu choice section
+        document.getElementById('menu-choice-section').style.display = 'none';
+        document.getElementById('single-menu-section').style.display = 'block';
+        document.getElementById('menu-instruction').textContent = 'Your menu has been automatically selected based on your date and time';
+        
+        // Show menu items if preorder is enabled
+        if (bookingData.party_size >= 11 && bookingData.preorder_enabled) {
+            populateMenuSelection();
+        } else {
+            // Just show a message that menu is determined
+            const menuSelection = document.getElementById('menu-selection');
+            if (menuSelection) {
+                menuSelection.innerHTML = `
+                    <div class="menu-confirmation">
+                        <p><strong>Your menu has been automatically selected:</strong></p>
+                        <p>Based on your selected date and time, you will be served from the <strong>${menu.menu_name}</strong>.</p>
+                        <p>${menu.menu_schedule || ''}</p>
+                    </div>
+                `;
+            }
+        }
+    }
+}
+
+// Show menu selection when multiple menus are available
+function showMenuSelection(menus) {
+    const menuChoiceSection = document.getElementById('menu-choice-section');
+    const singleMenuSection = document.getElementById('single-menu-section');
+    const menuInstruction = document.getElementById('menu-instruction');
+    const availableMenusList = document.getElementById('available-menus-list');
+    const continueBtn = document.getElementById('continue-menu-btn');
     
-    if (!menuData) {
-        console.error('Menu data not found for type:', menuType);
-        console.log('Available experience IDs:', availableExperiences.map(exp => exp.id));
-        return;
+    // Show menu choice section, hide single menu section
+    menuChoiceSection.style.display = 'block';
+    singleMenuSection.style.display = 'none';
+    menuInstruction.textContent = 'Multiple menus are available. Please select one:';
+    
+    // Disable continue button until menu is selected
+    continueBtn.disabled = true;
+    continueBtn.style.opacity = '0.5';
+    continueBtn.style.cursor = 'not-allowed';
+    
+    // Clear any previous selection
+    bookingData.experience_id = null;
+    
+    // Populate menu options
+    availableMenusList.innerHTML = menus.map((menu, index) => {
+        const menuData = availableExperiences.find(exp => exp.id === menu.menu_id);
+        const menuName = menuData ? menuData.name : menu.menu_name;
+        const menuDesc = menuData ? menuData.description : (menu.menu_schedule || 'Available for your selected time');
+        
+        return `
+            <div class="menu-option-card" onclick="selectMenu('${menu.menu_id}', ${index})" data-menu-id="${menu.menu_id}">
+                <h3>${menuName}</h3>
+                <p>${menuDesc}</p>
+                ${menu.menu_schedule ? `<p class="menu-schedule-info">${menu.menu_schedule}</p>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Handle menu selection
+function selectMenu(menuId, index) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.menu-option-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    const selectedCard = document.querySelector(`.menu-option-card[data-menu-id="${menuId}"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
     }
     
-    console.log('Found menu data:', menuData);
+    // Store selected menu
+    bookingData.experience_id = menuId;
+    console.log('User selected menu:', menuId);
     
-    // Update the menu info card
-    const menuNameElement = document.getElementById('selected-menu-name');
-    const menuDescElement = document.getElementById('selected-menu-description');
+    // Enable continue button
+    const continueBtn = document.getElementById('continue-menu-btn');
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = '1';
+    continueBtn.style.cursor = 'pointer';
     
-    if (menuNameElement) {
-        menuNameElement.textContent = menuData.name;
-    }
-    
-    if (menuDescElement) {
-        menuDescElement.textContent = menuData.description;
+    // Get menu data and update display
+    const menuData = availableExperiences.find(exp => exp.id === menuId);
+    if (menuData) {
+        // Update the menu info card (if visible)
+        const menuNameElement = document.getElementById('selected-menu-name');
+        const menuDescElement = document.getElementById('selected-menu-description');
+        
+        if (menuNameElement) {
+            menuNameElement.textContent = menuData.name;
+        }
+        
+        if (menuDescElement) {
+            menuDescElement.textContent = menuData.description;
+        }
     }
     
     // Show menu items if preorder is enabled
     if (bookingData.party_size >= 11 && bookingData.preorder_enabled) {
-        populateMenuSelection();
-    } else {
-        // Just show a message that menu is determined
-        const menuSelection = document.getElementById('menu-selection');
-        if (menuSelection) {
-            menuSelection.innerHTML = `
-                <div class="menu-confirmation">
-                    <p><strong>Your menu has been automatically selected:</strong></p>
-                    <p>Based on your selected date and time, you will be served from the <strong>${menuData.name}</strong>.</p>
-                    <p>${menuData.description}</p>
-                </div>
-            `;
-        }
+        // Show single menu section with menu items
+        document.getElementById('menu-choice-section').style.display = 'none';
+        document.getElementById('single-menu-section').style.display = 'block';
+        
+        // Load menu items for selected menu
+        loadMenuItems();
     }
 }
 
@@ -1216,8 +1329,8 @@ async function loadEventMenuItems() {
         return;
     }
     
-    // Determine which menu to load based on date and time
-    const selectedMenu = getMenuForDateTime(date, time);
+    // Determine which menu to load based on date and time (from database)
+    const selectedMenu = await getMenuForDateTime(date, time);
     
     try {
         showLoading(true);
@@ -1242,44 +1355,73 @@ async function loadEventMenuItems() {
     }
 }
 
-function getMenuForDateTime(date, time) {
+// Get menu for date/time from database schedule rules
+// Returns the first available menu ID (for backward compatibility)
+// Note: Use showSelectedMenu() for full menu selection with multiple menu support
+async function getMenuForDateTime(date, time) {
+    try {
+        console.log(`Checking menu for: ${date} at ${time}`);
+        
+        const response = await fetch(`${API_BASE_URL}/menus/for-datetime/${date}/${time}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            // Handle both single menu object and array of menus
+            const menus = Array.isArray(data.data) ? data.data : [data.data];
+            if (menus.length > 0) {
+                console.log('Selected menu from database:', menus[0].menu_name, '(ID:', menus[0].menu_id + ')');
+                return menus[0].menu_id;
+            }
+        }
+        
+        console.log('No menu available for this date and time');
+        return null;
+    } catch (error) {
+        console.error('Error fetching menu from schedule rules:', error);
+        // Fallback to hardcoded logic if API fails
+        return getMenuForDateTimeFallback(date, time);
+    }
+}
+
+// Fallback function with hardcoded logic (used if database lookup fails)
+function getMenuForDateTimeFallback(date, time) {
     const bookingDate = new Date(date);
     const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
     const hour = parseInt(time.split(':')[0]);
     const minute = parseInt(time.split(':')[1]);
     const timeInMinutes = hour * 60 + minute;
     
-    console.log(`Checking menu for: ${date} (day ${dayOfWeek}) at ${time} (${timeInMinutes} minutes)`);
+    console.log(`Using fallback logic for: ${date} (day ${dayOfWeek}) at ${time} (${timeInMinutes} minutes)`);
     
     // Sunday Lunch Menu: Sunday 12pm-5pm (PRIORITY - check first for Sunday)
     if (dayOfWeek === 0 && 
         (timeInMinutes >= 12 * 60 && timeInMinutes <= 17 * 60)) {
-        console.log('Selected: Sunday Lunch Menu');
+        console.log('Selected: Sunday Lunch Menu (fallback)');
         return 'sunday-lunch';
     }
     
     // Weekend Evening Menu: Friday, Saturday, Sunday 5pm-9pm
     if ((dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) && 
         (timeInMinutes >= 17 * 60 && timeInMinutes <= 21 * 60)) {
-        console.log('Selected: Weekend Evening Menu');
+        console.log('Selected: Weekend Evening Menu (fallback)');
         return 'weekend-evening';
     }
     
     // Tea Time Menu: Monday-Thursday 5pm-8.30pm
     if ((dayOfWeek >= 1 && dayOfWeek <= 4) && 
         (timeInMinutes >= 17 * 60 && timeInMinutes <= 20 * 60 + 30)) {
-        console.log('Selected: Tea Time Menu');
+        console.log('Selected: Tea Time Menu (fallback)');
         return 'tea-time';
     }
     
     // Lunch Menu: Monday-Saturday 12pm-4.45pm (NOT Sunday)
     if ((dayOfWeek >= 1 && dayOfWeek <= 6) && 
         (timeInMinutes >= 12 * 60 && timeInMinutes <= 16 * 60 + 45)) {
-        console.log('Selected: Lunch Menu');
+        console.log('Selected: Lunch Menu (fallback)');
         return 'lunch';
     }
     
-    console.log('No menu available for this date and time');
+    console.log('No menu available for this date and time (fallback)');
     return null; // No menu available for this time
 }
 
@@ -1441,7 +1583,7 @@ async function submitEventPreorder() {
     }
     
     // Determine which menu was selected
-    const selectedMenu = getMenuForDateTime(date, time);
+    const selectedMenu = await getMenuForDateTime(date, time);
     const experienceId = selectedMenu || 'event-preorder';
     
     // Collect preorder data

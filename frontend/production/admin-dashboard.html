@@ -482,8 +482,9 @@
             <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Menu Schedule Rules</h2>
             <p style="color: #666; font-size: 1.1em; margin-bottom: 25px;">Manage which menu is shown based on day and time</p>
             
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="openAddRuleModal()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">+ Add Schedule Rule</button>
+                <button class="btn btn-secondary" onclick="ensureAllMenuRules()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Auto-Add Missing Rules</button>
             </div>
             
             <div id="schedule-rules-list" class="schedule-rules-list">
@@ -846,6 +847,36 @@
             } catch (error) {
                 console.error('Error submitting schedule rule:', error);
                 showStatus('error', 'Failed to save schedule rule: ' + error.message);
+            }
+        }
+
+        // Ensure all menus have schedule rules
+        async function ensureAllMenuRules() {
+            if (!confirm('This will automatically add schedule rules for any menus that don\'t have them yet. Continue?')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules/ensure`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', data.message || 'Schedule rules ensured successfully');
+                    loadScheduleRules(); // Reload to show new rules
+                } else {
+                    showStatus('error', data.message || 'Failed to ensure schedule rules');
+                }
+            } catch (error) {
+                console.error('Error ensuring schedule rules:', error);
+                showStatus('error', 'Failed to ensure schedule rules: ' + error.message);
             }
         }
 

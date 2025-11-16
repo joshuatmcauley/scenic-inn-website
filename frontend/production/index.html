@@ -148,18 +148,29 @@
                     <p id="menu-instruction">Your menu has been automatically selected based on your date and time</p>
                 </div>
 
-                <div class="menu-info-card" id="menu-info-card">
-                    <h3 id="selected-menu-name">Menu Name</h3>
-                    <p id="selected-menu-description">Menu description will appear here</p>
+                <!-- Menu Selection (shown when multiple menus available) -->
+                <div id="menu-choice-section" style="display: none;">
+                    <p style="margin-bottom: 20px; color: #666;">Multiple menus are available for your selected time. Please choose one:</p>
+                    <div id="available-menus-list" class="available-menus-list">
+                        <!-- Menu options will be populated here -->
+                    </div>
                 </div>
 
-                <div class="form-group" id="menu-selection">
-                    <!-- Menu selection will be populated by JavaScript -->
+                <!-- Single Menu Display (shown when only one menu available) -->
+                <div id="single-menu-section">
+                    <div class="menu-info-card" id="menu-info-card">
+                        <h3 id="selected-menu-name">Menu Name</h3>
+                        <p id="selected-menu-description">Menu description will appear here</p>
+                    </div>
+
+                    <div class="form-group" id="menu-selection">
+                        <!-- Menu selection will be populated by JavaScript -->
+                    </div>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
-                    <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()" id="continue-menu-btn">Continue</button>
                 </div>
             </div>
 

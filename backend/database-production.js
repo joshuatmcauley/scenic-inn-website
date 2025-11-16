@@ -236,6 +236,114 @@ async function seedScheduleRules() {
   }
 }
 
+// Ensure all menus have schedule rules (can be called manually)
+async function ensureMenuScheduleRules() {
+  try {
+    // Get all menus
+    const menusResult = await pool.query('SELECT id, name FROM menus');
+    const menus = menusResult.rows;
+    
+    // Get existing rules
+    const rulesResult = await pool.query('SELECT menu_id FROM menu_schedule_rules WHERE active = true');
+    const menusWithRules = new Set(rulesResult.rows.map(r => r.menu_id));
+    
+    // Get menu IDs mapped by name
+    const menuMap = {};
+    menus.forEach(menu => {
+      const nameLower = menu.name.toLowerCase();
+      if (nameLower.includes('sunday lunch')) menuMap['sunday-lunch'] = menu.id;
+      else if (nameLower.includes('weekend evening')) menuMap['weekend-evening'] = menu.id;
+      else if (nameLower.includes('tea time')) menuMap['tea-time'] = menu.id;
+      else if (nameLower.includes('christmas dinner')) menuMap['christmas-dinner'] = menu.id;
+      else if (nameLower.includes('christmas lunch')) menuMap['christmas-lunch'] = menu.id;
+      else if (nameLower.includes('lunch') && !nameLower.includes('sunday') && !nameLower.includes('christmas')) menuMap['lunch'] = menu.id;
+    });
+    
+    const rulesToAdd = [];
+    
+    // Add default rules for menus that don't have them
+    if (menuMap['sunday-lunch'] && !menusWithRules.has(menuMap['sunday-lunch'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['sunday-lunch'],
+        days_of_week: '0',
+        start_time: '12:00:00',
+        end_time: '17:00:00',
+        priority: 10
+      });
+    }
+    
+    if (menuMap['weekend-evening'] && !menusWithRules.has(menuMap['weekend-evening'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['weekend-evening'],
+        days_of_week: '5,6,0',
+        start_time: '17:00:00',
+        end_time: '21:00:00',
+        priority: 5
+      });
+    }
+    
+    if (menuMap['tea-time'] && !menusWithRules.has(menuMap['tea-time'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['tea-time'],
+        days_of_week: '1,2,3,4',
+        start_time: '17:00:00',
+        end_time: '20:30:00',
+        priority: 3
+      });
+    }
+    
+    if (menuMap['lunch'] && !menusWithRules.has(menuMap['lunch'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['lunch'],
+        days_of_week: '1,2,3,4,5,6',
+        start_time: '12:00:00',
+        end_time: '16:45:00',
+        priority: 1
+      });
+    }
+    
+    if (menuMap['christmas-dinner'] && !menusWithRules.has(menuMap['christmas-dinner'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['christmas-dinner'],
+        days_of_week: '0,1,2,3,4,5,6',
+        start_time: '17:00:00',
+        end_time: '21:00:00',
+        priority: 15
+      });
+    }
+    
+    if (menuMap['christmas-lunch'] && !menusWithRules.has(menuMap['christmas-lunch'])) {
+      rulesToAdd.push({
+        menu_id: menuMap['christmas-lunch'],
+        days_of_week: '0,1,2,3,4,5,6',
+        start_time: '12:00:00',
+        end_time: '17:00:00',
+        priority: 12
+      });
+    }
+    
+    // Insert missing rules
+    for (const rule of rulesToAdd) {
+      await pool.query(`
+        INSERT INTO menu_schedule_rules (menu_id, days_of_week, start_time, end_time, priority, active)
+        VALUES ($1, $2, $3, $4, $5, true)
+        ON CONFLICT DO NOTHING
+      `, [rule.menu_id, rule.days_of_week, rule.start_time, rule.end_time, rule.priority]);
+    }
+    
+    if (rulesToAdd.length > 0) {
+      console.log(`✅ Added ${rulesToAdd.length} missing schedule rule(s)`);
+    } else {
+      console.log('✅ All menus already have schedule rules');
+    }
+    
+    return rulesToAdd.length;
+  } catch (error) {
+    console.error('❌ Error ensuring menu schedule rules:', error);
+    throw error;
+  }
+}
+
 // Seed database with initial data
 async function seedDatabase() {
   try {
@@ -671,6 +779,66 @@ const dbHelpers = {
     return result.rows[0];
   },
 
+  // Get menu for specific date and time based on schedule rules
+  // Returns single menu (for backward compatibility)
+  getMenuForDateTime: async (date, time) => {
+    const menus = await module.exports.getMenusForDateTime(date, time);
+    return menus.length > 0 ? menus[0] : null;
+  },
+
+  // Get all menus available for specific date and time (returns array)
+  getMenusForDateTime: async (date, time) => {
+    const bookingDate = new Date(date);
+    const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Parse time (format: "HH:MM" or "HH:MM:SS")
+    const timeParts = time.split(':');
+    const timeInMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+    
+    // Get all active schedule rules, ordered by priority (highest first)
+    const rulesResult = await pool.query(`
+      SELECT msr.*, m.id as menu_id, m.name as menu_name, m.schedule, m.pricing
+      FROM menu_schedule_rules msr
+      INNER JOIN menus m ON msr.menu_id = m.id
+      WHERE msr.active = true
+      ORDER BY msr.priority DESC, msr.start_time ASC
+    `);
+    
+    const rules = rulesResult.rows;
+    const matchingMenus = [];
+    
+    // Find all matching rules
+    for (const rule of rules) {
+      const days = rule.days_of_week.split(',').map(d => parseInt(d.trim()));
+      
+      // Check if this rule applies to the current day
+      if (!days.includes(dayOfWeek)) {
+        continue;
+      }
+      
+      // Parse rule times
+      const startTimeParts = rule.start_time.split(':');
+      const endTimeParts = rule.end_time.split(':');
+      const startTimeMinutes = parseInt(startTimeParts[0]) * 60 + parseInt(startTimeParts[1]);
+      const endTimeMinutes = parseInt(endTimeParts[0]) * 60 + parseInt(endTimeParts[1]);
+      
+      // Check if current time is within the rule's time range
+      if (timeInMinutes >= startTimeMinutes && timeInMinutes <= endTimeMinutes) {
+        matchingMenus.push({
+          menu_id: rule.menu_id,
+          menu_name: rule.menu_name,
+          menu_schedule: rule.schedule,
+          menu_pricing: rule.pricing,
+          rule_id: rule.id,
+          priority: rule.priority
+        });
+      }
+    }
+    
+    // Return all matching menus (sorted by priority)
+    return matchingMenus;
+  },
+
   // Create admin user
   createAdminUser: async (username, passwordHash, email) => {
     const result = await pool.query(
@@ -705,5 +873,6 @@ const dbHelpers = {
 module.exports = {
   pool,
   initializeDatabase,
-  dbHelpers
+  dbHelpers,
+  ensureMenuScheduleRules
 };

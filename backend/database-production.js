@@ -48,6 +48,27 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create specials table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS specials (
+        id TEXT PRIMARY KEY,
+        description TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create menu_specials junction table (many-to-many relationship)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS menu_specials (
+        special_id TEXT NOT NULL,
+        menu_id TEXT NOT NULL,
+        PRIMARY KEY (special_id, menu_id),
+        FOREIGN KEY (special_id) REFERENCES specials (id) ON DELETE CASCADE,
+        FOREIGN KEY (menu_id) REFERENCES menus (id) ON DELETE CASCADE
+      )
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS admin_users (
         id SERIAL PRIMARY KEY,
@@ -361,6 +382,95 @@ const dbHelpers = {
       [itemIds]
     );
     return result.rows;
+  },
+
+  // Create special
+  createSpecial: async (specialData) => {
+    const specialId = specialData.id || `special-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Insert special
+    const specialResult = await pool.query(`
+      INSERT INTO specials (
+        id, description, created_at, updated_at
+      ) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [
+      specialId,
+      specialData.description || null
+    ]);
+
+    const special = specialResult.rows[0];
+
+    // Link to menus if provided
+    if (specialData.menu_ids && Array.isArray(specialData.menu_ids) && specialData.menu_ids.length > 0) {
+      const menuLinks = specialData.menu_ids.map(menuId => [specialId, menuId]);
+      
+      for (const [specId, menuId] of menuLinks) {
+        await pool.query(`
+          INSERT INTO menu_specials (special_id, menu_id)
+          VALUES ($1, $2)
+          ON CONFLICT (special_id, menu_id) DO NOTHING
+        `, [specId, menuId]);
+      }
+    }
+
+    // Get associated menus for the special
+    const menusResult = await pool.query(`
+      SELECT m.id, m.name
+      FROM menus m
+      INNER JOIN menu_specials ms ON m.id = ms.menu_id
+      WHERE ms.special_id = $1
+    `, [specialId]);
+
+    special.menus = menusResult.rows;
+    return special;
+  },
+
+  // Get special by ID
+  getSpecialById: async (specialId) => {
+    const specialResult = await pool.query(`
+      SELECT * FROM specials WHERE id = $1
+    `, [specialId]);
+
+    if (specialResult.rows.length === 0) {
+      return null;
+    }
+
+    const special = specialResult.rows[0];
+
+    // Get associated menus
+    const menusResult = await pool.query(`
+      SELECT m.id, m.name
+      FROM menus m
+      INNER JOIN menu_specials ms ON m.id = ms.menu_id
+      WHERE ms.special_id = $1
+    `, [specialId]);
+
+    special.menus = menusResult.rows;
+    return special;
+  },
+
+  // Get all specials
+  getAllSpecials: async () => {
+    const specialsResult = await pool.query(`
+      SELECT * FROM specials
+      ORDER BY created_at DESC
+    `);
+
+    const specials = specialsResult.rows;
+
+    // Get menu associations for each special
+    for (const special of specials) {
+      const menusResult = await pool.query(`
+        SELECT m.id, m.name
+        FROM menus m
+        INNER JOIN menu_specials ms ON m.id = ms.menu_id
+        WHERE ms.special_id = $1
+      `, [special.id]);
+      special.menus = menusResult.rows;
+    }
+
+    return specials;
   },
 
   // Create admin user

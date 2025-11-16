@@ -289,4 +289,63 @@ router.delete('/menus/items', async (req, res) => {
   }
 });
 
+// Create special (admin)
+router.post('/specials', async (req, res) => {
+  try {
+    const { description, menu_ids } = req.body;
+
+    // Validate required fields
+    if (!description || !description.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Special description is required'
+      });
+    }
+
+    if (!menu_ids || !Array.isArray(menu_ids) || menu_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one menu must be selected'
+      });
+    }
+
+    const specialData = {
+      description: description.trim(),
+      menu_ids: menu_ids
+    };
+
+    const newSpecial = await dbHelpers.createSpecial(specialData);
+
+    res.json({
+      success: true,
+      message: 'Special created successfully',
+      data: newSpecial
+    });
+  } catch (error) {
+    console.error('Error creating special:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create special: ' + error.message
+    });
+  }
+});
+
+// Get all specials (admin)
+router.get('/specials', async (req, res) => {
+  try {
+    const specials = await dbHelpers.getAllSpecials();
+
+    res.json({
+      success: true,
+      data: specials
+    });
+  } catch (error) {
+    console.error('Error fetching specials:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch specials: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

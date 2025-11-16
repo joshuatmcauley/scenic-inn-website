@@ -39,7 +39,7 @@
         h1 {
             color: #8b4513;
             margin: 0;
-            font-size: 2.5em;
+            font-size: 2.8em;
         }
         
         .header-actions {
@@ -57,11 +57,14 @@
             background: #dc3545;
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
+            font-size: 1.1em;
+            font-weight: 600;
             transition: background 0.3s ease;
+            min-height: 44px; /* iPad touch target */
         }
         
         .logout-btn:hover {
@@ -70,16 +73,16 @@
         
         .menus-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
             margin-top: 30px;
         }
         
         .menu-card {
             background: #fffef7;
             border: 2px solid #d4af37;
-            border-radius: 10px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 25px;
             transition: all 0.3s ease;
         }
         
@@ -89,35 +92,37 @@
         }
         
         .menu-name {
-            font-size: 1.5em;
+            font-size: 1.8em;
             color: #8b4513;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-weight: 600;
         }
         
         .menu-schedule {
             color: #666;
-            font-size: 0.9em;
-            margin-bottom: 15px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
         
         .menu-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
         
         .action-btn {
             flex: 1;
-            min-width: 80px;
-            padding: 10px 15px;
+            min-width: 120px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 1.1em;
+            font-weight: 600;
             transition: all 0.3s ease;
+            min-height: 50px; /* iPad touch target */
         }
         
         .btn-add {
@@ -258,13 +263,13 @@
 
         .form-group textarea {
             width: 100%;
-            padding: 12px;
+            padding: 16px;
             border: 2px solid #d4af37;
             border-radius: 8px;
             font-family: 'Playfair Display', serif;
-            font-size: 1em;
+            font-size: 1.1em;
             resize: vertical;
-            min-height: 120px;
+            min-height: 140px;
         }
 
         .form-group textarea:focus {
@@ -296,9 +301,9 @@
         }
 
         .menu-checkbox-item input[type="checkbox"] {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
+            margin-right: 12px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
         }
 
@@ -323,26 +328,30 @@
             background: #6c757d;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 14px 28px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
-            font-size: 1em;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-height: 50px;
         }
-
+        
         .btn-cancel:hover {
             background: #545b62;
         }
-
+        
         .btn-submit {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 14px 28px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
-            font-size: 1em;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-height: 50px;
         }
 
         .btn-submit:hover {
@@ -353,13 +362,15 @@
             background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 18px 36px;
+            border-radius: 10px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
-            font-size: 1.1em;
+            font-size: 1.3em;
             font-weight: 600;
             transition: all 0.3s ease;
+            min-height: 60px; /* iPad touch target */
+            min-width: 200px;
         }
 
         .add-special-btn:hover {

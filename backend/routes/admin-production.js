@@ -350,10 +350,10 @@ router.get('/specials', async (req, res) => {
   }
 });
 
-// Get menu schedule rules (admin)
+// Get menu schedule rules (admin) - returns all rules (active and inactive)
 router.get('/menu-schedule-rules', async (req, res) => {
   try {
-    const rules = await dbHelpers.getMenuScheduleRules();
+    const rules = await dbHelpers.getAllMenuScheduleRules();
 
     res.json({
       success: true,

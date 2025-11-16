@@ -121,9 +121,95 @@ async function initializeDatabase() {
       await seedDatabase();
     }
     
+    // Check if we need to seed schedule rules
+    const rulesCount = await pool.query('SELECT COUNT(*) FROM menu_schedule_rules');
+    if (rulesCount.rows[0].count === '0') {
+      console.log('🌱 Seeding menu schedule rules...');
+      await seedScheduleRules();
+    }
+    
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     throw error;
+  }
+}
+
+// Seed menu schedule rules
+async function seedScheduleRules() {
+  try {
+    // Check if menus exist first
+    const menuCheck = await pool.query('SELECT id FROM menus LIMIT 1');
+    if (menuCheck.rows.length === 0) {
+      console.log('⚠️ No menus found, skipping schedule rules seed');
+      return;
+    }
+
+    // Get menu IDs (they might have different IDs in production)
+    const menusResult = await pool.query('SELECT id, name FROM menus');
+    const menus = {};
+    menusResult.rows.forEach(menu => {
+      const nameLower = menu.name.toLowerCase();
+      if (nameLower.includes('sunday lunch')) menus['sunday-lunch'] = menu.id;
+      else if (nameLower.includes('weekend evening')) menus['weekend-evening'] = menu.id;
+      else if (nameLower.includes('tea time')) menus['tea-time'] = menu.id;
+      else if (nameLower.includes('lunch') && !nameLower.includes('sunday')) menus['lunch'] = menu.id;
+    });
+
+    // Default schedule rules based on menu-schedule.txt
+    const defaultRules = [
+      // Sunday Lunch Menu: Sunday 12:00-17:00 (Priority 10 - highest, checked first)
+      {
+        menu_id: menus['sunday-lunch'] || 'sunday-lunch',
+        days_of_week: '0', // Sunday
+        start_time: '12:00:00',
+        end_time: '17:00:00',
+        priority: 10
+      },
+      // Weekend Evening Menu: Friday, Saturday, Sunday 17:00-21:00
+      {
+        menu_id: menus['weekend-evening'] || 'weekend-evening',
+        days_of_week: '5,6,0', // Friday, Saturday, Sunday
+        start_time: '17:00:00',
+        end_time: '21:00:00',
+        priority: 5
+      },
+      // Tea Time Menu: Monday-Thursday 17:00-20:30
+      {
+        menu_id: menus['tea-time'] || 'tea-time',
+        days_of_week: '1,2,3,4', // Monday-Thursday
+        start_time: '17:00:00',
+        end_time: '20:30:00',
+        priority: 3
+      },
+      // Lunch Menu: Monday-Saturday 12:00-16:45
+      {
+        menu_id: menus['lunch'] || 'lunch',
+        days_of_week: '1,2,3,4,5,6', // Monday-Saturday
+        start_time: '12:00:00',
+        end_time: '16:45:00',
+        priority: 1
+      }
+    ];
+
+    for (const rule of defaultRules) {
+      // Check if rule already exists
+      const existing = await pool.query(`
+        SELECT id FROM menu_schedule_rules 
+        WHERE menu_id = $1 AND days_of_week = $2 AND start_time = $3 AND end_time = $4
+      `, [rule.menu_id, rule.days_of_week, rule.start_time, rule.end_time]);
+
+      if (existing.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO menu_schedule_rules (menu_id, days_of_week, start_time, end_time, priority, active)
+          VALUES ($1, $2, $3, $4, $5, true)
+        `, [rule.menu_id, rule.days_of_week, rule.start_time, rule.end_time, rule.priority]);
+      }
+    }
+
+    console.log('✅ Menu schedule rules seeded successfully');
+  } catch (error) {
+    console.error('❌ Error seeding schedule rules:', error);
+    // Don't throw - this is not critical
   }
 }
 
@@ -500,6 +586,17 @@ const dbHelpers = {
       FROM menu_schedule_rules msr
       INNER JOIN menus m ON msr.menu_id = m.id
       WHERE msr.active = true
+      ORDER BY msr.priority DESC, msr.start_time ASC
+    `);
+    return result.rows;
+  },
+
+  // Get all menu schedule rules (including inactive)
+  getAllMenuScheduleRules: async () => {
+    const result = await pool.query(`
+      SELECT msr.*, m.name as menu_name
+      FROM menu_schedule_rules msr
+      INNER JOIN menus m ON msr.menu_id = m.id
       ORDER BY msr.priority DESC, msr.start_time ASC
     `);
     return result.rows;

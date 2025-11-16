@@ -746,6 +746,11 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const rulesData = await rulesResponse.json();
+                
+                if (!rulesData.success) {
+                    throw new Error(rulesData.message || 'Failed to load rules');
+                }
+                
                 const rule = rulesData.data.find(r => r.id === ruleId);
                 
                 if (!rule) {

@@ -152,7 +152,9 @@ async function seedScheduleRules() {
       if (nameLower.includes('sunday lunch')) menus['sunday-lunch'] = menu.id;
       else if (nameLower.includes('weekend evening')) menus['weekend-evening'] = menu.id;
       else if (nameLower.includes('tea time')) menus['tea-time'] = menu.id;
-      else if (nameLower.includes('lunch') && !nameLower.includes('sunday')) menus['lunch'] = menu.id;
+      else if (nameLower.includes('christmas dinner')) menus['christmas-dinner'] = menu.id;
+      else if (nameLower.includes('christmas lunch')) menus['christmas-lunch'] = menu.id;
+      else if (nameLower.includes('lunch') && !nameLower.includes('sunday') && !nameLower.includes('christmas')) menus['lunch'] = menu.id;
     });
 
     // Default schedule rules based on menu-schedule.txt
@@ -190,6 +192,27 @@ async function seedScheduleRules() {
         priority: 1
       }
     ];
+
+    // Add Christmas menu rules if they exist
+    if (menus['christmas-dinner']) {
+      defaultRules.push({
+        menu_id: menus['christmas-dinner'],
+        days_of_week: '0,1,2,3,4,5,6', // All days
+        start_time: '17:00:00',
+        end_time: '21:00:00',
+        priority: 15 // High priority for Christmas
+      });
+    }
+
+    if (menus['christmas-lunch']) {
+      defaultRules.push({
+        menu_id: menus['christmas-lunch'],
+        days_of_week: '0,1,2,3,4,5,6', // All days
+        start_time: '12:00:00',
+        end_time: '17:00:00',
+        priority: 12 // High priority for Christmas
+      });
+    }
 
     for (const rule of defaultRules) {
       // Check if rule already exists

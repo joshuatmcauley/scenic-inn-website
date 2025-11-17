@@ -36,6 +36,9 @@ function initializeApp() {
     // Load menu schedule (for future use)
     loadMenuSchedule();
     
+    // Populate event party size dropdown (1-100)
+    populateEventPartySize();
+    
     // Initialize step display - start with step 1
     currentStep = 1;
     updateStepDisplay();
@@ -44,6 +47,33 @@ function initializeApp() {
     const eventPreorder = document.getElementById('event-preorder');
     if (eventPreorder) {
         eventPreorder.style.display = 'none';
+    }
+}
+
+// Populate event party size dropdown with options 1-100
+function populateEventPartySize() {
+    const select = document.getElementById('event-party-size');
+    if (!select) return;
+    
+    // Clear existing options except the first one
+    const firstOption = select.querySelector('option[value=""]');
+    select.innerHTML = '';
+    if (firstOption) {
+        select.appendChild(firstOption);
+    } else {
+        // Add the placeholder option if it doesn't exist
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select party size';
+        select.appendChild(placeholder);
+    }
+    
+    // Add options from 1 to 100
+    for (let i = 1; i <= 100; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `${i} ${i === 1 ? 'person' : 'people'}`;
+        select.appendChild(option);
     }
 }
 

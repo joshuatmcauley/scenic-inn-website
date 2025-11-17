@@ -378,15 +378,16 @@
             background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
             color: white;
             border: none;
-            padding: 18px 36px;
-            border-radius: 10px;
+            padding: 22px 48px;
+            border-radius: 12px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
-            font-size: 1.3em;
+            font-size: 1.6em;
             font-weight: 600;
             transition: all 0.3s ease;
-            min-height: 60px; /* iPad touch target */
-            min-width: 200px;
+            min-height: 70px; /* iPad touch target */
+            min-width: 250px;
+            box-shadow: 0 4px 15px rgba(238, 90, 111, 0.2);
         }
 
         .add-special-btn:hover {
@@ -473,6 +474,11 @@
         
         <div id="status-message" class="status-message"></div>
         
+        <!-- Add Special Button - Top of Page -->
+        <div style="text-align: center; margin: 30px 0 40px 0;">
+            <button class="add-special-btn" onclick="openAddSpecialModal()">+ Add Special</button>
+        </div>
+        
         <div id="menus-container">
             <div class="loading">Loading menus...</div>
         </div>
@@ -492,9 +498,6 @@
             </div>
         </div>
         
-        <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
-            <button class="add-special-btn" onclick="openAddSpecialModal()">+ Add Special</button>
-        </div>
     </div>
 
     <!-- Add/Edit Schedule Rule Modal -->

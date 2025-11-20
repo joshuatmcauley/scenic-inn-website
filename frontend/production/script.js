@@ -1832,7 +1832,7 @@ async function submitEventPreorder() {
         first_name: firstName, // Support both formats
         lastName: lastName,
         last_name: lastName, // Support both formats
-        email: email,
+        email: email, // Customer's email from form
         phone: phone,
         specialRequests: specialRequests || '',
         special_requests: specialRequests || '', // Support both formats
@@ -1843,6 +1843,15 @@ async function submitEventPreorder() {
             items: preorderData
         }]
     };
+    
+    // Debug: Log the email being sent
+    console.log('📧 Event booking data being sent:', {
+        email: eventBookingData.email,
+        firstName: eventBookingData.firstName,
+        lastName: eventBookingData.lastName,
+        date: eventBookingData.date,
+        time: eventBookingData.time
+    });
     
     try {
         showLoading(true);

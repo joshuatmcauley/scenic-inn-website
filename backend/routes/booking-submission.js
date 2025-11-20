@@ -561,8 +561,10 @@ router.post('/', async (req, res) => {
         let bookingData = req.body?.bookingData || req.body;
         const preorderData = req.body?.preorderData || req.body?.preorder || [];
         
-        console.log('Received booking submission:', bookingData);
-      console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
+        console.log('=== BOOKING SUBMISSION RECEIVED ===');
+        console.log('Raw request body keys:', Object.keys(req.body));
+        console.log('bookingData:', JSON.stringify(bookingData, null, 2));
+        console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
         // Step 1: Dojo API integration not available
         const dojoResult = { 
@@ -600,19 +602,28 @@ router.post('/', async (req, res) => {
         
         // Step 4: Send confirmation email to customer
         try {
+            // Debug: Log the entire booking data to see what we're working with
+            console.log('=== CUSTOMER EMAIL DEBUG ===');
+            console.log('Full bookingData:', JSON.stringify(bookingData, null, 2));
+            console.log('bookingData.email:', bookingData.email);
+            console.log('bookingData.contactEmail:', bookingData.contactEmail);
+            console.log('bookingData.contact_email:', bookingData.contact_email);
+            
             // Extract customer email from booking data (support multiple field names)
             const customerEmail = bookingData.email || bookingData.contactEmail || bookingData.contact_email;
             
+            console.log('Extracted customerEmail:', customerEmail);
+            
             if (!customerEmail) {
-                console.warn('No customer email found in booking data, skipping confirmation email');
+                console.warn('❌ No customer email found in booking data, skipping confirmation email');
                 console.log('Booking data keys:', Object.keys(bookingData));
             } else {
                 // Validate email format
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(customerEmail)) {
-                    console.warn(`Invalid email format: ${customerEmail}, skipping confirmation email`);
+                    console.warn(`❌ Invalid email format: ${customerEmail}, skipping confirmation email`);
                 } else {
-                    console.log(`Sending confirmation email to customer: ${customerEmail}`);
+                    console.log(`✅ Sending confirmation email to customer: ${customerEmail}`);
                     
                     if (RESEND_API_KEY) {
                         const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();

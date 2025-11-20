@@ -57,11 +57,32 @@ async function sendEmailViaResend({ from, to, subject, text, html, attachments }
         // Resend supports attachments as { filename, content } base64
         payload.attachments = attachments.map(a => ({ filename: a.filename, content: a.content }));
     }
-    const res = await axios.post('https://api.resend.com/emails', payload, {
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        timeout: 15000
-    });
-    return res.data;
+    
+    try {
+        console.log(`[Resend] Sending email from ${from} to ${to}`);
+        const res = await axios.post('https://api.resend.com/emails', payload, {
+            headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            timeout: 15000
+        });
+        console.log(`[Resend] Email sent successfully. ID: ${res.data.id}`);
+        return res.data;
+    } catch (error) {
+        // Log detailed error information
+        if (error.response) {
+            console.error('[Resend] API Error Response:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            });
+            throw new Error(`Resend API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+        } else if (error.request) {
+            console.error('[Resend] No response received:', error.request);
+            throw new Error('Resend API: No response received');
+        } else {
+            console.error('[Resend] Error setting up request:', error.message);
+            throw error;
+        }
+    }
 }
 
 function pick(obj, keys, fallback = '') {
@@ -595,13 +616,19 @@ router.post('/', async (req, res) => {
                     
                     if (RESEND_API_KEY) {
                         const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();
-                        await sendEmailViaResend({
-                            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
-                            to: customerEmail, // Use extracted customer email
-                            subject: `Booking Confirmation - The Scenic Inn`,
-                            text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize || bookingData.party_size} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
-                        });
-                        console.log(`Confirmation email sent successfully to ${customerEmail}`);
+                        try {
+                            const result = await sendEmailViaResend({
+                                from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+                                to: customerEmail, // Use extracted customer email
+                                subject: `Booking Confirmation - The Scenic Inn`,
+                                text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize || bookingData.party_size} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                            });
+                            console.log(`✅ Confirmation email sent successfully to ${customerEmail}. Resend ID: ${result.id}`);
+                        } catch (emailError) {
+                            console.error(`❌ Failed to send confirmation email to ${customerEmail}:`, emailError.message);
+                            // Don't throw - we don't want to fail the booking if email fails
+                            // But log it clearly so we can see the issue
+                        }
                     } else {
                         const verify = await verifyTransporter();
                         if (!verify.ok) {

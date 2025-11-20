@@ -8,6 +8,9 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+// Import database helpers to fetch menu item details
+const { dbHelpers } = require('../database-production');
+
 // Dojo API configuration
 const dojoClient = axios.create({
     baseURL: 'https://api.dojo.tech/',
@@ -80,8 +83,8 @@ function cleanName(name) {
 }
 
 // Generate PDF for preorder (table layout)
-function generatePreorderPDF(bookingData, preorderData) {
-    return new Promise((resolve, reject) => {
+async function generatePreorderPDF(bookingData, preorderData) {
+    return new Promise(async (resolve, reject) => {
         try {
             const doc = new PDFDocument({ margin: 50 });
             const pdfPath = path.join(__dirname, '../temp', `preorder-${Date.now()}.pdf`);
@@ -110,6 +113,7 @@ function generatePreorderPDF(bookingData, preorderData) {
       const date = pick(bookingData, ['date'], '');
       const time = pick(bookingData, ['time'], '');
       const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
+      const experienceId = pick(bookingData, ['experience_id'], '');
 
       // Booking Information
             doc.fontSize(14)
@@ -141,46 +145,139 @@ function generatePreorderPDF(bookingData, preorderData) {
                    .text('Preorder Menu Selections:', { underline: true })
                    .moveDown();
                 
-        const starters = [];
-        const mains = [];
-        const sides = [];
-        const desserts = [];
-
-        preorderData.forEach((person, index) => {
-          const personNumber = person.person_number || index + 1;
-          const personName = person.person_name || null;
-          const personNotes = person.special_instructions || '';
+        // Check if this is a buffet menu (buffet items don't have course_type)
+        const isBuffetMenu = experienceId === 'buffet';
+        
+        if (isBuffetMenu) {
+          // For buffet, collect all items with quantities
+          const buffetItems = new Map(); // item name -> total quantity
           
-          // Format person identifier: only show name if available, otherwise empty string
-          const personLabel = personName ? personName : '';
-          
-          // Collect items by person to match sides with mains
-          let personStarter = null;
-          let personMain = null;
-          let personSide = null;
-          let personDessert = null;
-          
-          if (person.items && Array.isArray(person.items)) {
-            person.items.forEach(sel => {
-              const course = (sel.course_type || '').toLowerCase();
-              const name = cleanName(sel.item_name || sel.name || sel.menu_item_id || '');
-              if (course === 'starter') personStarter = name;
-              else if (course === 'main') personMain = name;
-              else if (course === 'side') personSide = name;
-              else if (course === 'dessert') personDessert = name;
-            });
-          } else {
-            if (person.starter) personStarter = cleanName(person.starter);
-            if (person.main) personMain = cleanName(person.main);
-            if (person.side) personSide = cleanName(person.side);
-            if (person.dessert) personDessert = cleanName(person.dessert);
+          for (const person of preorderData) {
+            if (person.items && Array.isArray(person.items)) {
+              for (const sel of person.items) {
+                let itemName = '';
+                const quantity = sel.quantity || 1;
+                
+                // Try to get item name from various sources
+                if (sel.item_name) {
+                  itemName = cleanName(sel.item_name);
+                } else if (sel.name) {
+                  itemName = cleanName(sel.name);
+                } else if (sel.menu_item_id) {
+                  // Fetch item name from database
+                  try {
+                    const item = await dbHelpers.getMenuItemById(sel.menu_item_id);
+                    if (item) {
+                      itemName = cleanName(item.name);
+                    } else {
+                      itemName = sel.menu_item_id; // Fallback to ID
+                    }
+                  } catch (err) {
+                    console.error('Error fetching menu item:', err);
+                    itemName = sel.menu_item_id; // Fallback to ID
+                  }
+                }
+                
+                if (itemName) {
+                  const currentQty = buffetItems.get(itemName) || 0;
+                  buffetItems.set(itemName, currentQty + quantity);
+                }
+              }
+            }
           }
           
-          // Add to arrays with side matched to main
-          if (personStarter) starters.push({ person: personLabel, item: personStarter, notes: personNotes });
-          if (personMain) mains.push({ person: personLabel, item: personMain, side: personSide, notes: personNotes });
-          if (personDessert) desserts.push({ person: personLabel, item: personDessert, notes: personNotes });
-        });
+          // Display buffet items in a simple list
+          if (buffetItems.size > 0) {
+            doc.font('Helvetica-Bold').fontSize(12).text('Buffet Items:').moveDown(0.3);
+            doc.font('Helvetica').fontSize(10);
+            
+            const x0 = doc.x;
+            const itemW = 300;
+            const qtyW = 80;
+            
+            // Header
+            doc.font('Helvetica-Bold').fontSize(9);
+            doc.text('Item', x0, doc.y, { width: itemW });
+            doc.text('Quantity', x0 + itemW, doc.y, { width: qtyW });
+            doc.moveDown(0.2);
+            
+            // Draw line
+            doc.lineWidth(0.5);
+            const lineY = doc.y;
+            doc.moveTo(x0, lineY).lineTo(x0 + itemW + qtyW, lineY).stroke();
+            doc.moveDown(0.2);
+            
+            // Items
+            doc.font('Helvetica').fontSize(10);
+            for (const [itemName, quantity] of buffetItems.entries()) {
+              doc.text(itemName, x0, doc.y, { width: itemW });
+              doc.text(`${quantity}x`, x0 + itemW, doc.y, { width: qtyW });
+              doc.moveDown(0.3);
+            }
+          }
+        } else {
+          // Regular menu with course types
+          const starters = [];
+          const mains = [];
+          const sides = [];
+          const desserts = [];
+
+          for (const person of preorderData) {
+            const personNumber = person.person_number || 1;
+            const personName = person.person_name || null;
+            const personNotes = person.special_instructions || '';
+            
+            // Format person identifier: only show name if available, otherwise empty string
+            const personLabel = personName ? personName : '';
+            
+            // Collect items by person to match sides with mains
+            let personStarter = null;
+            let personMain = null;
+            let personSide = null;
+            let personDessert = null;
+            
+            if (person.items && Array.isArray(person.items)) {
+              for (const sel of person.items) {
+                const course = (sel.course_type || '').toLowerCase();
+                let name = '';
+                
+                // Try to get item name
+                if (sel.item_name) {
+                  name = cleanName(sel.item_name);
+                } else if (sel.name) {
+                  name = cleanName(sel.name);
+                } else if (sel.menu_item_id) {
+                  // Fetch item name from database
+                  try {
+                    const item = await dbHelpers.getMenuItemById(sel.menu_item_id);
+                    if (item) {
+                      name = cleanName(item.name);
+                    } else {
+                      name = sel.menu_item_id; // Fallback to ID
+                    }
+                  } catch (err) {
+                    console.error('Error fetching menu item:', err);
+                    name = sel.menu_item_id; // Fallback to ID
+                  }
+                }
+                
+                if (course === 'starter') personStarter = name;
+                else if (course === 'main') personMain = name;
+                else if (course === 'side') personSide = name;
+                else if (course === 'dessert') personDessert = name;
+              }
+            } else {
+              if (person.starter) personStarter = cleanName(person.starter);
+              if (person.main) personMain = cleanName(person.main);
+              if (person.side) personSide = cleanName(person.side);
+              if (person.dessert) personDessert = cleanName(person.dessert);
+            }
+            
+            // Add to arrays with side matched to main
+            if (personStarter) starters.push({ person: personLabel, item: personStarter, notes: personNotes });
+            if (personMain) mains.push({ person: personLabel, item: personMain, side: personSide, notes: personNotes });
+            if (personDessert) desserts.push({ person: personLabel, item: personDessert, notes: personNotes });
+          }
 
         // Draw table with Person, Item, Sides, Notes columns
         const drawTable = (title, items, showSides = false) => {
@@ -290,32 +387,33 @@ function generatePreorderPDF(bookingData, preorderData) {
           doc.moveDown(totalHeight / 14 + 0.3); // advance roughly table height + spacing
         };
 
-        // Only show sections that have data
-        if (starters.length > 0) {
-          doc.font('Helvetica-Bold').text('Starters').moveDown(0.2);
-          drawTable('Starters', starters);
-          doc.moveDown(0.3);
-        }
-        
-        if (mains.length > 0) {
-          // Check if we need a new page for mains
-          if (doc.y > doc.page.height - 200) {
-            doc.addPage();
+          // Only show sections that have data
+          if (starters.length > 0) {
+            doc.font('Helvetica-Bold').text('Starters').moveDown(0.2);
+            drawTable('Starters', starters);
+            doc.moveDown(0.3);
           }
-          doc.font('Helvetica-Bold').text('Mains').moveDown(0.2);
-          drawTable('Mains', mains, true); // Show sides column for mains
-          doc.moveDown(0.3);
-        }
+          
+          if (mains.length > 0) {
+            // Check if we need a new page for mains
+            if (doc.y > doc.page.height - 200) {
+              doc.addPage();
+            }
+            doc.font('Helvetica-Bold').text('Mains').moveDown(0.2);
+            drawTable('Mains', mains, true); // Show sides column for mains
+            doc.moveDown(0.3);
+          }
 
-        // Sides are now included in the mains table, no separate table needed
-        
-        if (desserts.length > 0) {
-          // Check if we need a new page for desserts
-          if (doc.y > doc.page.height - 200) {
-            doc.addPage();
+          // Sides are now included in the mains table, no separate table needed
+          
+          if (desserts.length > 0) {
+            // Check if we need a new page for desserts
+            if (doc.y > doc.page.height - 200) {
+              doc.addPage();
+            }
+            doc.font('Helvetica-Bold').text('Desserts').moveDown(0.2);
+            drawTable('Desserts', desserts);
           }
-          doc.font('Helvetica-Bold').text('Desserts').moveDown(0.2);
-          drawTable('Desserts', desserts);
         }
             }
             

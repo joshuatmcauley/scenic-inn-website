@@ -498,6 +498,23 @@ body {
     margin: 30px auto;
 }
 
+/* Buffet Items Container */
+.buffet-items-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+}
+
+.buffet-items-container .form-group {
+    margin-bottom: 20px;
+}
+
+.buffet-items-container .form-group:last-child {
+    margin-bottom: 0;
+}
+
 .event-menu-grid {
     display: grid;
     gap: 20px;

@@ -1668,77 +1668,83 @@ function populateEventMenuSelection() {
         return;
     }
     
-    const menuGrid = document.createElement('div');
-    menuGrid.className = 'event-menu-grid';
-    
+    // Collect all buffet items from all categories into a single list
+    const allItems = [];
     menuItems.categories.forEach(category => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'event-category';
-        
-        const categoryTitle = document.createElement('div');
-        categoryTitle.className = 'event-category-title';
-        categoryTitle.textContent = category.name;
-        
-        const itemsGrid = document.createElement('div');
-        itemsGrid.className = 'event-items-grid';
-        
         category.items.forEach(item => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'event-item';
-            itemDiv.innerHTML = `
-                <div class="event-item-header">
-                    <div class="event-item-name">${item.name}</div>
-                    <div class="event-item-price">${item.price}</div>
-                </div>
-                <div class="event-item-description">${item.description || ''}</div>
-                <div class="event-item-controls">
-                    <div class="quantity-controls">
-                        <button type="button" class="quantity-btn" onclick="changeEventQuantity('${item.id}', -1)">-</button>
-                        <input type="number" class="quantity-input" id="qty-${item.id}" value="0" min="0" max="100" onchange="updateEventTotal()">
-                        <button type="button" class="quantity-btn" onclick="changeEventQuantity('${item.id}', 1)">+</button>
-                    </div>
-                </div>
-            `;
-            itemsGrid.appendChild(itemDiv);
+            allItems.push(item);
         });
-        
-        categoryDiv.appendChild(categoryTitle);
-        categoryDiv.appendChild(itemsGrid);
-        menuGrid.appendChild(categoryDiv);
     });
     
-    // Add total section
-    const totalDiv = document.createElement('div');
-    totalDiv.className = 'event-total';
-    totalDiv.innerHTML = `
-        <h3>Total Items</h3>
-        <div class="event-total-amount" id="event-total-amount">0</div>
+    if (allItems.length === 0) {
+        container.innerHTML = '<p class="text-center">No menu items available</p>';
+        return;
+    }
+    
+    // Create the "How many different items?" dropdown
+    const formGroup = document.createElement('div');
+    formGroup.className = 'form-group';
+    formGroup.innerHTML = `
+        <label for="buffet-item-count">How many different items?</label>
+        <select id="buffet-item-count" name="buffet_item_count" onchange="handleBuffetItemCountChange()">
+            <option value="">Select number of items</option>
+            <option value="1">1 item</option>
+            <option value="2">2 items</option>
+            <option value="3">3 items</option>
+            <option value="4">4 items</option>
+        </select>
     `;
+    container.appendChild(formGroup);
     
-    container.appendChild(menuGrid);
-    container.appendChild(totalDiv);
-    
-    updateEventTotal();
+    // Container for item selection dropdowns
+    const itemsContainer = document.createElement('div');
+    itemsContainer.id = 'buffet-items-container';
+    itemsContainer.className = 'buffet-items-container';
+    container.appendChild(itemsContainer);
 }
 
-function changeEventQuantity(itemId, change) {
-    const input = document.getElementById(`qty-${itemId}`);
-    const currentValue = parseInt(input.value) || 0;
-    const newValue = Math.max(0, currentValue + change);
-    input.value = newValue;
-    updateEventTotal();
+function handleBuffetItemCountChange() {
+    const count = parseInt(document.getElementById('buffet-item-count').value);
+    const container = document.getElementById('buffet-items-container');
+    
+    if (!count || count < 1 || count > 4) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    // Get all buffet items
+    const allItems = [];
+    if (menuItems.categories) {
+        menuItems.categories.forEach(category => {
+            category.items.forEach(item => {
+                allItems.push(item);
+            });
+        });
+    }
+    
+    // Clear existing dropdowns
+    container.innerHTML = '';
+    
+    // Create dropdowns for each item selection
+    for (let i = 1; i <= count; i++) {
+        const formGroup = document.createElement('div');
+        formGroup.className = 'form-group';
+        formGroup.innerHTML = `
+            <label for="buffet-item-${i}">Item ${i}:</label>
+            <select id="buffet-item-${i}" name="buffet_item_${i}" onchange="handleBuffetItemChange(${i})">
+                <option value="">Select an item</option>
+                ${allItems.map(item => `
+                    <option value="${item.id}" data-price="${item.priceValue || 0}">${item.name}${item.price && item.price !== 'Included' ? ' - ' + item.price : ''}</option>
+                `).join('')}
+            </select>
+        `;
+        container.appendChild(formGroup);
+    }
 }
 
-function updateEventTotal() {
-    let total = 0;
-    const inputs = document.querySelectorAll('.quantity-input');
-    
-    inputs.forEach(input => {
-        const quantity = parseInt(input.value) || 0;
-        total += quantity;
-    });
-    
-    document.getElementById('event-total-amount').textContent = total;
+function handleBuffetItemChange(itemNumber) {
+    // Optional: Add any validation or price calculation here if needed
+    console.log(`Buffet item ${itemNumber} selected`);
 }
 
 async function submitEventPreorder() {
@@ -1755,21 +1761,43 @@ async function submitEventPreorder() {
     // Event/Buffet preorder always uses the buffet menu
     const experienceId = 'buffet';
     
-    // Collect preorder data
-    const preorderData = [];
-    const inputs = document.querySelectorAll('.quantity-input');
+    // Get number of items selected
+    const itemCount = parseInt(document.getElementById('buffet-item-count').value);
+    if (!itemCount || itemCount < 1 || itemCount > 4) {
+        showError('Please select how many different items you want (1-4)');
+        return;
+    }
     
-    inputs.forEach(input => {
-        const quantity = parseInt(input.value) || 0;
-        if (quantity > 0) {
-            const itemId = input.id.replace('qty-', '');
-            preorderData.push({
-                menu_item_id: itemId,
-                quantity: quantity,
-                special_instructions: ''
-            });
+    // Collect preorder data from dropdowns
+    const preorderData = [];
+    const selectedItems = new Set(); // Track to prevent duplicates
+    
+    for (let i = 1; i <= itemCount; i++) {
+        const select = document.getElementById(`buffet-item-${i}`);
+        if (!select || !select.value) {
+            showError(`Please select item ${i}`);
+            return;
         }
-    });
+        
+        const itemId = select.value;
+        
+        // Check for duplicates
+        if (selectedItems.has(itemId)) {
+            showError('Please select different items (no duplicates allowed)');
+            return;
+        }
+        selectedItems.add(itemId);
+        
+        // Get the selected option to find item name
+        const selectedOption = select.options[select.selectedIndex];
+        const itemName = selectedOption.text.split(' - ')[0]; // Remove price from display
+        
+        preorderData.push({
+            menu_item_id: itemId,
+            quantity: partySize, // Quantity is the party size (all people get this item)
+            special_instructions: ''
+        });
+    }
     
     if (preorderData.length === 0) {
         showError('Please select at least one item for your event');

@@ -1268,8 +1268,14 @@ function showEventPreorder() {
     // Hide progress bar
     document.querySelector('.progress-container').style.display = 'none';
     
-    // Load menu items for event preorder
-    loadEventMenuItems();
+    // Clear any existing menu items display
+    const menuSelection = document.getElementById('event-menu-selection');
+    if (menuSelection) {
+        menuSelection.innerHTML = '<p class="text-center">Please select a date and time to view menu items</p>';
+    }
+    
+    // Don't load menu items yet - wait for user to select date and time
+    // Menu items will be loaded automatically when both date and time are selected
 }
 
 function showRegularBooking() {

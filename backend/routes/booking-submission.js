@@ -579,26 +579,44 @@ router.post('/', async (req, res) => {
         
         // Step 4: Send confirmation email to customer
         try {
-            if (RESEND_API_KEY) {
-                const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();
-                await sendEmailViaResend({
-                    from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
-                    to: bookingData.email,
-                    subject: `Booking Confirmation - The Scenic Inn`,
-                    text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
-                });
+            // Extract customer email from booking data (support multiple field names)
+            const customerEmail = bookingData.email || bookingData.contactEmail || bookingData.contact_email;
+            
+            if (!customerEmail) {
+                console.warn('No customer email found in booking data, skipping confirmation email');
+                console.log('Booking data keys:', Object.keys(bookingData));
             } else {
-                const verify = await verifyTransporter();
-                if (!verify.ok) {
-                    console.warn('Email transporter not verified, continuing but email may fail');
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(customerEmail)) {
+                    console.warn(`Invalid email format: ${customerEmail}, skipping confirmation email`);
+                } else {
+                    console.log(`Sending confirmation email to customer: ${customerEmail}`);
+                    
+                    if (RESEND_API_KEY) {
+                        const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();
+                        await sendEmailViaResend({
+                            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+                            to: customerEmail, // Use extracted customer email
+                            subject: `Booking Confirmation - The Scenic Inn`,
+                            text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize || bookingData.party_size} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                        });
+                        console.log(`Confirmation email sent successfully to ${customerEmail}`);
+                    } else {
+                        const verify = await verifyTransporter();
+                        if (!verify.ok) {
+                            console.warn('Email transporter not verified, continuing but email may fail');
+                        }
+                        const emailOptions = {
+                            from: process.env.EMAIL_USER || 'your-email@gmail.com',
+                            to: customerEmail, // Use extracted customer email
+                            subject: `Booking Confirmation - The Scenic Inn`,
+                            text: `Dear ${(bookingData.firstName || bookingData.first_name || 'guest')},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize || bookingData.party_size} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
+                        };
+                        await emailTransporter.sendMail(emailOptions);
+                        console.log(`Confirmation email sent successfully to ${customerEmail}`);
+                    }
                 }
-                const customerEmail = {
-                    from: process.env.EMAIL_USER || 'your-email@gmail.com',
-                    to: bookingData.email,
-                    subject: `Booking Confirmation - The Scenic Inn`,
-                    text: `Dear ${(bookingData.firstName || bookingData.first_name || 'guest')},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
-                };
-                await emailTransporter.sendMail(customerEmail);
             }
         } catch (error) {
             console.error('Error sending customer confirmation:', error);

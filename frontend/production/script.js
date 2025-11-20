@@ -1390,25 +1390,122 @@ async function loadEventMenuItems() {
     }
     
     // Determine which menu to load based on date and time (from database)
-    const selectedMenu = await getMenuForDateTime(date, time);
+    const selectedMenuId = await getMenuForDateTime(date, time);
+    
+    if (!selectedMenuId) {
+        showError('No menu available for the selected date and time');
+        return;
+    }
     
     try {
         showLoading(true);
         
-        // For now, we'll use mock data. Later this will connect to your database
-        const menuData = getMockMenuData(selectedMenu);
+        // Fetch menu info
+        const menuInfoResponse = await fetch(`${API_BASE_URL}/menus/${selectedMenuId}`);
+        let menuInfoData = await menuInfoResponse.json();
+        console.log('Menu info response:', menuInfoData);
         
-        if (menuData) {
-            menuItems = menuData;
+        // Fetch menu items for preorder
+        console.log('Fetching event menu items from:', `${API_BASE_URL}/menus/${selectedMenuId}/items?forPreorder=true`);
+        const response = await fetch(`${API_BASE_URL}/menus/${selectedMenuId}/items?forPreorder=true`);
+        let data = await response.json();
+        console.log('Event menu items response:', data);
+        
+        if (response.ok && data && data.success !== false) {
+            // Handle both shapes: { success, data: [...] } or direct array
+            let raw = Array.isArray(data) ? data : (data.data || []);
+
+            // Transform flat list of items with section_key/section_name into categories
+            if (raw.length > 0 && raw[0].section_key) {
+                const grouped = {};
+                raw.forEach(item => {
+                    const sectionKey = (item.section_key || '').toString().toLowerCase();
+                    // Format section name: use section_name if available, otherwise format section_key
+                    let sectionName = item.section_name;
+                    if (!sectionName && item.section_key) {
+                        // Convert "section-key" to "Section Key"
+                        sectionName = item.section_key
+                            .split('-')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ');
+                    }
+                    if (!sectionName) {
+                        sectionName = sectionKey;
+                    }
+                    
+                    if (!grouped[sectionKey]) {
+                        grouped[sectionKey] = { 
+                            name: sectionName, 
+                            items: [] 
+                        };
+                    }
+                    
+                    // Format price for display
+                    let priceDisplay = '';
+                    if (item.price && parseFloat(item.price) > 0) {
+                        priceDisplay = `£${parseFloat(item.price).toFixed(2)}`;
+                    } else {
+                        priceDisplay = 'Included';
+                    }
+                    
+                    grouped[sectionKey].items.push({
+                        id: item.id,
+                        name: item.name,
+                        description: item.description || '',
+                        price: priceDisplay,
+                        priceValue: parseFloat(item.price) || 0
+                    });
+                });
+                menuItems = { categories: Object.values(grouped) };
+                console.log('Event menu items grouped:', menuItems);
+            } else {
+                // Already grouped by sections with items
+                menuItems = {
+                    categories: raw.map(section => ({
+                        name: section.section_name || section.name || section.section_key || 'Items',
+                        items: (section.items || []).map(item => {
+                            let priceDisplay = '';
+                            if (item.price && parseFloat(item.price) > 0) {
+                                priceDisplay = `£${parseFloat(item.price).toFixed(2)}`;
+                            } else {
+                                priceDisplay = 'Included';
+                            }
+                            return {
+                                id: item.id,
+                                name: item.name,
+                                description: item.description || '',
+                                price: priceDisplay,
+                                priceValue: parseFloat(item.price) || 0
+                            };
+                        })
+                    }))
+                };
+            }
+            
+            // Store menu info
+            if (menuInfoResponse.ok && menuInfoData.success) {
+                menuItems.menuInfo = menuInfoData.data;
+            }
+            
+            console.log('Event menu items loaded:', menuItems);
+            
+            // Check if we actually have items
+            if (!menuItems.categories || menuItems.categories.length === 0) {
+                console.warn('No menu items found in response');
+                showError('No menu items available for this menu. Please contact support.');
+                return;
+            }
+            
             populateEventMenuSelection();
             
             // Show which menu is being displayed
-            showMenuInfo(selectedMenu);
+            showMenuInfo(selectedMenuId, menuItems.menuInfo);
         } else {
-            showError('No menu available for the selected date and time');
+            console.error('Failed to load event menu items. Status:', response.status, 'Data:', data);
+            showError(data.message || 'Failed to load menu items. Please try again or contact support.');
         }
     } catch (error) {
-        console.error('Error loading menu items:', error);
+        console.error('Error loading event menu items:', error);
         showError('Failed to load menu items');
     } finally {
         showLoading(false);
@@ -1528,10 +1625,7 @@ function parseMenuSchedule(text) {
     return schedule;
 }
 
-function showMenuInfo(menuType) {
-    const menuData = getMockMenuData(menuType);
-    if (!menuData) return;
-    
+function showMenuInfo(menuId, menuData) {
     // Create or update menu info display
     let menuInfo = document.getElementById('menu-info');
     if (!menuInfo) {
@@ -1540,15 +1634,48 @@ function showMenuInfo(menuType) {
         menuInfo.className = 'menu-info';
         
         const container = document.getElementById('event-menu-selection');
-        container.parentNode.insertBefore(menuInfo, container);
+        if (container && container.parentNode) {
+            container.parentNode.insertBefore(menuInfo, container);
+        }
     }
     
-    menuInfo.innerHTML = `
-        <div class="menu-info-card">
-            <h3>${menuData.name}</h3>
-            <p>${menuData.description}</p>
-        </div>
-    `;
+    // If menuData is provided, use it; otherwise fetch it
+    if (menuData) {
+        const menuName = menuData.name || menuId;
+        const menuDescription = menuData.description || menuData.schedule || '';
+        
+        menuInfo.innerHTML = `
+            <div class="menu-info-card">
+                <h3>${menuName}</h3>
+                ${menuDescription ? `<p>${menuDescription}</p>` : ''}
+            </div>
+        `;
+    } else if (menuId) {
+        // Fetch menu info if not provided
+        fetch(`${API_BASE_URL}/menus/${menuId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    const menuName = data.data.name || menuId;
+                    const menuDescription = data.data.description || data.data.schedule || '';
+                    menuInfo.innerHTML = `
+                        <div class="menu-info-card">
+                            <h3>${menuName}</h3>
+                            ${menuDescription ? `<p>${menuDescription}</p>` : ''}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching menu info:', err);
+                // Show menu ID as fallback
+                menuInfo.innerHTML = `
+                    <div class="menu-info-card">
+                        <h3>${menuId}</h3>
+                    </div>
+                `;
+            });
+    }
 }
 
 function populateEventMenuSelection() {

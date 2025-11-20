@@ -1268,14 +1268,8 @@ function showEventPreorder() {
     // Hide progress bar
     document.querySelector('.progress-container').style.display = 'none';
     
-    // Clear any existing menu items display
-    const menuSelection = document.getElementById('event-menu-selection');
-    if (menuSelection) {
-        menuSelection.innerHTML = '<p class="text-center">Please select a date and time to view menu items</p>';
-    }
-    
-    // Don't load menu items yet - wait for user to select date and time
-    // Menu items will be loaded automatically when both date and time are selected
+    // Load buffet menu items immediately (buffet is always available, not date/time dependent)
+    loadEventMenuItems();
 }
 
 function showRegularBooking() {
@@ -1313,19 +1307,13 @@ function handleEventDateChange() {
         populateEventTimeSelect();
     }
     
-    // Also load menu items if time is already selected
-    const time = document.getElementById('event-time').value;
-    if (date && time) {
-        loadEventMenuItems();
-    }
+    // Note: Menu items are already loaded (buffet menu is always available)
+    // No need to reload menu items when date/time changes
 }
 
 function handleEventTimeChange() {
-    const date = document.getElementById('event-date').value;
-    const time = document.getElementById('event-time').value;
-    if (date && time) {
-        loadEventMenuItems();
-    }
+    // Note: Menu items are already loaded (buffet menu is always available)
+    // No need to reload menu items when date/time changes
 }
 
 
@@ -1387,21 +1375,8 @@ function populateEventTimeSelect() {
 }
 
 async function loadEventMenuItems() {
-    const date = document.getElementById('event-date').value;
-    const time = document.getElementById('event-time').value;
-    
-    if (!date || !time) {
-        showError('Please select date and time first');
-        return;
-    }
-    
-    // Determine which menu to load based on date and time (from database)
-    const selectedMenuId = await getMenuForDateTime(date, time);
-    
-    if (!selectedMenuId) {
-        showError('No menu available for the selected date and time');
-        return;
-    }
+    // Event/Buffet preorder always uses the buffet menu, regardless of date/time
+    const selectedMenuId = 'buffet';
     
     try {
         showLoading(true);
@@ -1411,8 +1386,8 @@ async function loadEventMenuItems() {
         let menuInfoData = await menuInfoResponse.json();
         console.log('Menu info response:', menuInfoData);
         
-        // Fetch menu items for preorder
-        console.log('Fetching event menu items from:', `${API_BASE_URL}/menus/${selectedMenuId}/items?forPreorder=true`);
+        // Fetch menu items for preorder (buffet menu)
+        console.log('Fetching event/buffet menu items from:', `${API_BASE_URL}/menus/${selectedMenuId}/items?forPreorder=true`);
         const response = await fetch(`${API_BASE_URL}/menus/${selectedMenuId}/items?forPreorder=true`);
         let data = await response.json();
         console.log('Event menu items response:', data);
@@ -1777,9 +1752,8 @@ async function submitEventPreorder() {
         return;
     }
     
-    // Determine which menu was selected
-    const selectedMenu = await getMenuForDateTime(date, time);
-    const experienceId = selectedMenu || 'event-preorder';
+    // Event/Buffet preorder always uses the buffet menu
+    const experienceId = 'buffet';
     
     // Collect preorder data
     const preorderData = [];

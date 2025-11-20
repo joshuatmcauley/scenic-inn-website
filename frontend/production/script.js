@@ -1758,6 +1758,27 @@ async function submitEventPreorder() {
         return;
     }
     
+    // Collect customer details
+    const firstName = document.getElementById('event-first-name').value.trim();
+    const lastName = document.getElementById('event-last-name').value.trim();
+    const email = document.getElementById('event-email').value.trim();
+    const phone = document.getElementById('event-phone').value.trim();
+    const specialRequests = document.getElementById('event-special-requests').value.trim();
+    const marketingConsent = document.getElementById('event-marketing-consent').checked;
+    
+    // Validate customer details
+    if (!firstName || !lastName || !email || !phone) {
+        showError('Please fill in all contact details');
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showError('Please enter a valid email address');
+        return;
+    }
+    
     // Event/Buffet preorder always uses the buffet menu
     const experienceId = 'buffet';
     
@@ -1788,10 +1809,6 @@ async function submitEventPreorder() {
         }
         selectedItems.add(itemId);
         
-        // Get the selected option to find item name
-        const selectedOption = select.options[select.selectedIndex];
-        const itemName = selectedOption.text.split(' - ')[0]; // Remove price from display
-        
         preorderData.push({
             menu_item_id: itemId,
             quantity: partySize, // Quantity is the party size (all people get this item)
@@ -1804,29 +1821,34 @@ async function submitEventPreorder() {
         return;
     }
     
-    // Prepare booking data
+    // Prepare booking data (matching backend expected format)
     eventBookingData = {
-        party_size: partySize,
+        partySize: partySize,
+        party_size: partySize, // Support both formats
         experience_id: experienceId,
         date: date,
         time: time,
+        firstName: firstName,
+        first_name: firstName, // Support both formats
+        lastName: lastName,
+        last_name: lastName, // Support both formats
+        email: email,
+        phone: phone,
+        specialRequests: specialRequests || '',
+        special_requests: specialRequests || '', // Support both formats
+        marketing_consent: marketingConsent,
         preorder_enabled: true,
         preorder: [{
             person_number: 1,
             items: preorderData
-        }],
-        // Add contact details (you might want to add a form for this)
-        first_name: 'Event',
-        last_name: 'Booking',
-        email: 'event@scenicinn.com',
-        phone: '000-000-0000',
-        special_requests: 'Event preorder booking',
-        marketing_consent: false
+        }]
     };
     
     try {
         showLoading(true);
         
+        // Format data for backend (backend accepts bookingData directly or wrapped)
+        // Send in same format as regular booking for consistency
         const response = await fetch(`${API_BASE_URL}/booking-submission`, {
             method: 'POST',
             headers: {
@@ -1837,8 +1859,8 @@ async function submitEventPreorder() {
         
         const result = await response.json();
         
-        if (response.ok) {
-            showEventConfirmation(result.booking || { id: 'EVENT-' + Date.now() });
+        if (response.ok && result.success) {
+            showEventConfirmation(result);
         } else {
             showError(result.message || 'Failed to create event booking');
         }
@@ -1850,14 +1872,22 @@ async function submitEventPreorder() {
     }
 }
 
-function showEventConfirmation(booking) {
+function showEventConfirmation(result) {
     const container = document.getElementById('event-menu-selection');
+    const bookingRef = result.bookingReference || result.booking?.id || 'EVENT-' + Date.now();
+    
+    // Count total items selected
+    const itemCount = parseInt(document.getElementById('buffet-item-count').value) || 0;
+    
     container.innerHTML = `
         <div class="confirmation-details">
             <h2 style="color: #4CAF50; text-align: center; margin-bottom: 20px;">🎉 Event Preorder Confirmed!</h2>
+            <p style="text-align: center; margin-bottom: 20px; color: #666;">
+                A confirmation email has been sent to ${eventBookingData.email}
+            </p>
             <div class="confirmation-item">
                 <span class="confirmation-label">Booking Reference:</span>
-                <span class="confirmation-value">${booking.id || 'N/A'}</span>
+                <span class="confirmation-value">${bookingRef}</span>
             </div>
             <div class="confirmation-item">
                 <span class="confirmation-label">Date & Time:</span>
@@ -1868,19 +1898,41 @@ function showEventConfirmation(booking) {
                 <span class="confirmation-value">${eventBookingData.party_size} people</span>
             </div>
             <div class="confirmation-item">
-                <span class="confirmation-label">Total Items:</span>
-                <span class="confirmation-value">${document.getElementById('event-total-amount').textContent} items</span>
+                <span class="confirmation-label">Items Selected:</span>
+                <span class="confirmation-value">${itemCount} different items</span>
             </div>
             <div class="confirmation-item">
-                <span class="confirmation-label">Preorder:</span>
-                <span class="confirmation-value">Yes - Event Preorder</span>
+                <span class="confirmation-label">Contact:</span>
+                <span class="confirmation-value">${eventBookingData.first_name} ${eventBookingData.last_name} - ${eventBookingData.email}</span>
+            </div>
+            ${eventBookingData.special_requests ? `
+            <div class="confirmation-item">
+                <span class="confirmation-label">Special Requests:</span>
+                <span class="confirmation-value">${eventBookingData.special_requests}</span>
+            </div>
+            ` : ''}
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <p style="margin: 0; color: #666; text-align: center;">
+                    <strong>What happens next?</strong><br>
+                    We've received your event preorder and will prepare everything for your arrival. 
+                    A detailed preorder PDF has been sent to the restaurant, and you'll receive a confirmation email shortly.
+                </p>
             </div>
         </div>
     `;
     
+    // Hide the form and show confirmation
+    const form = document.querySelector('#event-preorder form');
+    if (form) {
+        form.style.display = 'none';
+    }
+    
     // Update form actions
     const formActions = document.querySelector('#event-preorder .form-actions');
-    formActions.innerHTML = `
-        <button type="button" class="btn btn-primary" onclick="showEventPreorder()">Make Another Event Booking</button>
-    `;
+    if (formActions) {
+        formActions.innerHTML = `
+            <button type="button" class="btn btn-primary" onclick="showEventPreorder()">Make Another Event Booking</button>
+        `;
+    }
 }
+

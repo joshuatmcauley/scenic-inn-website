@@ -627,16 +627,30 @@ router.post('/', async (req, res) => {
                     
                     if (RESEND_API_KEY) {
                         const firstName = (bookingData.firstName || bookingData.first_name || '').toString().trim();
+                        const emailFrom = process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>';
+                        
+                        console.log(`📧 Confirmation email details:`);
+                        console.log(`   From: ${emailFrom}`);
+                        console.log(`   To: ${customerEmail}`);
+                        console.log(`   Subject: Booking Confirmation - The Scenic Inn`);
+                        
                         try {
                             const result = await sendEmailViaResend({
-                                from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+                                from: emailFrom,
                                 to: customerEmail, // Use extracted customer email
                                 subject: `Booking Confirmation - The Scenic Inn`,
                                 text: `Dear ${firstName || 'guest'},\n\nThank you for your booking at The Scenic Inn.\n\nBooking Details:\nDate: ${bookingData.date}\nTime: ${bookingData.time}\nParty Size: ${bookingData.partySize || bookingData.party_size} people\n\nWe look forward to seeing you!\n\nBest regards,\nThe Scenic Inn Team`
                             });
-                            console.log(`✅ Confirmation email sent successfully to ${customerEmail}. Resend ID: ${result.id}`);
+                            console.log(`✅ Confirmation email sent successfully to ${customerEmail}`);
+                            console.log(`   Resend Email ID: ${result.id}`);
+                            console.log(`   Check Resend dashboard: https://resend.com/emails/${result.id}`);
                         } catch (emailError) {
-                            console.error(`❌ Failed to send confirmation email to ${customerEmail}:`, emailError.message);
+                            console.error(`❌ FAILED to send confirmation email to ${customerEmail}`);
+                            console.error(`   Error:`, emailError.message);
+                            if (emailError.response) {
+                                console.error(`   Status: ${emailError.response.status}`);
+                                console.error(`   Response Data:`, JSON.stringify(emailError.response.data, null, 2));
+                            }
                             // Don't throw - we don't want to fail the booking if email fails
                             // But log it clearly so we can see the issue
                         }

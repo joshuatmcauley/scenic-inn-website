@@ -575,14 +575,25 @@ router.post('/', async (req, res) => {
         
         // Step 2: Handle preorder if present
         let preorderResult = null;
+        console.log('=== PREORDER CHECK ===');
+        console.log('preorderData:', JSON.stringify(preorderData, null, 2));
+        console.log('preorderData type:', typeof preorderData);
+        console.log('preorderData is array:', Array.isArray(preorderData));
+        console.log('preorderData length:', preorderData ? preorderData.length : 0);
+        
         if (preorderData && preorderData.length > 0) {
+            console.log('✅ Preorder data found, generating PDF...');
             try {
                 // Generate PDF
                 const pdfPath = await generatePreorderPDF(bookingData, preorderData);
+                console.log('✅ PDF generated at:', pdfPath);
                 
                 // Send email with PDF
-              preorderResult = await sendPreorderEmail(pdfPath, bookingData);
-              console.log('Preorder email result:', preorderResult);
+                console.log('📧 Sending restaurant email with PDF...');
+                console.log('   To:', process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER);
+                console.log('   From:', process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>');
+                preorderResult = await sendPreorderEmail(pdfPath, bookingData);
+                console.log('✅ Preorder email result:', preorderResult);
                 
                 // Clean up PDF file after sending
                 setTimeout(() => {
@@ -592,9 +603,13 @@ router.post('/', async (req, res) => {
                 }, 5000);
                 
             } catch (error) {
-                console.error('Error handling preorder:', error);
+                console.error('❌ Error handling preorder:', error);
+                console.error('   Error stack:', error.stack);
                 preorderResult = { success: false, error: error.message };
             }
+        } else {
+            console.warn('⚠️ No preorder data found - skipping PDF generation');
+            console.warn('   This means the restaurant email with PDF will NOT be sent');
         }
         
         // Step 3: Store booking locally (backup)

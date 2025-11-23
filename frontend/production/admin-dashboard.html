@@ -637,7 +637,8 @@
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                 </select>
-                <input type="date" id="booking-filter-date" onchange="loadBookings()" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
+                <input type="date" id="booking-filter-date" onchange="loadBookings()" placeholder="Filter by date (optional)" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
+                <button class="btn btn-secondary" onclick="clearBookingFilters()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Clear Filters</button>
                 <button class="btn btn-secondary" onclick="loadBookings()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Refresh</button>
             </div>
             
@@ -1219,6 +1220,8 @@
                 if (dateFilter) params.push(`date=${dateFilter}`);
                 if (params.length > 0) url += '?' + params.join('&');
                 
+                console.log('Loading bookings from:', url);
+                
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -1226,10 +1229,13 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load bookings');
+                    const errorText = await response.text();
+                    console.error('Failed to load bookings:', response.status, errorText);
+                    throw new Error(`Failed to load bookings: ${response.status}`);
                 }
                 
                 const result = await response.json();
+                console.log('Bookings API response:', result);
                 
                 if (!result.success || !result.data || result.data.length === 0) {
                     bookingsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; font-size: 1.2em;">No bookings found</div>';
@@ -1327,6 +1333,13 @@
                 document.getElementById('bookings-list').innerHTML = 
                     `<div style="text-align: center; padding: 40px; color: #dc3545; font-size: 1.2em;">Error loading bookings: ${error.message}</div>`;
             }
+        }
+        
+        // Clear booking filters
+        function clearBookingFilters() {
+            document.getElementById('booking-filter-status').value = '';
+            document.getElementById('booking-filter-date').value = '';
+            loadBookings();
         }
         
         // Update Booking Status

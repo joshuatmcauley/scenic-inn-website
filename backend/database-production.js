@@ -178,22 +178,33 @@ async function initializeDatabase() {
           ALTER TABLE bookings ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
         END IF;
         
-        -- Rename contact_name to first_name if contact_name exists and first_name doesn't
+        -- Handle old contact_name column - make it nullable
         IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name='bookings' AND column_name='contact_name')
-           AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                          WHERE table_name='bookings' AND column_name='first_name') THEN
-          ALTER TABLE bookings ADD COLUMN first_name TEXT;
-          UPDATE bookings SET first_name = contact_name WHERE first_name IS NULL;
+                   WHERE table_name='bookings' AND column_name='contact_name'
+                   AND is_nullable = 'NO') THEN
+          ALTER TABLE bookings ALTER COLUMN contact_name DROP NOT NULL;
         END IF;
         
-        -- Rename contact_email to email if contact_email exists and email doesn't
+        -- Handle old contact_email column - make it nullable  
+        IF EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='bookings' AND column_name='contact_email'
+                   AND is_nullable = 'NO') THEN
+          ALTER TABLE bookings ALTER COLUMN contact_email DROP NOT NULL;
+        END IF;
+        
+        -- Migrate data from old columns to new columns if they exist
+        IF EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='bookings' AND column_name='contact_name')
+           AND EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='first_name') THEN
+          UPDATE bookings SET first_name = COALESCE(first_name, contact_name) WHERE first_name IS NULL AND contact_name IS NOT NULL;
+        END IF;
+        
         IF EXISTS (SELECT 1 FROM information_schema.columns 
                    WHERE table_name='bookings' AND column_name='contact_email')
-           AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                          WHERE table_name='bookings' AND column_name='email') THEN
-          ALTER TABLE bookings ADD COLUMN email TEXT;
-          UPDATE bookings SET email = contact_email WHERE email IS NULL;
+           AND EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='email') THEN
+          UPDATE bookings SET email = COALESCE(email, contact_email) WHERE email IS NULL AND contact_email IS NOT NULL;
         END IF;
       END $$;
     `);
@@ -946,26 +957,37 @@ const dbHelpers = {
     return result.rows[0];
   },
 
-  // Create booking
   // Create a new booking
   createBooking: async (bookingData) => {
     const bookingReference = bookingData.bookingReference || `SCENIC-${Date.now()}`;
-    const result = await pool.query(`
-      INSERT INTO bookings (
-        booking_reference, party_size, date, time, 
-        first_name, last_name, email, phone,
-        experience_id, special_requests, marketing_consent,
-        preorder_enabled, preorder, menu_selections, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING *
-    `, [
+    
+    // Prepare data
+    const firstName = bookingData.firstName || bookingData.first_name || '';
+    const lastName = bookingData.lastName || bookingData.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim() || firstName || lastName || '';
+    const email = bookingData.email || bookingData.contactEmail || bookingData.contact_email || '';
+    
+    // Check if old columns exist and include them in INSERT
+    const checkOldColumns = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'bookings' 
+      AND column_name IN ('contact_name', 'contact_email')
+    `);
+    
+    const hasContactName = checkOldColumns.rows.some(r => r.column_name === 'contact_name');
+    const hasContactEmail = checkOldColumns.rows.some(r => r.column_name === 'contact_email');
+    
+    // Build dynamic INSERT based on which columns exist
+    let columns = ['booking_reference', 'party_size', 'date', 'time', 'first_name', 'last_name', 'email', 'phone', 'experience_id', 'special_requests', 'marketing_consent', 'preorder_enabled', 'preorder', 'menu_selections', 'status'];
+    let values = [
       bookingReference,
       bookingData.partySize || bookingData.party_size,
       bookingData.date,
       bookingData.time,
-      bookingData.firstName || bookingData.first_name || '',
-      bookingData.lastName || bookingData.last_name || '',
-      bookingData.email || bookingData.contactEmail || bookingData.contact_email,
+      firstName,
+      lastName,
+      email,
       bookingData.phone || bookingData.contactPhone || bookingData.contact_phone || '',
       bookingData.experience_id || bookingData.experienceId || null,
       bookingData.specialRequests || bookingData.special_requests || '',
@@ -974,7 +996,26 @@ const dbHelpers = {
       bookingData.preorder ? JSON.stringify(bookingData.preorder) : null,
       bookingData.menu_selections ? JSON.stringify(bookingData.menu_selections) : null,
       bookingData.status || 'pending'
-    ]);
+    ];
+    
+    // Add old columns if they exist (for backward compatibility)
+    if (hasContactName) {
+      columns.push('contact_name');
+      values.push(fullName);
+    }
+    if (hasContactEmail) {
+      columns.push('contact_email');
+      values.push(email);
+    }
+    
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    const columnsList = columns.join(', ');
+    
+    const result = await pool.query(`
+      INSERT INTO bookings (${columnsList})
+      VALUES (${placeholders})
+      RETURNING *
+    `, values);
     return result.rows[0];
   },
 

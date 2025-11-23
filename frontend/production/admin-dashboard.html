@@ -456,6 +456,11 @@
             color: #155724;
         }
         
+        .status-seated {
+            background: #d4edda;
+            color: #155724;
+        }
+        
         .status-completed {
             background: #d1ecf1;
             color: #0c5460;
@@ -633,7 +638,7 @@
                 <select id="booking-filter-status" onchange="loadBookings()" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
+                    <option value="seated">Seated</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                 </select>
@@ -1253,7 +1258,8 @@
                     const customerName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'N/A';
                     const statusClass = `status-${booking.status || 'pending'}`;
                     
-                    let preorderHtml = '';
+                    let preorderButton = '';
+                    let preorderItemsData = null;
                     if (booking.preorder_enabled && booking.preorder) {
                         const preorderData = Array.isArray(booking.preorder) ? booking.preorder : [booking.preorder];
                         let itemsList = [];
@@ -1263,17 +1269,16 @@
                                 person.items.forEach(item => {
                                     const itemName = item.item_name || item.name || item.menu_item_id || 'Unknown Item';
                                     const quantity = item.quantity || 1;
-                                    itemsList.push(`${itemName} x${quantity}`);
+                                    const price = item.price ? ` - £${parseFloat(item.price).toFixed(2)}` : '';
+                                    itemsList.push({ name: itemName, quantity, price });
                                 });
                             }
                         });
                         
                         if (itemsList.length > 0) {
-                            preorderHtml = `
-                                <div class="preorder-items">
-                                    <div class="preorder-items-title">Preorder Items:</div>
-                                    ${itemsList.map(item => `<div class="preorder-item">${item}</div>`).join('')}
-                                </div>
+                            preorderItemsData = itemsList;
+                            preorderButton = `
+                                <button class="action-btn btn-edit" onclick="viewPreorder(${booking.id})" style="min-width: 150px; margin-top: 10px;">View Preorder (${itemsList.length} items)</button>
                             `;
                         }
                     }
@@ -1318,12 +1323,16 @@
                                     <div style="color: #666; margin-top: 5px;">${booking.special_requests}</div>
                                 </div>
                             ` : ''}
-                            ${preorderHtml}
+                            ${preorderButton}
                             <div class="booking-actions">
-                                <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'confirmed')" style="min-width: 140px;">Mark Confirmed</button>
+                                <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'seated')" style="min-width: 140px;">Confirm Seated</button>
                                 <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'completed')" style="min-width: 140px;">Mark Completed</button>
                                 <button class="action-btn btn-delete" onclick="deleteBooking(${booking.id})" style="min-width: 120px;">Delete</button>
                             </div>
+                            ${preorderItemsData ? `<div id="preorder-${booking.id}" style="display: none; margin-top: 15px; padding: 15px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;">
+                                <div class="preorder-items-title">Preorder Items:</div>
+                                ${preorderItemsData.map(item => `<div class="preorder-item">${item.name}${item.price} x${item.quantity}</div>`).join('')}
+                            </div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -1340,6 +1349,18 @@
             document.getElementById('booking-filter-status').value = '';
             document.getElementById('booking-filter-date').value = '';
             loadBookings();
+        }
+        
+        // View/Show preorder items
+        function viewPreorder(bookingId) {
+            const preorderDiv = document.getElementById(`preorder-${bookingId}`);
+            if (preorderDiv) {
+                if (preorderDiv.style.display === 'none') {
+                    preorderDiv.style.display = 'block';
+                } else {
+                    preorderDiv.style.display = 'none';
+                }
+            }
         }
         
         // Update Booking Status

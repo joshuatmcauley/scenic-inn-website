@@ -444,4 +444,128 @@ router.post('/menu-schedule-rules/ensure', async (req, res) => {
   }
 });
 
+// Get all bookings (admin)
+router.get('/bookings', async (req, res) => {
+  try {
+    const filters = {
+      status: req.query.status,
+      date: req.query.date,
+      dateFrom: req.query.dateFrom,
+      dateTo: req.query.dateTo,
+      limit: req.query.limit ? parseInt(req.query.limit) : null
+    };
+    
+    const bookings = await dbHelpers.getAllBookings(filters);
+    
+    // Parse JSONB fields
+    const formattedBookings = bookings.map(booking => ({
+      ...booking,
+      preorder: booking.preorder ? (typeof booking.preorder === 'string' ? JSON.parse(booking.preorder) : booking.preorder) : null,
+      menu_selections: booking.menu_selections ? (typeof booking.menu_selections === 'string' ? JSON.parse(booking.menu_selections) : booking.menu_selections) : null
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedBookings,
+      count: formattedBookings.length
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings: ' + error.message
+    });
+  }
+});
+
+// Get single booking by ID (admin)
+router.get('/bookings/:bookingId', async (req, res) => {
+  try {
+    const booking = await dbHelpers.getBookingById(req.params.bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    // Parse JSONB fields
+    booking.preorder = booking.preorder ? (typeof booking.preorder === 'string' ? JSON.parse(booking.preorder) : booking.preorder) : null;
+    booking.menu_selections = booking.menu_selections ? (typeof booking.menu_selections === 'string' ? JSON.parse(booking.menu_selections) : booking.menu_selections) : null;
+    
+    res.json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch booking: ' + error.message
+    });
+  }
+});
+
+// Update booking status (admin)
+router.put('/bookings/:bookingId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required'
+      });
+    }
+    
+    const booking = await dbHelpers.updateBookingStatus(req.params.bookingId, status);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: booking,
+      message: 'Booking status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update booking status: ' + error.message
+    });
+  }
+});
+
+// Delete booking (admin)
+router.delete('/bookings/:bookingId', async (req, res) => {
+  try {
+    const booking = await dbHelpers.deleteBooking(req.params.bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Booking deleted successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete booking: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -397,6 +397,132 @@
         }
 
         /* Schedule Rules Styles */
+        .bookings-list {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .booking-card {
+            background: #fffef7;
+            border: 2px solid #d4af37;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .booking-card:hover {
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+        }
+        
+        .booking-info {
+            flex: 1;
+        }
+        
+        .booking-reference {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #8b4513;
+            margin-bottom: 5px;
+        }
+        
+        .booking-status {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .booking-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .booking-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .booking-detail-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .booking-detail-value {
+            font-size: 1.1em;
+            color: #8b4513;
+            font-weight: 500;
+        }
+        
+        .booking-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(139, 69, 19, 0.1);
+        }
+        
+        .preorder-items {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(139, 69, 19, 0.05);
+            border-radius: 8px;
+        }
+        
+        .preorder-items-title {
+            font-weight: 700;
+            color: #8b4513;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .preorder-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(139, 69, 19, 0.1);
+        }
+        
+        .preorder-item:last-child {
+            border-bottom: none;
+        }
+        
         .schedule-rules-list {
             display: grid;
             gap: 15px;
@@ -495,6 +621,28 @@
             
             <div id="schedule-rules-list" class="schedule-rules-list">
                 <div class="loading">Loading schedule rules...</div>
+            </div>
+        </div>
+        
+        <!-- Bookings Section -->
+        <div id="bookings-section" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
+            <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Bookings & Preorders</h2>
+            <p style="color: #666; font-size: 1.1em; margin-bottom: 25px;">View and manage all customer bookings and preorders</p>
+            
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <select id="booking-filter-status" onchange="loadBookings()" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <input type="date" id="booking-filter-date" onchange="loadBookings()" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
+                <button class="btn btn-secondary" onclick="loadBookings()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Refresh</button>
+            </div>
+            
+            <div id="bookings-list" class="bookings-list">
+                <div class="loading">Loading bookings...</div>
             </div>
         </div>
         
@@ -656,6 +804,7 @@
                 
                 displayMenus();
                 loadScheduleRules(); // Also load schedule rules
+                loadBookings(); // Also load bookings
             } catch (error) {
                 console.error('Error loading menus:', error);
                 document.getElementById('menus-container').innerHTML = 
@@ -1054,6 +1203,197 @@
                 closeScheduleRuleModal();
             }
         }
+        // Load Bookings
+        async function loadBookings() {
+            try {
+                const bookingsList = document.getElementById('bookings-list');
+                bookingsList.innerHTML = '<div class="loading">Loading bookings...</div>';
+                
+                const statusFilter = document.getElementById('booking-filter-status').value;
+                const dateFilter = document.getElementById('booking-filter-date').value;
+                
+                let url = `${API_BASE_URL}/admin/bookings`;
+                const params = [];
+                if (statusFilter) params.push(`status=${statusFilter}`);
+                if (dateFilter) params.push(`date=${dateFilter}`);
+                if (params.length > 0) url += '?' + params.join('&');
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load bookings');
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success || !result.data || result.data.length === 0) {
+                    bookingsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; font-size: 1.2em;">No bookings found</div>';
+                    return;
+                }
+                
+                bookingsList.innerHTML = result.data.map(booking => {
+                    const date = new Date(booking.date).toLocaleDateString('en-GB', { 
+                        weekday: 'short', 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    const time = booking.time.substring(0, 5); // HH:MM format
+                    const customerName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'N/A';
+                    const statusClass = `status-${booking.status || 'pending'}`;
+                    
+                    let preorderHtml = '';
+                    if (booking.preorder_enabled && booking.preorder) {
+                        const preorderData = Array.isArray(booking.preorder) ? booking.preorder : [booking.preorder];
+                        let itemsList = [];
+                        
+                        preorderData.forEach(person => {
+                            if (person.items && Array.isArray(person.items)) {
+                                person.items.forEach(item => {
+                                    const itemName = item.item_name || item.name || item.menu_item_id || 'Unknown Item';
+                                    const quantity = item.quantity || 1;
+                                    itemsList.push(`${itemName} x${quantity}`);
+                                });
+                            }
+                        });
+                        
+                        if (itemsList.length > 0) {
+                            preorderHtml = `
+                                <div class="preorder-items">
+                                    <div class="preorder-items-title">Preorder Items:</div>
+                                    ${itemsList.map(item => `<div class="preorder-item">${item}</div>`).join('')}
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    return `
+                        <div class="booking-card">
+                            <div class="booking-header">
+                                <div class="booking-info">
+                                    <div class="booking-reference">${booking.booking_reference || `Booking #${booking.id}`}</div>
+                                    <div class="booking-status ${statusClass}">${(booking.status || 'pending').toUpperCase()}</div>
+                                </div>
+                            </div>
+                            <div class="booking-details">
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Customer</div>
+                                    <div class="booking-detail-value">${customerName}</div>
+                                </div>
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Email</div>
+                                    <div class="booking-detail-value">${booking.email || 'N/A'}</div>
+                                </div>
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Phone</div>
+                                    <div class="booking-detail-value">${booking.phone || 'N/A'}</div>
+                                </div>
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Date & Time</div>
+                                    <div class="booking-detail-value">${date} at ${time}</div>
+                                </div>
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Party Size</div>
+                                    <div class="booking-detail-value">${booking.party_size} ${booking.party_size === 1 ? 'person' : 'people'}</div>
+                                </div>
+                                <div class="booking-detail-item">
+                                    <div class="booking-detail-label">Menu</div>
+                                    <div class="booking-detail-value">${booking.experience_id || 'N/A'}</div>
+                                </div>
+                            </div>
+                            ${booking.special_requests ? `
+                                <div style="margin-top: 15px; padding: 12px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;">
+                                    <div class="booking-detail-label">Special Requests:</div>
+                                    <div style="color: #666; margin-top: 5px;">${booking.special_requests}</div>
+                                </div>
+                            ` : ''}
+                            ${preorderHtml}
+                            <div class="booking-actions">
+                                <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'confirmed')" style="min-width: 140px;">Mark Confirmed</button>
+                                <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'completed')" style="min-width: 140px;">Mark Completed</button>
+                                <button class="action-btn btn-delete" onclick="deleteBooking(${booking.id})" style="min-width: 120px;">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('bookings-list').innerHTML = 
+                    `<div style="text-align: center; padding: 40px; color: #dc3545; font-size: 1.2em;">Error loading bookings: ${error.message}</div>`;
+            }
+        }
+        
+        // Update Booking Status
+        async function updateBookingStatus(bookingId, status) {
+            if (!confirm(`Are you sure you want to mark this booking as ${status}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update booking status');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', 'Booking status updated successfully');
+                    loadBookings();
+                } else {
+                    throw new Error(result.message || 'Failed to update booking status');
+                }
+            } catch (error) {
+                console.error('Error updating booking status:', error);
+                showStatus('error', 'Failed to update booking status: ' + error.message);
+            }
+        }
+        
+        // Delete Booking
+        async function deleteBooking(bookingId) {
+            if (!confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete booking');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', 'Booking deleted successfully');
+                    loadBookings();
+                } else {
+                    throw new Error(result.message || 'Failed to delete booking');
+                }
+            } catch (error) {
+                console.error('Error deleting booking:', error);
+                showStatus('error', 'Failed to delete booking: ' + error.message);
+            }
+        }
+        
     </script>
 </body>
 </html>

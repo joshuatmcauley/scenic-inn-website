@@ -100,16 +100,102 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id SERIAL PRIMARY KEY,
+        booking_reference TEXT UNIQUE,
         party_size INTEGER NOT NULL,
         date DATE NOT NULL,
         time TIME NOT NULL,
-        contact_name TEXT NOT NULL,
-        contact_email TEXT NOT NULL,
+        first_name TEXT,
+        last_name TEXT,
+        email TEXT NOT NULL,
+        phone TEXT,
+        experience_id TEXT,
         special_requests TEXT,
+        marketing_consent BOOLEAN DEFAULT false,
+        preorder_enabled BOOLEAN DEFAULT false,
+        preorder JSONB,
         menu_selections JSONB,
         status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add missing columns if they don't exist (for existing tables)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        -- Add booking_reference if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='booking_reference') THEN
+          ALTER TABLE bookings ADD COLUMN booking_reference TEXT UNIQUE;
+        END IF;
+        
+        -- Add first_name if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='first_name') THEN
+          ALTER TABLE bookings ADD COLUMN first_name TEXT;
+        END IF;
+        
+        -- Add last_name if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='last_name') THEN
+          ALTER TABLE bookings ADD COLUMN last_name TEXT;
+        END IF;
+        
+        -- Add phone if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='phone') THEN
+          ALTER TABLE bookings ADD COLUMN phone TEXT;
+        END IF;
+        
+        -- Add experience_id if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='experience_id') THEN
+          ALTER TABLE bookings ADD COLUMN experience_id TEXT;
+        END IF;
+        
+        -- Add marketing_consent if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='marketing_consent') THEN
+          ALTER TABLE bookings ADD COLUMN marketing_consent BOOLEAN DEFAULT false;
+        END IF;
+        
+        -- Add preorder_enabled if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='preorder_enabled') THEN
+          ALTER TABLE bookings ADD COLUMN preorder_enabled BOOLEAN DEFAULT false;
+        END IF;
+        
+        -- Add preorder if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='preorder') THEN
+          ALTER TABLE bookings ADD COLUMN preorder JSONB;
+        END IF;
+        
+        -- Add updated_at if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='bookings' AND column_name='updated_at') THEN
+          ALTER TABLE bookings ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+        END IF;
+        
+        -- Rename contact_name to first_name if contact_name exists and first_name doesn't
+        IF EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='bookings' AND column_name='contact_name')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='bookings' AND column_name='first_name') THEN
+          ALTER TABLE bookings ADD COLUMN first_name TEXT;
+          UPDATE bookings SET first_name = contact_name WHERE first_name IS NULL;
+        END IF;
+        
+        -- Rename contact_email to email if contact_email exists and email doesn't
+        IF EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='bookings' AND column_name='contact_email')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='bookings' AND column_name='email') THEN
+          ALTER TABLE bookings ADD COLUMN email TEXT;
+          UPDATE bookings SET email = contact_email WHERE email IS NULL;
+        END IF;
+      END $$;
     `);
 
     console.log('✅ Database tables created successfully');
@@ -861,11 +947,102 @@ const dbHelpers = {
   },
 
   // Create booking
+  // Create a new booking
   createBooking: async (bookingData) => {
+    const bookingReference = bookingData.bookingReference || `SCENIC-${Date.now()}`;
+    const result = await pool.query(`
+      INSERT INTO bookings (
+        booking_reference, party_size, date, time, 
+        first_name, last_name, email, phone,
+        experience_id, special_requests, marketing_consent,
+        preorder_enabled, preorder, menu_selections, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *
+    `, [
+      bookingReference,
+      bookingData.partySize || bookingData.party_size,
+      bookingData.date,
+      bookingData.time,
+      bookingData.firstName || bookingData.first_name || '',
+      bookingData.lastName || bookingData.last_name || '',
+      bookingData.email || bookingData.contactEmail || bookingData.contact_email,
+      bookingData.phone || bookingData.contactPhone || bookingData.contact_phone || '',
+      bookingData.experience_id || bookingData.experienceId || null,
+      bookingData.specialRequests || bookingData.special_requests || '',
+      bookingData.marketing_consent || bookingData.marketingConsent || false,
+      bookingData.preorder_enabled || bookingData.preorderEnabled || false,
+      bookingData.preorder ? JSON.stringify(bookingData.preorder) : null,
+      bookingData.menu_selections ? JSON.stringify(bookingData.menu_selections) : null,
+      bookingData.status || 'pending'
+    ]);
+    return result.rows[0];
+  },
+
+  // Get all bookings (with optional filters)
+  getAllBookings: async (filters = {}) => {
+    let query = 'SELECT * FROM bookings WHERE 1=1';
+    const params = [];
+    let paramCount = 1;
+
+    if (filters.status) {
+      query += ` AND status = $${paramCount}`;
+      params.push(filters.status);
+      paramCount++;
+    }
+
+    if (filters.date) {
+      query += ` AND date = $${paramCount}`;
+      params.push(filters.date);
+      paramCount++;
+    }
+
+    if (filters.dateFrom) {
+      query += ` AND date >= $${paramCount}`;
+      params.push(filters.dateFrom);
+      paramCount++;
+    }
+
+    if (filters.dateTo) {
+      query += ` AND date <= $${paramCount}`;
+      params.push(filters.dateTo);
+      paramCount++;
+    }
+
+    query += ' ORDER BY date DESC, time DESC, created_at DESC';
+
+    if (filters.limit) {
+      query += ` LIMIT $${paramCount}`;
+      params.push(filters.limit);
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows;
+  },
+
+  // Get a single booking by ID
+  getBookingById: async (bookingId) => {
+    const result = await pool.query('SELECT * FROM bookings WHERE id = $1', [bookingId]);
+    return result.rows[0];
+  },
+
+  // Get booking by reference
+  getBookingByReference: async (reference) => {
+    const result = await pool.query('SELECT * FROM bookings WHERE booking_reference = $1', [reference]);
+    return result.rows[0];
+  },
+
+  // Update booking status
+  updateBookingStatus: async (bookingId, status) => {
     const result = await pool.query(
-      'INSERT INTO bookings (party_size, date, time, contact_name, contact_email, special_requests, menu_selections) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [bookingData.partySize, bookingData.date, bookingData.time, bookingData.contactName, bookingData.contactEmail, bookingData.specialRequests, JSON.stringify(bookingData.menuSelections)]
+      'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      [status, bookingId]
     );
+    return result.rows[0];
+  },
+
+  // Delete a booking
+  deleteBooking: async (bookingId) => {
+    const result = await pool.query('DELETE FROM bookings WHERE id = $1 RETURNING *', [bookingId]);
     return result.rows[0];
   }
 };

@@ -612,8 +612,21 @@ router.post('/', async (req, res) => {
             console.warn('   This means the restaurant email with PDF will NOT be sent');
         }
         
-        // Step 3: Store booking locally (backup)
-        // You can add database storage here if needed
+        // Step 3: Store booking in database
+        let savedBooking = null;
+        try {
+            const bookingReference = `SCENIC-${Date.now()}`;
+            const bookingToSave = {
+                ...bookingData,
+                bookingReference,
+                preorder: preorderData && preorderData.length > 0 ? preorderData : null
+            };
+            savedBooking = await dbHelpers.createBooking(bookingToSave);
+            console.log('✅ Booking saved to database:', savedBooking.id);
+        } catch (dbError) {
+            console.error('❌ Error saving booking to database:', dbError);
+            // Don't fail the booking if database save fails
+        }
         
         // Step 4: Send confirmation email to customer
         try {
@@ -695,7 +708,8 @@ router.post('/', async (req, res) => {
             message: 'Booking submitted successfully',
             dojoResult,
             preorderResult,
-            bookingReference: `SCENIC-${Date.now()}`,
+            bookingReference: savedBooking?.booking_reference || `SCENIC-${Date.now()}`,
+            bookingId: savedBooking?.id || null,
             dojoBookingId: dojoResult?.dojoBookingId || null
         });
         

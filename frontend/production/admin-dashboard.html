@@ -1206,6 +1206,7 @@
         // Load Bookings
         async function loadBookings() {
             try {
+                const token = localStorage.getItem('adminToken');
                 const bookingsList = document.getElementById('bookings-list');
                 bookingsList.innerHTML = '<div class="loading">Loading bookings...</div>';
                 
@@ -1335,6 +1336,7 @@
             }
             
             try {
+                const token = localStorage.getItem('adminToken');
                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1369,6 +1371,7 @@
             }
             
             try {
+                const token = localStorage.getItem('adminToken');
                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}`, {
                     method: 'DELETE',
                     headers: {

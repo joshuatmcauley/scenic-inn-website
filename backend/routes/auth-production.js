@@ -63,7 +63,7 @@ function sanitizeInput(input) {
 // Login endpoint with brute force protection
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, rememberMe } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress;
     const attemptKey = `${clientIP}_${username}`;
 
@@ -129,18 +129,22 @@ router.post('/login', loginLimiter, async (req, res) => {
     loginAttempts.delete(attemptKey);
     
     // Log successful login
-    console.log(`[SECURITY] Successful login for user ID: ${admin.id}, username: ${admin.username} from IP: ${clientIP}`);
+    console.log(`[SECURITY] Successful login for user ID: ${admin.id}, username: ${admin.username} from IP: ${clientIP}, rememberMe: ${rememberMe || false}`);
 
-    // Generate JWT token with shorter expiration
+    // Generate JWT token with expiration based on rememberMe
+    // If rememberMe is true, token lasts 7 days, otherwise 8 hours
+    const tokenExpiration = rememberMe ? '7d' : '8h';
+    
     const token = jwt.sign(
       { 
         id: admin.id, 
         username: admin.username, 
         role: 'admin',
+        rememberMe: rememberMe || false,
         iat: Math.floor(Date.now() / 1000)
       }, 
       JWT_SECRET, 
-      { expiresIn: '8h' } // Reduced from 24h to 8h
+      { expiresIn: tokenExpiration }
     );
 
     res.json({

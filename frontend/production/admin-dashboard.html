@@ -610,27 +610,8 @@
             <button class="add-special-btn" onclick="openAddSpecialModal()">+ Add Special</button>
         </div>
         
-        <div id="menus-container">
-            <div class="loading">Loading menus...</div>
-        </div>
-        
-        <!-- Menu Schedule Rules Section -->
-        <div id="schedule-rules-section" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
-            <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Menu Schedule Rules</h2>
-            <p style="color: #666; font-size: 1.1em; margin-bottom: 25px;">Manage which menu is shown based on day and time</p>
-            
-            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="openAddRuleModal()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">+ Add Schedule Rule</button>
-                <button class="btn btn-secondary" onclick="ensureAllMenuRules()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Auto-Add Missing Rules</button>
-            </div>
-            
-            <div id="schedule-rules-list" class="schedule-rules-list">
-                <div class="loading">Loading schedule rules...</div>
-            </div>
-        </div>
-        
-        <!-- Bookings Section -->
-        <div id="bookings-section" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
+        <!-- Bookings Section - Moved to Top -->
+        <div id="bookings-section" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 40px;">
             <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Bookings & Preorders</h2>
             <p style="color: #666; font-size: 1.1em; margin-bottom: 25px;">View and manage all customer bookings and preorders</p>
             
@@ -649,6 +630,25 @@
             
             <div id="bookings-list" class="bookings-list">
                 <div class="loading">Loading bookings...</div>
+            </div>
+        </div>
+        
+        <div id="menus-container">
+            <div class="loading">Loading menus...</div>
+        </div>
+        
+        <!-- Menu Schedule Rules Section -->
+        <div id="schedule-rules-section" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
+            <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Menu Schedule Rules</h2>
+            <p style="color: #666; font-size: 1.1em; margin-bottom: 25px;">Manage which menu is shown based on day and time</p>
+            
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openAddRuleModal()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">+ Add Schedule Rule</button>
+                <button class="btn btn-secondary" onclick="ensureAllMenuRules()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Auto-Add Missing Rules</button>
+        </div>
+        
+            <div id="schedule-rules-list" class="schedule-rules-list">
+                <div class="loading">Loading schedule rules...</div>
             </div>
         </div>
         
@@ -756,9 +756,28 @@
         const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
         let allMenus = [];
 
+        // Helper function to get token from either localStorage or sessionStorage
+        function getAdminToken() {
+            return localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        }
+        
+        // Helper function to get user from either localStorage or sessionStorage
+        function getAdminUser() {
+            const userStr = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
+            return userStr ? JSON.parse(userStr) : {};
+        }
+        
+        // Helper function to remove token from both storages
+        function clearAdminToken() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            sessionStorage.removeItem('adminToken');
+            sessionStorage.removeItem('adminUser');
+        }
+
         // Check authentication on page load
         window.addEventListener('load', function() {
-            const token = localStorage.getItem('adminToken');
+            const token = getAdminToken();
             
             if (!token) {
                 window.location.href = 'admin-login.html';
@@ -774,19 +793,19 @@
             .then(response => response.json())
             .then(data => {
                 if (!data.success) {
-                    localStorage.removeItem('adminToken');
-                    localStorage.removeItem('adminUser');
+                    clearAdminToken();
                     window.location.href = 'admin-login.html';
                 } else {
-                    const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
+                    const user = getAdminUser();
                     document.getElementById('admin-info').textContent = `Welcome, ${user.username}`;
+                    loadBookings(); // Load bookings first (now at top)
                     loadMenus();
+                    loadScheduleRules();
                 }
             })
             .catch(error => {
                 console.error('Token verification error:', error);
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminUser');
+                clearAdminToken();
                 window.location.href = 'admin-login.html';
             });
         });
@@ -794,7 +813,7 @@
         // Load all menus
         async function loadMenus() {
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/menus`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -810,7 +829,6 @@
                 
                 displayMenus();
                 loadScheduleRules(); // Also load schedule rules
-                loadBookings(); // Also load bookings
             } catch (error) {
                 console.error('Error loading menus:', error);
                 document.getElementById('menus-container').innerHTML = 
@@ -821,7 +839,7 @@
         // Load schedule rules
         async function loadScheduleRules() {
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -900,7 +918,7 @@
         // Edit Schedule Rule
         async function editScheduleRule(ruleId) {
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const rulesResponse = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -976,7 +994,7 @@
             }
             
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules`, {
                     method: 'POST',
                     headers: {
@@ -1015,7 +1033,7 @@
             }
 
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules/ensure`, {
                     method: 'POST',
                     headers: {
@@ -1025,7 +1043,7 @@
                 });
 
                 const data = await response.json();
-
+                
                 if (data.success) {
                     showStatus('success', data.message || 'Schedule rules ensured successfully');
                     loadScheduleRules(); // Reload to show new rules
@@ -1045,7 +1063,7 @@
             }
 
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/menu-schedule-rules/${ruleId}`, {
                     method: 'DELETE',
                     headers: {
@@ -1169,7 +1187,7 @@
             }
             
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/specials`, {
                     method: 'POST',
                     headers: {
@@ -1212,7 +1230,7 @@
         // Load Bookings
         async function loadBookings() {
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const bookingsList = document.getElementById('bookings-list');
                 bookingsList.innerHTML = '<div class="loading">Loading bookings...</div>';
                 
@@ -1370,7 +1388,7 @@
             }
             
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1405,7 +1423,7 @@
             }
             
             try {
-                const token = localStorage.getItem('adminToken');
+                const token = getAdminToken();
                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}`, {
                     method: 'DELETE',
                     headers: {

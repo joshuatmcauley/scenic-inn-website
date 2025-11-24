@@ -84,6 +84,28 @@
             box-shadow: 0 0 0 3px rgba(117, 47, 21, 0.1);
         }
 
+        .form-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #752f15;
+            margin-right: 10px;
+        }
+
+        .remember-me-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .remember-me-container label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #2C2C2C;
+            user-select: none;
+        }
+
         .login-button {
             width: 100%;
             background: linear-gradient(135deg, #752f15, #8B4513);
@@ -200,6 +222,11 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
+            <div class="remember-me-container">
+                <input type="checkbox" id="remember-me" name="remember-me">
+                <label for="remember-me">Remember this device</label>
+            </div>
+
             <button type="submit" class="login-button" id="login-button">
                 Sign In
             </button>
@@ -223,6 +250,7 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
             const loginButton = document.getElementById('login-button');
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
@@ -244,16 +272,27 @@
                     },
                     body: JSON.stringify({
                         username: username,
-                        password: password
+                        password: password,
+                        rememberMe: rememberMe
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Store the token
-                    localStorage.setItem('adminToken', data.token);
-                    localStorage.setItem('adminUser', JSON.stringify(data.user));
+                    // Store the token - use localStorage if rememberMe, sessionStorage otherwise
+                    const storage = rememberMe ? localStorage : sessionStorage;
+                    storage.setItem('adminToken', data.token);
+                    storage.setItem('adminUser', JSON.stringify(data.user));
+                    
+                    // Clear the other storage type
+                    if (rememberMe) {
+                        sessionStorage.removeItem('adminToken');
+                        sessionStorage.removeItem('adminUser');
+                    } else {
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminUser');
+                    }
                     
                     successMessage.textContent = 'Login successful! Redirecting...';
                     successMessage.style.display = 'block';
@@ -277,9 +316,9 @@
             }
         });
 
-        // Check if already logged in
+        // Check if already logged in (check both localStorage and sessionStorage)
         window.addEventListener('load', function() {
-            const token = localStorage.getItem('adminToken');
+            const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
             if (token) {
                 // Verify token is still valid
                 fetch(`${API_BASE_URL}/auth/verify`, {
@@ -298,6 +337,8 @@
                     // Token invalid, stay on login page
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminUser');
+                    sessionStorage.removeItem('adminToken');
+                    sessionStorage.removeItem('adminUser');
                 });
             }
         });

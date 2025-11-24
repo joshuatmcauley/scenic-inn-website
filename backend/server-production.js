@@ -10,8 +10,23 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security middleware
-app.use(helmet());
+// Security middleware with enhanced configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for admin dashboard
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for admin dashboard
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding if needed
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(compression());
 
 // Rate limiting
@@ -50,9 +65,32 @@ console.log('CORS configured for Vercel and GitHub Pages');
 // Logging
 app.use(morgan('combined'));
 
-// Body parsing
+// Body parsing with size limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization middleware
+app.use((req, res, next) => {
+  // Sanitize query parameters
+  if (req.query) {
+    Object.keys(req.query).forEach(key => {
+      if (typeof req.query[key] === 'string') {
+        req.query[key] = req.query[key].trim().replace(/[<>]/g, '');
+      }
+    });
+  }
+  
+  // Sanitize body parameters (except for admin routes which handle their own)
+  if (req.body && !req.path.startsWith('/api/admin') && !req.path.startsWith('/api/auth')) {
+    Object.keys(req.body).forEach(key => {
+      if (typeof req.body[key] === 'string') {
+        req.body[key] = req.body[key].trim().replace(/[<>]/g, '');
+      }
+    });
+  }
+  
+  next();
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

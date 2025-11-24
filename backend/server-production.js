@@ -27,8 +27,12 @@ app.use(cors({
   origin: [
     'https://scenic-inn.netlify.app',
     'https://*.netlify.app',
-    'https://kipaxe.co.uk',
-    'https://www.kipaxe.co.uk',
+    'https://scenicinnbookings.com',
+    'https://www.scenicinnbookings.com',
+    'https://scenicinn-bookings.co.uk',
+    'https://www.scenicinn-bookings.co.uk',
+    'https://kipaxe.co.uk',  // Keep for transition period
+    'https://www.kipaxe.co.uk',  // Keep for transition period
     'http://localhost:3000',
     'http://localhost:8080',
     'https://scenic-inn-website.vercel.app',

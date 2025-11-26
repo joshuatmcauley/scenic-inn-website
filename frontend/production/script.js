@@ -78,10 +78,14 @@ function populateEventPartySize() {
 }
 
 function setupEventListeners() {
-    // Party size change
-    const partySizeSelect = document.getElementById('party-size');
-    if (partySizeSelect) {
-        partySizeSelect.addEventListener('change', handlePartySizeChange);
+    // Adults and children change
+    const adultsSelect = document.getElementById('adults');
+    const childrenSelect = document.getElementById('children');
+    if (adultsSelect) {
+        adultsSelect.addEventListener('change', handlePartySizeChange);
+    }
+    if (childrenSelect) {
+        childrenSelect.addEventListener('change', handlePartySizeChange);
     }
     
     // Date change
@@ -189,17 +193,33 @@ function validateCurrentStep() {
 }
 
 function validateStep1() {
-    const partySize = document.getElementById('party-size').value;
+    const adults = document.getElementById('adults').value;
+    const children = document.getElementById('children').value;
     const date = document.getElementById('booking-date').value;
     
-    if (!partySize || !date) {
-        showError('Please select party size and date');
+    if (!adults || adults === '' || !date) {
+        showError('Please select number of adults and date');
+        return false;
+    }
+    
+    // Calculate total party size
+    const adultsCount = parseInt(adults) || 0;
+    const childrenCount = parseInt(children) || 0;
+    const totalPartySize = adultsCount + childrenCount;
+    
+    if (totalPartySize < 1) {
+        showError('Please select at least 1 adult');
         return false;
     }
     
     // Store data
-    bookingData.party_size = parseInt(partySize);
+    bookingData.adults = adultsCount;
+    bookingData.children = childrenCount;
+    bookingData.party_size = totalPartySize;
     bookingData.date = date;
+    
+    // Update hidden field for compatibility
+    document.getElementById('party-size').value = totalPartySize;
     
     return true;
 }
@@ -435,13 +455,39 @@ function validateStep4() {
     return true;
 }
 
+// Update party size from adults and children
+function updatePartySize() {
+    const adults = parseInt(document.getElementById('adults').value) || 0;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    const total = adults + children;
+    
+    // Update hidden field
+    document.getElementById('party-size').value = total;
+    
+    // Show/hide total display
+    const totalDisplay = document.getElementById('party-total');
+    const totalValue = document.getElementById('total-people');
+    
+    if (adults > 0 || children > 0) {
+        totalDisplay.style.display = 'block';
+        totalValue.textContent = `${total} ${total === 1 ? 'person' : 'people'} (${adults} adult${adults !== 1 ? 's' : ''}${children > 0 ? `, ${children} child${children !== 1 ? 'ren' : ''}` : ''})`;
+    } else {
+        totalDisplay.style.display = 'none';
+    }
+    
+    // Trigger party size change handler
+    handlePartySizeChange();
+}
+
 // Event Handlers
 function handlePartySizeChange() {
-    const partySize = parseInt(document.getElementById('party-size').value);
+    const adults = parseInt(document.getElementById('adults').value) || 0;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    const totalPartySize = adults + children;
     const notice = document.getElementById('large-party-notice');
     const preorderToggle = document.getElementById('enable-preorder');
     
-    if (partySize >= 11) {
+    if (totalPartySize >= 11) {
         notice.style.display = 'block';
         // Reset preorder toggle when party size changes
         if (preorderToggle) {
@@ -458,7 +504,9 @@ function handlePartySizeChange() {
 function handlePreorderToggle() {
     const preorderToggle = document.getElementById('enable-preorder');
     const preorderInfo = document.getElementById('preorder-info');
-    const partySize = parseInt(document.getElementById('party-size').value);
+    const adults = parseInt(document.getElementById('adults').value) || 0;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    const totalPartySize = adults + children;
     
     if (preorderToggle && preorderInfo) {
         if (preorderToggle.checked) {
@@ -467,7 +515,7 @@ function handlePreorderToggle() {
             // Update menu instruction
             const instruction = document.getElementById('menu-instruction');
             if (instruction) {
-                instruction.textContent = `Select meals for each of the ${partySize} people in your party`;
+                instruction.textContent = `Select meals for each of the ${totalPartySize} people in your party`;
             }
         } else {
             preorderInfo.style.display = 'none';
@@ -1176,7 +1224,7 @@ function showConfirmation(booking) {
         </div>
         <div class="confirmation-item">
             <span class="confirmation-label">Party Size:</span>
-            <span class="confirmation-value">${bookingData.party_size} people</span>
+            <span class="confirmation-value">${bookingData.party_size} ${bookingData.party_size === 1 ? 'person' : 'people'}${bookingData.adults !== undefined ? ` (${bookingData.adults} adult${bookingData.adults !== 1 ? 's' : ''}${bookingData.children > 0 ? `, ${bookingData.children} child${bookingData.children !== 1 ? 'ren' : ''}` : ''})` : ''}</span>
         </div>
         <div class="confirmation-item">
             <span class="confirmation-label">Contact:</span>

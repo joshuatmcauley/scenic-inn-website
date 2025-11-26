@@ -837,7 +837,7 @@ function populateTimeSelect() {
     }
 }
 
-function populateMenuSelection() {
+async function populateMenuSelection() {
     const container = document.getElementById('menu-selection');
     container.innerHTML = '';
     
@@ -871,31 +871,123 @@ function populateMenuSelection() {
         return;
     }
     
+    // Determine adults and children counts
+    const adultsCount = bookingData.adults || bookingData.party_size;
+    const childrenCount = bookingData.children || 0;
+    
+    // Load kids menu items if there are children
+    let kidsMenuItems = null;
+    if (childrenCount > 0) {
+        await loadKidsMenuItems();
+        kidsMenuItems = window.kidsMenuItems || null;
+    }
+    
     // Create menu selection for each person
-    for (let i = 1; i <= bookingData.party_size; i++) {
+    let personIndex = 1;
+    
+    // Add adults first
+    for (let i = 1; i <= adultsCount; i++) {
         const personDiv = document.createElement('div');
         personDiv.className = 'person-menu';
         personDiv.innerHTML = `
             <div class="person-header">
-                <div class="person-avatar">${i}</div>
-                <div class="person-name">Person ${i}</div>
+                <div class="person-avatar">${personIndex}</div>
+                <div class="person-name">Adult ${i}</div>
                 <input type="text" 
                        class="person-name-input" 
-                       id="person-${i}-name" 
-                       name="person-${i}-name" 
+                       id="person-${personIndex}-name" 
+                       name="person-${personIndex}-name" 
                        placeholder="Enter name (optional)" 
                        maxlength="50">
             </div>
             <div class="menu-categories">
-                ${generateMenuCategories(i)}
+                ${generateMenuCategories(personIndex, false)}
             </div>
         `;
         container.appendChild(personDiv);
+        personIndex++;
+    }
+    
+    // Add children with kids menu
+    for (let i = 1; i <= childrenCount; i++) {
+        const personDiv = document.createElement('div');
+        personDiv.className = 'person-menu person-menu-child';
+        personDiv.innerHTML = `
+            <div class="person-header">
+                <div class="person-avatar person-avatar-child">🧒</div>
+                <div class="person-name">Child ${i}</div>
+                <input type="text" 
+                       class="person-name-input" 
+                       id="person-${personIndex}-name" 
+                       name="person-${personIndex}-name" 
+                       placeholder="Enter name (optional)" 
+                       maxlength="50">
+            </div>
+            <div class="menu-categories">
+                ${generateMenuCategories(personIndex, true, kidsMenuItems)}
+            </div>
+        `;
+        container.appendChild(personDiv);
+        personIndex++;
     }
 }
 
-function generateMenuCategories(personNumber) {
-    if (!menuItems.categories) {
+// Load kids menu items
+async function loadKidsMenuItems() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/menus/kids-menu/items?forPreorder=true`);
+        let data = await response.json();
+        
+        if (response.ok && data && data.success !== false) {
+            let raw = Array.isArray(data) ? data : (data.data || []);
+            
+            if (raw.length > 0 && raw[0].section_key) {
+                const grouped = {};
+                raw.forEach(item => {
+                    const key = (item.section_key || '').toString().toLowerCase();
+                    if (!grouped[key]) {
+                        grouped[key] = { name: key, items: [] };
+                    }
+                    grouped[key].items.push({
+                        id: item.id,
+                        name: item.name,
+                        description: item.description || '',
+                        price: item.price,
+                        comes_with_side: item.comes_with_side || false,
+                        is_steak: false // Kids menu won't have steaks
+                    });
+                });
+                window.kidsMenuItems = { categories: Object.values(grouped) };
+            } else {
+                window.kidsMenuItems = {
+                    categories: raw.map(section => ({
+                        name: (section.section_key || section.name || '').toString().toLowerCase(),
+                        items: (section.items || []).map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            description: item.description || '',
+                            price: item.price,
+                            comes_with_side: item.comes_with_side || false,
+                            is_steak: false
+                        }))
+                    }))
+                };
+            }
+        } else {
+            console.warn('Failed to load kids menu items');
+            window.kidsMenuItems = null;
+        }
+    } catch (error) {
+        console.error('Error loading kids menu items:', error);
+        window.kidsMenuItems = null;
+    }
+}
+
+function generateMenuCategories(personNumber, isChild = false, kidsMenuData = null) {
+    // Use kids menu if this is a child
+    const itemsToUse = isChild && kidsMenuData ? kidsMenuData : menuItems;
+    
+    if (!itemsToUse || !itemsToUse.categories) {
         return '<p>No menu items available</p>';
     }
     
@@ -905,13 +997,13 @@ function generateMenuCategories(personNumber) {
     const desserts = [];
     const sides = [];
     
-    menuItems.categories.forEach(category => {
+    itemsToUse.categories.forEach(category => {
         const sectionKey = category.name; // Use exact case from database
         
         console.log(`Processing section: "${sectionKey}" with ${category.items.length} items`);
         
-        // Starters - exact matches
-        if (sectionKey === 'starters' || sectionKey === 'light-bites') {
+        // Starters - exact matches (kids menu typically doesn't have starters)
+        if (!isChild && (sectionKey === 'starters' || sectionKey === 'light-bites')) {
             starters.push(...category.items);
             console.log(`  → Added to starters: ${category.items.map(item => item.name).join(', ')}`);
         }
@@ -928,17 +1020,25 @@ function generateMenuCategories(personNumber) {
             desserts.push(...category.items);
             console.log(`  → Added to desserts: ${category.items.map(item => item.name).join(', ')}`);
         }
-        // Sides - separate category
+        // Sides - separate category (for kids menu, sides are usually included with mains)
         else if (sectionKey === 'sides' || sectionKey === 'side-orders' || sectionKey === 'dips' || sectionKey === 'sauces') {
-            sides.push(...category.items);
+            // For kids menu, we might want to show sides separately or include them
+            if (isChild) {
+                // For kids, sides are usually included, but we can show them if needed
+                sides.push(...category.items);
+            } else {
+                sides.push(...category.items);
+            }
             console.log(`  → Added to sides: ${category.items.map(item => item.name).join(', ')}`);
         }
         // Specials - separate category (for special offers, chef's specials, etc.)
         else if (sectionKey === 'specials') {
             // Specials can be shown separately or grouped with mains depending on your preference
             // For now, we'll add them to mains but log them separately
-            mains.push(...category.items);
-            console.log(`  → Added to mains (specials): ${category.items.map(item => item.name).join(', ')}`);
+            if (!isChild) {
+                mains.push(...category.items);
+                console.log(`  → Added to mains (specials): ${category.items.map(item => item.name).join(', ')}`);
+            }
         }
         else {
             console.warn(`  → Unknown section key: "${sectionKey}" - defaulting to mains`);
@@ -950,12 +1050,16 @@ function generateMenuCategories(personNumber) {
     const hasDesserts = desserts.length > 0;
     const hasSides = sides.length > 0;
     
-    // Add pricing information header
-    const pricingInfo = getPricingInfoDisplay();
+    // Add pricing information header (only for adults)
+    const pricingInfo = !isChild ? getPricingInfoDisplay() : '';
+    
+    // Kids menu typically doesn't have starters, just main and maybe dessert
+    const showStarters = !isChild && starters.length > 0;
     
     return `
         <div class="course-selection">
             ${pricingInfo}
+            ${showStarters ? `
             <div class="course-group">
                 <label for="person-${personNumber}-starter">Starter:</label>
                 <select id="person-${personNumber}-starter" name="person-${personNumber}-starter">
@@ -965,13 +1069,14 @@ function generateMenuCategories(personNumber) {
                     `).join('')}
                 </select>
             </div>
+            ` : ''}
             
             <div class="course-group">
-                <label for="person-${personNumber}-main">Main Course:</label>
+                <label for="person-${personNumber}-main">${isChild ? 'Main Meal:' : 'Main Course:'}</label>
                 <select id="person-${personNumber}-main" name="person-${personNumber}-main" onchange="toggleSideDropdown(${personNumber}); toggleSteakRarity(${personNumber})">
-                    <option value="">Select a main course</option>
+                    <option value="">Select a ${isChild ? 'meal' : 'main course'}</option>
                     ${mains.map(item => `
-                        <option value="${item.id}" data-comes-with-side="${item.comes_with_side || false}" data-is-steak="${item.is_steak || false}">${item.name}${getItemPriceDisplay(item)}</option>
+                        <option value="${item.id}" data-comes-with-side="${item.comes_with_side || false}" data-is-steak="${item.is_steak || false}">${item.name}${getItemPriceDisplay(item, isChild)}</option>
                     `).join('')}
                 </select>
             </div>
@@ -1007,16 +1112,18 @@ function generateMenuCategories(personNumber) {
                 <select id="person-${personNumber}-dessert" name="person-${personNumber}-dessert">
                     <option value="">Select a dessert</option>
                     ${desserts.map(item => `
-                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item)}</option>
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item, isChild)}</option>
                     `).join('')}
                 </select>
             </div>
             ` : ''}
             
+            ${isChild ? '<input type="hidden" id="person-' + personNumber + '-is-child" value="true">' : ''}
+            
             <div class="course-group">
                 <label for="person-${personNumber}-notes">Special Instructions/Notes:</label>
                 <textarea id="person-${personNumber}-notes" name="person-${personNumber}-notes" 
-                    placeholder="Any dietary requirements, allergies, or special requests for this person..." 
+                    placeholder="${isChild ? 'Any dietary requirements, allergies, or special requests for this child...' : 'Any dietary requirements, allergies, or special requests for this person...'}" 
                     rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;"></textarea>
             </div>
         </div>
@@ -1051,7 +1158,12 @@ function getPricingInfoDisplay() {
 }
 
 // Helper function to display item pricing based on menu pricing type
-function getItemPriceDisplay(item) {
+function getItemPriceDisplay(item, isKidsMenu = false) {
+    // Kids menu always shows prices (individual pricing)
+    if (isKidsMenu) {
+        return item.price ? ` - £${item.price}` : '';
+    }
+    
     const pricingType = menuItems.pricing_info?.pricing_type;
     
     if (pricingType === 'course') {
@@ -1144,8 +1256,13 @@ function toggleSteakRarity(personNumber) {
 // Data Collection
 function collectPreorderData() {
     const preorderData = [];
+    const adultsCount = bookingData.adults || bookingData.party_size;
+    const childrenCount = bookingData.children || 0;
     
-    for (let i = 1; i <= bookingData.party_size; i++) {
+    let personIndex = 1;
+    
+    // Collect data for adults
+    for (let i = 1; i <= adultsCount; i++) {
         const items = [];
         
         // Get starter selection
@@ -1218,12 +1335,67 @@ function collectPreorderData() {
         
         if (items.length > 0 || personNotes) {
             preorderData.push({
-                person_number: i,
+                person_number: personIndex,
                 person_name: personName || null,
+                is_child: false,
                 items: items,
                 special_instructions: personNotes
             });
         }
+        personIndex++;
+    }
+    
+    // Collect data for children
+    for (let i = 1; i <= childrenCount; i++) {
+        const items = [];
+        
+        // Get main course selection (kids menu)
+        const mainSelect = document.getElementById(`person-${personIndex}-main`);
+        if (mainSelect && mainSelect.value) {
+            let itemName = mainSelect.options[mainSelect.selectedIndex]?.text || '';
+            itemName = itemName.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
+            
+            items.push({
+                menu_item_id: mainSelect.value,
+                course_type: 'main',
+                item_name: itemName,
+                quantity: 1,
+                special_instructions: '',
+                is_kids_menu: true
+            });
+        }
+        
+        // Get dessert selection (if available)
+        const dessertSelect = document.getElementById(`person-${personIndex}-dessert`);
+        if (dessertSelect && dessertSelect.value) {
+            items.push({
+                menu_item_id: dessertSelect.value,
+                course_type: 'dessert',
+                item_name: dessertSelect.options[dessertSelect.selectedIndex]?.text || '',
+                quantity: 1,
+                special_instructions: '',
+                is_kids_menu: true
+            });
+        }
+        
+        // Get notes for this child
+        const notesElement = document.getElementById(`person-${personIndex}-notes`);
+        const personNotes = notesElement ? notesElement.value.trim() : '';
+        
+        // Get person name (optional)
+        const nameElement = document.getElementById(`person-${personIndex}-name`);
+        const personName = nameElement ? nameElement.value.trim() : '';
+        
+        if (items.length > 0 || personNotes) {
+            preorderData.push({
+                person_number: personIndex,
+                person_name: personName || null,
+                is_child: true,
+                items: items,
+                special_instructions: personNotes
+            });
+        }
+        personIndex++;
     }
     
     return preorderData;

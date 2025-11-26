@@ -626,8 +626,8 @@
                 <input type="date" id="booking-filter-date" onchange="loadBookings()" placeholder="Filter by date (optional)" style="padding: 12px 20px; border: 2px solid #d4af37; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 1em; min-height: 50px;">
                 <button class="btn btn-secondary" onclick="clearBookingFilters()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Clear Filters</button>
                 <button class="btn btn-secondary" onclick="loadBookings()" style="padding: 14px 28px; font-size: 1.1em; min-height: 50px;">Refresh</button>
-            </div>
-            
+        </div>
+        
             <div id="bookings-list" class="bookings-list">
                 <div class="loading">Loading bookings...</div>
             </div>
@@ -636,7 +636,7 @@
         <div id="menus-container">
             <div class="loading">Loading menus...</div>
         </div>
-        
+
         <!-- Menu Schedule Rules Section -->
         <div id="schedule-rules-section" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #8b4513;">
             <h2 style="color: #8b4513; font-size: 2.2em; margin-bottom: 20px;">Menu Schedule Rules</h2>
@@ -1102,7 +1102,7 @@
                             <div class="menu-name">${menu.name}</div>
                             <div class="menu-schedule">${menu.schedule || 'No schedule set'}</div>
                             <div class="menu-actions">
-                                <button class="action-btn btn-edit" onclick="handleEdit('${menu.id}')">Edit Menu</button>
+                                <button type="button" class="action-btn btn-edit" onclick="handleEdit('${menu.id}', event)">Edit Menu</button>
                             </div>
                         </div>
                     `).join('')}
@@ -1111,10 +1111,15 @@
         }
 
         // Handle Edit button - navigate to menu manager
-        function handleEdit(menuId) {
+        function handleEdit(menuId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             localStorage.setItem('selectedMenuId', menuId);
             localStorage.setItem('selectedAction', 'edit');
             window.location.href = `admin-menu-manager.html?menu=${menuId}&action=edit`;
+            return false;
         }
 
         // Logout function

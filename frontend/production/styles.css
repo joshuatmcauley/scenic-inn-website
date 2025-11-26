@@ -610,6 +610,16 @@ body::before {
     margin-right: 15px;
 }
 
+.person-avatar-child {
+    background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+    font-size: 1.2rem;
+}
+
+.person-menu-child {
+    border-left: 4px solid #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 179, 71, 0.05) 100%);
+}
+
 .person-name {
     font-size: 1.1rem;
     font-weight: 600;

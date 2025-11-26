@@ -607,6 +607,11 @@
         let currentEditingMenu = null;
 
         // Get URL parameters
+        // Helper function to get token from either storage
+        function getAdminToken() {
+            return localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        }
+        
         function getUrlParams() {
             const params = new URLSearchParams(window.location.search);
             return {
@@ -617,7 +622,8 @@
 
         // Check authentication on page load
         window.addEventListener('load', function() {
-            const token = localStorage.getItem('adminToken');
+            // Check both localStorage and sessionStorage for token
+            const token = getAdminToken();
             if (!token) {
                 window.location.href = 'admin-login.html';
                 return;
@@ -634,11 +640,14 @@
                 if (!data.success) {
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminUser');
+                    sessionStorage.removeItem('adminToken');
+                    sessionStorage.removeItem('adminUser');
                     window.location.href = 'admin-login.html';
                 } else {
-                    // Show admin info
-                    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
-                    document.getElementById('admin-info').textContent = `Welcome, ${adminUser.username}`;
+                    // Show admin info - check both storages
+                    const adminUserStr = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
+                    const adminUser = adminUserStr ? JSON.parse(adminUserStr) : {};
+                    document.getElementById('admin-info').textContent = `Welcome, ${adminUser.username || 'Admin'}`;
                     
                     // Check if we're in edit/add/delete mode
                     const params = getUrlParams();
@@ -653,6 +662,8 @@
                 console.error('Auth verification error:', error);
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminUser');
+                sessionStorage.removeItem('adminToken');
+                sessionStorage.removeItem('adminUser');
                 window.location.href = 'admin-login.html';
             });
         });

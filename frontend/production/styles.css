@@ -57,6 +57,10 @@ body::before {
     letter-spacing: 1px;
 }
 
+.logo p strong {
+    font-weight: 700;
+}
+
 /* Event Preorder Link */
 .event-preorder-link {
     margin-top: 20px;

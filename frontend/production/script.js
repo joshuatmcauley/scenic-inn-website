@@ -196,9 +196,17 @@ function validateStep1() {
     const adults = document.getElementById('adults').value;
     const children = document.getElementById('children').value;
     const date = document.getElementById('booking-date').value;
+    const inputWrapper = document.querySelector('.party-input-wrapper');
     
     if (!adults || adults === '' || !date) {
-        showError('Please select number of adults and date');
+        if (!adults || adults === '') {
+            if (inputWrapper) {
+                inputWrapper.style.borderColor = '#d63031';
+            }
+            showError('Please select number of guests');
+        } else {
+            showError('Please select a date');
+        }
         return false;
     }
     
@@ -208,8 +216,16 @@ function validateStep1() {
     const totalPartySize = adultsCount + childrenCount;
     
     if (totalPartySize < 1) {
+        if (inputWrapper) {
+            inputWrapper.style.borderColor = '#d63031';
+        }
         showError('Please select at least 1 adult');
         return false;
+    }
+    
+    // Reset border color if valid
+    if (inputWrapper) {
+        inputWrapper.style.borderColor = '';
     }
     
     // Store data
@@ -455,6 +471,35 @@ function validateStep4() {
     return true;
 }
 
+// Open party selector popup
+function openPartySelector() {
+    const popup = document.getElementById('party-selector-popup');
+    const inputWrapper = document.querySelector('.party-input-wrapper');
+    popup.classList.add('active');
+    if (inputWrapper) {
+        inputWrapper.classList.add('active');
+    }
+    // Prevent body scroll when popup is open
+    document.body.style.overflow = 'hidden';
+}
+
+// Close party selector popup
+function closePartySelector() {
+    const popup = document.getElementById('party-selector-popup');
+    const inputWrapper = document.querySelector('.party-input-wrapper');
+    popup.classList.remove('active');
+    if (inputWrapper) {
+        inputWrapper.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+    
+    // Validate that at least 1 adult is selected
+    const adults = parseInt(document.getElementById('adults').value) || 0;
+    if (adults === 0) {
+        document.getElementById('party-composition-input').value = '';
+    }
+}
+
 // Update party size from adults and children
 function updatePartySize() {
     const adults = parseInt(document.getElementById('adults').value) || 0;
@@ -464,20 +509,33 @@ function updatePartySize() {
     // Update hidden field
     document.getElementById('party-size').value = total;
     
-    // Show/hide total display
-    const totalDisplay = document.getElementById('party-total');
-    const totalValue = document.getElementById('total-people');
-    
-    if (adults > 0 || children > 0) {
-        totalDisplay.style.display = 'block';
-        totalValue.textContent = `${total} ${total === 1 ? 'person' : 'people'} (${adults} adult${adults !== 1 ? 's' : ''}${children > 0 ? `, ${children} child${children !== 1 ? 'ren' : ''}` : ''})`;
+    // Update the input display
+    const input = document.getElementById('party-composition-input');
+    if (adults > 0) {
+        let displayText = `${adults} adult${adults !== 1 ? 's' : ''}`;
+        if (children > 0) {
+            displayText += `, ${children} child${children !== 1 ? 'ren' : ''}`;
+        }
+        input.value = displayText;
     } else {
-        totalDisplay.style.display = 'none';
+        input.value = '';
     }
     
     // Trigger party size change handler
     handlePartySizeChange();
 }
+
+// Close popup when clicking outside
+document.addEventListener('click', function(event) {
+    const popup = document.getElementById('party-selector-popup');
+    const inputWrapper = document.querySelector('.party-input-wrapper');
+    
+    if (popup && popup.classList.contains('active')) {
+        if (!popup.contains(event.target) && !inputWrapper.contains(event.target)) {
+            closePartySelector();
+        }
+    }
+});
 
 // Event Handlers
 function handlePartySizeChange() {

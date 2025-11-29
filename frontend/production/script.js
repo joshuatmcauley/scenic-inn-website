@@ -885,30 +885,7 @@ async function populateMenuSelection() {
     // Create menu selection for each person
     let personIndex = 1;
     
-    // Add adults first
-    for (let i = 1; i <= adultsCount; i++) {
-        const personDiv = document.createElement('div');
-        personDiv.className = 'person-menu';
-        personDiv.innerHTML = `
-            <div class="person-header">
-                <div class="person-avatar">${personIndex}</div>
-                <div class="person-name">Adult ${i}</div>
-                <input type="text" 
-                       class="person-name-input" 
-                       id="person-${personIndex}-name" 
-                       name="person-${personIndex}-name" 
-                       placeholder="Enter name (optional)" 
-                       maxlength="50">
-            </div>
-            <div class="menu-categories">
-                ${generateMenuCategories(personIndex, false)}
-            </div>
-        `;
-        container.appendChild(personDiv);
-        personIndex++;
-    }
-    
-    // Add children with kids menu
+    // Add children FIRST with kids menu (so they appear at the top)
     for (let i = 1; i <= childrenCount; i++) {
         const personDiv = document.createElement('div');
         personDiv.className = 'person-menu person-menu-child';
@@ -925,6 +902,29 @@ async function populateMenuSelection() {
             </div>
             <div class="menu-categories">
                 ${generateMenuCategories(personIndex, true, kidsMenuItems)}
+            </div>
+        `;
+        container.appendChild(personDiv);
+        personIndex++;
+    }
+    
+    // Add adults AFTER children
+    for (let i = 1; i <= adultsCount; i++) {
+        const personDiv = document.createElement('div');
+        personDiv.className = 'person-menu';
+        personDiv.innerHTML = `
+            <div class="person-header">
+                <div class="person-avatar">${personIndex}</div>
+                <div class="person-name">Adult ${i}</div>
+                <input type="text" 
+                       class="person-name-input" 
+                       id="person-${personIndex}-name" 
+                       name="person-${personIndex}-name" 
+                       placeholder="Enter name (optional)" 
+                       maxlength="50">
+            </div>
+            <div class="menu-categories">
+                ${generateMenuCategories(personIndex, false)}
             </div>
         `;
         container.appendChild(personDiv);
@@ -1273,91 +1273,7 @@ function collectPreorderData() {
     
     let personIndex = 1;
     
-    // Collect data for adults
-    for (let i = 1; i <= adultsCount; i++) {
-        const items = [];
-        
-        // Get starter selection
-        const starterSelect = document.getElementById(`person-${i}-starter`);
-        if (starterSelect && starterSelect.value) {
-            items.push({
-                menu_item_id: starterSelect.value,
-                course_type: 'starter',
-                item_name: starterSelect.options[starterSelect.selectedIndex]?.text || '',
-                quantity: 1,
-                special_instructions: ''
-            });
-        }
-        
-        // Get main course selection
-        const mainSelect = document.getElementById(`person-${i}-main`);
-        if (mainSelect && mainSelect.value) {
-            let itemName = mainSelect.options[mainSelect.selectedIndex]?.text || '';
-            
-            // Remove price from item name (for steaks especially)
-            itemName = itemName.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
-            
-            // Check if this is a steak and get rarity
-            const steakRaritySelect = document.getElementById(`person-${i}-steak-rarity`);
-            if (steakRaritySelect && steakRaritySelect.value) {
-                itemName += ` (${steakRaritySelect.value})`;
-            }
-            
-            items.push({
-                menu_item_id: mainSelect.value,
-                course_type: 'main',
-                item_name: itemName,
-                quantity: 1,
-                special_instructions: '',
-                steak_rarity: steakRaritySelect ? steakRaritySelect.value : null
-            });
-        }
-        
-        // Get side selection (optional)
-        const sideSelect = document.getElementById(`person-${i}-side`);
-        if (sideSelect && sideSelect.value) {
-            items.push({
-                menu_item_id: sideSelect.value,
-                course_type: 'side',
-                item_name: sideSelect.options[sideSelect.selectedIndex]?.text || '',
-                quantity: 1,
-                special_instructions: ''
-            });
-        }
-        
-        // Get dessert selection
-        const dessertSelect = document.getElementById(`person-${i}-dessert`);
-        if (dessertSelect && dessertSelect.value) {
-            items.push({
-                menu_item_id: dessertSelect.value,
-                course_type: 'dessert',
-                item_name: dessertSelect.options[dessertSelect.selectedIndex]?.text || '',
-                quantity: 1,
-                special_instructions: ''
-            });
-        }
-        
-        // Get notes for this person
-        const notesElement = document.getElementById(`person-${i}-notes`);
-        const personNotes = notesElement ? notesElement.value.trim() : '';
-        
-        // Get person name (optional)
-        const nameElement = document.getElementById(`person-${i}-name`);
-        const personName = nameElement ? nameElement.value.trim() : '';
-        
-        if (items.length > 0 || personNotes) {
-            preorderData.push({
-                person_number: personIndex,
-                person_name: personName || null,
-                is_child: false,
-                items: items,
-                special_instructions: personNotes
-            });
-        }
-        personIndex++;
-    }
-    
-    // Collect data for children
+    // Collect data for children FIRST (matching the display order)
     for (let i = 1; i <= childrenCount; i++) {
         const items = [];
         
@@ -1403,6 +1319,90 @@ function collectPreorderData() {
                 person_number: personIndex,
                 person_name: personName || null,
                 is_child: true,
+                items: items,
+                special_instructions: personNotes
+            });
+        }
+        personIndex++;
+    }
+    
+    // Collect data for adults AFTER children
+    for (let i = 1; i <= adultsCount; i++) {
+        const items = [];
+        
+        // Get starter selection
+        const starterSelect = document.getElementById(`person-${personIndex}-starter`);
+        if (starterSelect && starterSelect.value) {
+            items.push({
+                menu_item_id: starterSelect.value,
+                course_type: 'starter',
+                item_name: starterSelect.options[starterSelect.selectedIndex]?.text || '',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get main course selection
+        const mainSelect = document.getElementById(`person-${personIndex}-main`);
+        if (mainSelect && mainSelect.value) {
+            let itemName = mainSelect.options[mainSelect.selectedIndex]?.text || '';
+            
+            // Remove price from item name (for steaks especially)
+            itemName = itemName.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
+            
+            // Check if this is a steak and get rarity
+            const steakRaritySelect = document.getElementById(`person-${personIndex}-steak-rarity`);
+            if (steakRaritySelect && steakRaritySelect.value) {
+                itemName += ` (${steakRaritySelect.value})`;
+            }
+            
+            items.push({
+                menu_item_id: mainSelect.value,
+                course_type: 'main',
+                item_name: itemName,
+                quantity: 1,
+                special_instructions: '',
+                steak_rarity: steakRaritySelect ? steakRaritySelect.value : null
+            });
+        }
+        
+        // Get side selection (optional)
+        const sideSelect = document.getElementById(`person-${personIndex}-side`);
+        if (sideSelect && sideSelect.value) {
+            items.push({
+                menu_item_id: sideSelect.value,
+                course_type: 'side',
+                item_name: sideSelect.options[sideSelect.selectedIndex]?.text || '',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get dessert selection
+        const dessertSelect = document.getElementById(`person-${personIndex}-dessert`);
+        if (dessertSelect && dessertSelect.value) {
+            items.push({
+                menu_item_id: dessertSelect.value,
+                course_type: 'dessert',
+                item_name: dessertSelect.options[dessertSelect.selectedIndex]?.text || '',
+                quantity: 1,
+                special_instructions: ''
+            });
+        }
+        
+        // Get notes for this person
+        const notesElement = document.getElementById(`person-${personIndex}-notes`);
+        const personNotes = notesElement ? notesElement.value.trim() : '';
+        
+        // Get person name (optional)
+        const nameElement = document.getElementById(`person-${personIndex}-name`);
+        const personName = nameElement ? nameElement.value.trim() : '';
+        
+        if (items.length > 0 || personNotes) {
+            preorderData.push({
+                person_number: personIndex,
+                person_name: personName || null,
+                is_child: false,
                 items: items,
                 special_instructions: personNotes
             });

@@ -311,7 +311,7 @@ async function generatePreorderPDF(bookingData, preorderData) {
             return itemA.localeCompare(itemB);
           });
           
-          const x0 = doc.x;
+          const x0 = doc.page.margins.left;
           let y = doc.y;
           const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
           const personW = 60;
@@ -347,6 +347,22 @@ async function generatePreorderPDF(bookingData, preorderData) {
             rowHeights.push(rowH);
           }
           
+          // Calculate total table height BEFORE drawing
+          const totalHeight = headerH + rowHeights.reduce((sum, h) => sum + h, 0);
+          const titleHeight = 15; // Space for title
+          const spacingAfter = 10; // Space after table
+          const totalNeeded = titleHeight + totalHeight + spacingAfter;
+          
+          // Check if we need a new page BEFORE drawing
+          const availableSpace = doc.page.height - doc.y - doc.page.margins.bottom;
+          if (availableSpace < totalNeeded) {
+            doc.addPage();
+            y = doc.page.margins.top;
+            doc.y = y;
+          } else {
+            y = doc.y;
+          }
+          
           // Draw header
           doc.font('Helvetica-Bold').fontSize(9);
           const headerY = y + 2;
@@ -356,9 +372,6 @@ async function generatePreorderPDF(bookingData, preorderData) {
             doc.text('Sides', x0 + personW + itemW + cellPadding, headerY, { width: sidesW - cellPadding * 2 });
           }
           doc.text('Notes', x0 + personW + itemW + sidesW + cellPadding, headerY, { width: notesW - cellPadding * 2 });
-          
-          // Calculate total table height
-          const totalHeight = headerH + rowHeights.reduce((sum, h) => sum + h, 0);
           
           // Draw grid lines
           doc.lineWidth(0.5);
@@ -404,8 +417,9 @@ async function generatePreorderPDF(bookingData, preorderData) {
             currentY += rowH;
           }
           
+          // Update doc.y to position after the table
+          doc.y = y + totalHeight + spacingAfter;
           doc.fontSize(12); // Reset font size
-          doc.moveDown(totalHeight / 14 + 0.3); // advance roughly table height + spacing
         };
 
           // Only show sections that have data
@@ -428,11 +442,8 @@ async function generatePreorderPDF(bookingData, preorderData) {
           // Sides are now included in the mains table, no separate table needed
           
           if (desserts.length > 0) {
-            // Check if we need a new page for desserts
-            if (doc.y > doc.page.height - 200) {
-              doc.addPage();
-            }
-            doc.font('Helvetica-Bold').text('Desserts').moveDown(0.2);
+            // drawTable now handles page breaks internally, so we just need to add the title
+            doc.font('Helvetica-Bold').fontSize(14).text('Desserts').moveDown(0.2);
             drawTable('Desserts', desserts);
           }
         }

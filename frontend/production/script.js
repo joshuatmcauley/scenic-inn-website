@@ -935,7 +935,19 @@ async function populateMenuSelection() {
 // Load kids menu items
 async function loadKidsMenuItems() {
     try {
-        const response = await fetch(`${API_BASE_URL}/menus/kids-menu/items?forPreorder=true`);
+        // Determine which kids menu to load based on the current experience/menu
+        let kidsMenuId = 'kids-menu'; // Default kids menu
+        
+        // Check if we're on a Christmas menu - use the corresponding kids Christmas menu
+        if (bookingData.experience_id === 'christmas-dinner') {
+            kidsMenuId = 'kids-christmas-dinner';
+        } else if (bookingData.experience_id === 'christmas-lunch') {
+            kidsMenuId = 'kids-christmas-lunch';
+        }
+        
+        console.log('Loading kids menu:', kidsMenuId, 'for experience:', bookingData.experience_id);
+        
+        const response = await fetch(`${API_BASE_URL}/menus/${kidsMenuId}/items?forPreorder=true`);
         let data = await response.json();
         
         if (response.ok && data && data.success !== false) {

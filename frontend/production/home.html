@@ -6,7 +6,7 @@
     <title>The Scenic Inn - Bar and Restaurant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -15,251 +15,300 @@
         }
 
         body {
-            font-family: 'Cormorant Garamond', serif;
-            background: url('Theme/building.jpg') center/cover no-repeat fixed;
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
             color: #333;
             line-height: 1.6;
-            position: relative;
         }
 
-        /* Marble overlay for top and bottom */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 120px;
-            background: url('Theme/Marble.jpg') center/cover no-repeat;
-            z-index: 1;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 120px;
-            background: url('Theme/Marble.jpg') center/cover no-repeat;
-            z-index: 1;
-        }
-
-        /* Navigation Bar */
+        /* Navigation Bar - White with Red Text */
         .navbar {
-            background-color: #752f15;
+            background-color: #ffffff;
             padding: 15px 0;
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .nav-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 30px;
         }
 
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 25px;
+            align-items: center;
         }
 
         .nav-links a {
-            color: #f4f1eb;
+            color: #dc3545;
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s ease;
-            padding: 8px 16px;
-            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: opacity 0.3s ease;
+            padding: 5px 0;
         }
 
         .nav-links a:hover,
         .nav-links a.active {
-            color: #d4af37;
-            background-color: rgba(212, 175, 55, 0.1);
+            opacity: 0.8;
+            text-decoration: underline;
         }
 
         .nav-right {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
 
-        .admin-login {
-            color: #f4f1eb;
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .admin-login:hover {
-            color: #d4af37;
-        }
-
-        .cart-icon {
-            color: #f4f1eb;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9rem;
-        }
-
-        .cart-icon:hover {
-            color: #d4af37;
-        }
-
-        /* Main Content */
-        .main-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 100px 20px 20px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 60px 40px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .logo {
-            margin-bottom: 30px;
-        }
-
-        .logo-image {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            border-radius: 50%;
-        }
-
-        .restaurant-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 3rem;
-            color: #752f15;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .restaurant-subtitle {
+        .user-icon {
+            color: #dc3545;
             font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 40px;
-            font-weight: 400;
-        }
-
-        .book-button {
-            background: linear-gradient(135deg, #752f15 0%, #d4af37 100%);
-            color: white;
-            padding: 18px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
             text-decoration: none;
-            display: inline-block;
-            font-family: 'Cormorant Garamond', serif;
         }
 
-        .book-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(117, 47, 21, 0.3);
+        /* Logo Banner Section */
+        .logo-banner {
+            background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 100%);
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 60px;
         }
 
-        /* Contact Us Button */
-        .contact-button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
+        .logo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            display: block;
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .logo-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        /* Main Content Sections */
+        .content-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .content-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 35px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .content-box h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .content-box p {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        /* Awards Section - Dark Grey */
+        .awards-box {
+            background: #2c3e50;
+            color: white;
+            padding: 35px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .awards-box h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .awards-box p {
+            font-size: 1rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .red-button {
             background: #dc3545;
             color: white;
-            padding: 15px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
             font-weight: 600;
-            transition: all 0.3s ease;
-            z-index: 1000;
-            box-shadow: 0 10px 20px rgba(220, 53, 69, 0.3);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 15px;
+            transition: background 0.3s ease;
         }
 
-        .contact-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(220, 53, 69, 0.4);
+        .red-button:hover {
+            background: #c82333;
         }
 
-        .contact-icon {
-            width: 20px;
-            height: 20px;
+        .awards-image {
+            width: 100%;
+            max-width: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        /* Reviews Section */
+        .reviews-box {
+            background: #2c3e50;
+            color: white;
+            padding: 35px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+
+        .review-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #dc3545;
+        }
+
+        .review-item p {
+            font-style: italic;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .review-author {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .tripadvisor-icon {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #00af87;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        /* Photo Gallery */
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .gallery-item.large {
+            grid-row: 1 / 3;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Interior Photo Section */
+        .interior-section {
+            margin-bottom: 40px;
+        }
+
+        .interior-photo {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         /* Responsive Design */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
+        @media (max-width: 1024px) {
+            .two-column {
+                grid-template-columns: 1fr;
             }
 
-            .hero-card {
-                padding: 40px 30px;
-                margin: 20px;
+            .photo-gallery {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto;
             }
 
-            .restaurant-name {
-                font-size: 2.2rem;
-            }
-
-            .restaurant-subtitle {
-                font-size: 1rem;
-            }
-
-            .book-button {
-                padding: 15px 30px;
-                font-size: 1rem;
-            }
-
-            .contact-button {
-                bottom: 20px;
-                right: 20px;
-                padding: 12px 16px;
-                font-size: 0.9rem;
+            .gallery-item.large {
+                grid-row: auto;
             }
         }
 
-        @media (max-width: 480px) {
-            .hero-card {
-                padding: 30px 20px;
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 15px;
+                font-size: 0.85rem;
             }
 
-            .restaurant-name {
-                font-size: 1.8rem;
+            .logo-text {
+                font-size: 2rem;
             }
 
-            .logo-image {
-                width: 60px;
-                height: 60px;
+            .content-wrapper {
+                padding: 20px 15px;
+            }
+
+            .content-box,
+            .awards-box,
+            .reviews-box {
+                padding: 25px;
+            }
+
+            .photo-gallery {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -271,63 +320,109 @@
             <ul class="nav-links">
                 <li><a href="home.html" class="active">Home</a></li>
                 <li><a href="index.html">Book a Table</a></li>
+                <li><a href="index.html">Group/Large Party Booking</a></li>
                 <li><a href="about.html">About Us</a></li>
                 <li><a href="contact.html">Contact Us</a></li>
-                <li><a href="menus-dynamic.html">Menus</a></li>
+                <li><a href="menus.html">Menus</a></li>
                 <li><a href="events.html">What's On</a></li>
             </ul>
             <div class="nav-right">
-                <a href="admin-menu-dashboard.html" class="admin-login">
-                    <span>👤</span> Admin Login
-                </a>
-                <a href="#" class="cart-icon">
-                    <span>🛒</span> 0
-                </a>
+                <a href="#" class="user-icon">👤</a>
+                <span style="color: #dc3545;">▼</span>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="hero-card">
-            <div class="logo">
-                <img src="Theme/logotransparent.png" alt="The Scenic Inn Logo" class="logo-image">
-            </div>
-            <h1 class="restaurant-name">THE SCENIC INN</h1>
-            <p class="restaurant-subtitle">BAR AND RESTAURANT</p>
-            <a href="index.html" class="book-button">Book a Table</a>
+    <!-- Logo Banner -->
+    <div class="logo-banner">
+        <div class="logo-container">
+            <img src="Theme/logotransparent.png" alt="Logo" class="logo-icon">
+            <div class="logo-text">THE SCENIC INN</div>
+            <div class="logo-subtitle">BAR AND RESTAURANT</div>
         </div>
-    </main>
+    </div>
 
-    <!-- Contact Us Button -->
-    <a href="contact.html" class="contact-button">
-        <svg class="contact-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-        </svg>
-        CONTACT US
-    </a>
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Two Column Layout: Welcome & Awards -->
+        <div class="two-column">
+            <!-- Left: Welcome Message -->
+            <div class="content-box">
+                <h2>Welcome to The Scenic Inn</h2>
+                <p>We are a family run Bar and Restaurant situated just outside Armoy, a short distance from the Famous Dark Hedges. We offer a wide range of dishes to suit everyone's taste from our Famous Sizzling Pepper Chicken to the finest steaks which are all locally sourced.</p>
+                <p>We are Passionate about sourcing all of our produce locally and all of our food is cooked from fresh. We have a variety of menu's including Lunch time menu, Evening menu and Sunday Lunch. We can cater for parties and tailor menus to suit your needs. We offer live entertainment at the weekends with free admission, with a different band playing each week.</p>
+            </div>
+
+            <!-- Right: Awards Section -->
+            <div class="awards-box">
+                <h2>LOCAL AWARD-WINNING BAR AND RESTAURANT</h2>
+                <p>Did you know that since January 2013 the Scenic Inn has helped raise over £200,000 for various charities in Northern Ireland? We're committed to helping our local community in any way we can!</p>
+                <p>In 2017 we won the very prestigious accolade "Pub Food of The Year" for the whole of Northern Ireland along with Community Bar of the year.</p>
+                <a href="menus.html" class="red-button">SEE THE MENU</a>
+                <img src="reference-images/IMG_1096.jpeg" alt="Awards" class="awards-image">
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="reviews-box">
+            <h2 style="margin-bottom: 25px;">Customer Reviews</h2>
+            
+            <div class="review-item">
+                <p>"I've never had a bad meal at the Scenic Inn! The food is always fantastic, and the staff couldn't be nicer, or more helpful. Would definitely recommend."</p>
+                <div class="review-author">- Lauren C</div>
+            </div>
+
+            <div class="review-item">
+                <p>"Had a brilliant meal in very comfortable surroundings. Food is great & the prices are very good. Staff were very helpful and well mannered."</p>
+                <div class="review-author">- shirl228</div>
+            </div>
+
+            <div class="review-item">
+                <p>"First time there for birthday meal, food was excellent, staff were so friendly & couldn't do enough for you. Will definitely be back"</p>
+                <div class="review-author">- macey612</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 25px;">
+                <a href="#" class="red-button">SEE MORE REVIEWS</a>
+                <span class="tripadvisor-icon"></span>
+            </div>
+        </div>
+
+        <!-- Photo Gallery -->
+        <div class="photo-gallery">
+            <div class="gallery-item large">
+                <img src="reference-images/darkhedges2.jpg" alt="The Dark Hedges">
+            </div>
+            <div class="gallery-item">
+                <img src="reference-images/m_the_scenic_inn_photo.jpg" alt="Restaurant">
+            </div>
+            <div class="gallery-item">
+                <img src="reference-images/The-Scenic-Inn-8.jpeg" alt="Interior">
+            </div>
+            <div class="gallery-item">
+                <img src="reference-images/outside new bit.jpg" alt="Exterior">
+            </div>
+            <div class="gallery-item">
+                <img src="reference-images/inside new bit.jpg" alt="Interior">
+            </div>
+        </div>
+
+        <!-- Interior Photo -->
+        <div class="interior-section">
+            <img src="reference-images/inside new bit.jpg" alt="Restaurant Interior" class="interior-photo">
+        </div>
+    </div>
 
     <script>
-        // Add smooth scrolling for navigation links
+        // Smooth scroll for navigation
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                    target.scrollIntoView({ behavior: 'smooth' });
                 }
             });
-        });
-
-        // Add loading animation for the book button
-        document.querySelector('.book-button').addEventListener('click', function(e) {
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
         });
     </script>
 </body>

@@ -4,39 +4,240 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - The Scenic Inn</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: url('Theme/Marble.jpg') center/cover no-repeat fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar - White with Red Text */
+        .navbar {
+            background-color: #ffffff;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: opacity 0.3s ease;
+            padding: 5px 0;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-icon {
+            color: #dc3545;
+            font-size: 1.2rem;
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .content-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 30px 40px;
+        }
+
+        .location-hours-section {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        /* Location & Hours Box - Black */
+        .location-box {
+            background: #000000;
+            color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .location-box h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            color: #ffffff;
+        }
+
+        .location-box .info-item {
+            margin-bottom: 20px;
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+
+        .location-box .info-item strong {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        /* Google Maps */
+        .map-container {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            height: 100%;
+            min-height: 500px;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .location-hours-section {
+                grid-template-columns: 1fr;
+            }
+
+            .map-container {
+                min-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 15px;
+                font-size: 0.85rem;
+            }
+
+            .content-wrapper {
+                padding: 80px 15px 20px;
+            }
+
+            .location-box {
+                padding: 25px;
+            }
+
+            .location-box h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
-                <img src="Theme/logotransparent.png" alt="The Scenic Inn" class="logo-image">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <ul class="nav-links">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="index.html">Book a Table</a></li>
+                <li><a href="index.html">Group/Large Party Booking</a></li>
+                <li><a href="about.html">About Us</a></li>
+                <li><a href="contact.html" class="active">Contact Us</a></li>
+                <li><a href="menus.html">Menus</a></li>
+                <li><a href="events.html">What's On</a></li>
+            </ul>
+            <div class="nav-right">
+                <a href="#" class="user-icon">👤</a>
+                <span style="color: #dc3545;">▼</span>
             </div>
-            <nav class="nav">
-                <ul>
-                    <li><a href="homepage.html">Home</a></li>
-                    <li><a href="index.html">Book a Table</a></li>
-                    <li><a href="about.html">About Us</a></li>
-                    <li><a href="contact.html" class="active">Contact Us</a></li>
-                    <li><a href="menus.html">Menus</a></li>
-                    <li><a href="events.html">What's On</a></li>
-                </ul>
-            </nav>
-        </header>
-        
-        <main class="main-content">
-            <section class="hero">
-                <h1>Contact The Scenic Inn</h1>
-                <p>Get in touch with us for reservations, events, or any inquiries.</p>
-            </section>
-            
-            <section class="content">
-                <h2>Contact Information</h2>
-                <p>Coming soon... This page is under development.</p>
-                <a href="index.html" class="book-button">Book a Table</a>
-            </section>
-        </main>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <div class="location-hours-section">
+            <!-- Location & Hours Box -->
+            <div class="location-box">
+                <h2>LOCATION & HOURS</h2>
+                
+                <div class="info-item">
+                    <strong>Address:</strong>
+                    38 FIVEY ROAD, BALLYMONEY, COUNTY ANTRIM, BT53 8UT
+                </div>
+
+                <div class="info-item">
+                    <strong>Contact Number:</strong>
+                    CALL 02820751260
+                </div>
+
+                <div class="info-item">
+                    <strong>Email Address:</strong>
+                    ENQUIRIES@THESCENICINN.COM
+                </div>
+
+                <div class="info-item">
+                    <strong>Location:</strong>
+                    SITUATED CLOSE TO THE ICONIC DARK HEDGES, ARMOY
+                </div>
+
+                <div class="info-item">
+                    <strong>Operating Hours:</strong>
+                    OPEN DAILY NOON TILL 1AM
+                </div>
+
+                <div class="info-item">
+                    <strong>Food Serving Hours:</strong>
+                    SERVING FOOD NOON TILL 8:30 PM
+                </div>
+            </div>
+
+            <!-- Google Maps -->
+            <div class="map-container">
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2318.1234567890123!2d-6.3456789!3d55.1234567!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTXCsDA3JzI0LjQiTiA2wrAyMCc0NC40Ilc!5e0!3m2!1sen!2suk!4v1234567890123!5m2!1sen!2suk"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // You can add any interactive features here
+    </script>
 </body>
 </html>

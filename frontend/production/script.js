@@ -1154,7 +1154,27 @@ function generateMenuCategories(personNumber, isChild = false, kidsMenuData = nu
             </div>
             ` : ''}
             
-            ${hasDesserts ? `
+            ${isChild && hasDesserts ? `
+            <div class="course-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" 
+                           id="person-${personNumber}-add-dessert" 
+                           name="person-${personNumber}-add-dessert"
+                           onchange="toggleKidsDessert(${personNumber})"
+                           style="width: auto; margin: 0;">
+                    <span>Add dessert?</span>
+                </label>
+            </div>
+            <div class="course-group" id="person-${personNumber}-dessert-group" style="display: none;">
+                <label for="person-${personNumber}-dessert">Dessert:</label>
+                <select id="person-${personNumber}-dessert" name="person-${personNumber}-dessert">
+                    <option value="">Select a dessert</option>
+                    ${desserts.map(item => `
+                        <option value="${item.id}">${item.name}${getItemPriceDisplay(item, isChild)}</option>
+                    `).join('')}
+                </select>
+            </div>
+            ` : hasDesserts ? `
             <div class="course-group">
                 <label for="person-${personNumber}-dessert">Dessert:</label>
                 <select id="person-${personNumber}-dessert" name="person-${personNumber}-dessert">
@@ -1301,6 +1321,29 @@ function toggleSteakRarity(personNumber) {
     }
 }
 
+// Toggle kids dessert dropdown based on checkbox
+function toggleKidsDessert(personNumber) {
+    const checkbox = document.getElementById(`person-${personNumber}-add-dessert`);
+    const dessertGroup = document.getElementById(`person-${personNumber}-dessert-group`);
+    const dessertSelect = document.getElementById(`person-${personNumber}-dessert`);
+    
+    if (!checkbox || !dessertGroup || !dessertSelect) {
+        console.log('Missing dessert elements - returning early');
+        return;
+    }
+    
+    if (checkbox.checked) {
+        // Show dessert dropdown
+        dessertGroup.style.display = 'block';
+        console.log('Showing dessert dropdown for person', personNumber);
+    } else {
+        // Hide dessert dropdown and clear selection
+        dessertGroup.style.display = 'none';
+        dessertSelect.value = '';
+        console.log('Hiding dessert dropdown for person', personNumber);
+    }
+}
+
 // Data Collection
 function collectPreorderData() {
     const preorderData = [];
@@ -1329,13 +1372,17 @@ function collectPreorderData() {
             });
         }
         
-        // Get dessert selection (if available)
+        // Get dessert selection (only if checkbox is checked)
+        const addDessertCheckbox = document.getElementById(`person-${personIndex}-add-dessert`);
         const dessertSelect = document.getElementById(`person-${personIndex}-dessert`);
-        if (dessertSelect && dessertSelect.value) {
+        if (addDessertCheckbox && addDessertCheckbox.checked && dessertSelect && dessertSelect.value) {
+            let itemName = dessertSelect.options[dessertSelect.selectedIndex]?.text || '';
+            itemName = itemName.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
+            
             items.push({
                 menu_item_id: dessertSelect.value,
                 course_type: 'dessert',
-                item_name: dessertSelect.options[dessertSelect.selectedIndex]?.text || '',
+                item_name: itemName,
                 quantity: 1,
                 special_instructions: '',
                 is_kids_menu: true

@@ -542,6 +542,11 @@ function handlePartySizeChange() {
     const adults = parseInt(document.getElementById('adults').value) || 0;
     const children = parseInt(document.getElementById('children').value) || 0;
     const totalPartySize = adults + children;
+    
+    // Update bookingData immediately
+    bookingData.adults = adults;
+    bookingData.children = children;
+    bookingData.party_size = totalPartySize;
     const notice = document.getElementById('large-party-notice');
     const preorderToggle = document.getElementById('enable-preorder');
     
@@ -566,6 +571,11 @@ function handlePreorderToggle() {
     const children = parseInt(document.getElementById('children').value) || 0;
     const totalPartySize = adults + children;
     
+    // Update bookingData with current adults and children counts
+    bookingData.adults = adults;
+    bookingData.children = children;
+    bookingData.party_size = totalPartySize;
+    
     if (preorderToggle && preorderInfo) {
         if (preorderToggle.checked) {
             preorderInfo.style.display = 'block';
@@ -574,6 +584,10 @@ function handlePreorderToggle() {
             const instruction = document.getElementById('menu-instruction');
             if (instruction) {
                 instruction.textContent = `Select meals for each of the ${totalPartySize} people in your party`;
+            }
+            // Reload menu selection to show children first
+            if (bookingData.experience_id) {
+                populateMenuSelection();
             }
         } else {
             preorderInfo.style.display = 'none';
@@ -871,11 +885,18 @@ async function populateMenuSelection() {
         return;
     }
     
-    // Determine adults and children counts
-    const adultsCount = bookingData.adults || bookingData.party_size;
-    const childrenCount = bookingData.children || 0;
+    // Determine adults and children counts - read directly from form inputs
+    const adultsInput = document.getElementById('adults');
+    const childrenInput = document.getElementById('children');
+    const adultsCount = adultsInput ? parseInt(adultsInput.value) || 0 : (bookingData.adults || bookingData.party_size || 0);
+    const childrenCount = childrenInput ? parseInt(childrenInput.value) || 0 : (bookingData.children || 0);
     
-    console.log('populateMenuSelection - Adults:', adultsCount, 'Children:', childrenCount);
+    // Update bookingData with current values
+    bookingData.adults = adultsCount;
+    bookingData.children = childrenCount;
+    bookingData.party_size = adultsCount + childrenCount;
+    
+    console.log('populateMenuSelection - Adults:', adultsCount, 'Children:', childrenCount, 'Total:', adultsCount + childrenCount);
     
     // Load kids menu items if there are children
     let kidsMenuItems = null;

@@ -875,17 +875,22 @@ async function populateMenuSelection() {
     const adultsCount = bookingData.adults || bookingData.party_size;
     const childrenCount = bookingData.children || 0;
     
+    console.log('populateMenuSelection - Adults:', adultsCount, 'Children:', childrenCount);
+    
     // Load kids menu items if there are children
     let kidsMenuItems = null;
     if (childrenCount > 0) {
+        console.log('Loading kids menu items...');
         await loadKidsMenuItems();
         kidsMenuItems = window.kidsMenuItems || null;
+        console.log('Kids menu items loaded:', kidsMenuItems ? 'Yes' : 'No', kidsMenuItems);
     }
     
     // Create menu selection for each person
     let personIndex = 1;
     
     // Add children FIRST with kids menu (so they appear at the top)
+    console.log('Adding children first, count:', childrenCount);
     for (let i = 1; i <= childrenCount; i++) {
         const personDiv = document.createElement('div');
         personDiv.className = 'person-menu person-menu-child';
@@ -909,6 +914,7 @@ async function populateMenuSelection() {
     }
     
     // Add adults AFTER children
+    console.log('Adding adults after children, count:', adultsCount);
     for (let i = 1; i <= adultsCount; i++) {
         const personDiv = document.createElement('div');
         personDiv.className = 'person-menu';
@@ -999,7 +1005,16 @@ function generateMenuCategories(personNumber, isChild = false, kidsMenuData = nu
     // Use kids menu if this is a child
     const itemsToUse = isChild && kidsMenuData ? kidsMenuData : menuItems;
     
+    console.log(`generateMenuCategories for person ${personNumber}:`, {
+        isChild,
+        hasKidsMenuData: !!kidsMenuData,
+        usingKidsMenu: isChild && kidsMenuData,
+        itemsToUse: itemsToUse ? Object.keys(itemsToUse) : null,
+        categories: itemsToUse?.categories?.length || 0
+    });
+    
     if (!itemsToUse || !itemsToUse.categories) {
+        console.warn(`No menu items available for person ${personNumber}, isChild: ${isChild}`);
         return '<p>No menu items available</p>';
     }
     

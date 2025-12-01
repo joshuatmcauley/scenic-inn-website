@@ -463,7 +463,7 @@ async function generatePreorderPDF(bookingData, preorderData) {
     });
 }
 
-// Send email with PDF attachment
+// Send email with PDF attachment (restaurant preorder email)
 async function sendPreorderEmail(pdfPath, bookingData) {
     const useResend = !!RESEND_API_KEY;
     
@@ -511,6 +511,60 @@ async function sendPreorderEmail(pdfPath, bookingData) {
             }
         ]
     };
+    const info = await emailTransporter.sendMail(mailOptions);
+    return { success: true, provider: 'smtp', messageId: info.messageId };
+}
+
+// Send a simple booking notification email to the restaurant (no preorder / no PDF)
+async function sendRestaurantBookingEmail(bookingData, hasPreorder = false) {
+    const useResend = !!RESEND_API_KEY;
+
+    // Normalize fields to prevent undefined values
+    const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+    const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+    const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+    const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
+    const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
+    const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
+    const date = pick(bookingData, ['date'], 'N/A');
+    const time = pick(bookingData, ['time'], 'N/A');
+    const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
+
+    const subject = hasPreorder
+        ? `New booking (with preorder) - ${date}`
+        : `New booking - ${date}`;
+
+    let text = `New booking received.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
+
+    if (specialRequests && specialRequests.trim()) {
+        text += `\n\nSpecial Requests:\n${specialRequests}`;
+    }
+
+    if (hasPreorder) {
+        text += `\n\nPreorder: Customer has submitted a preorder. See preorder PDF / system for full details.`;
+    } else {
+        text += `\n\nPreorder: No preorder submitted. Customer will order on the day.`;
+    }
+
+    const toAddress = process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
+
+    if (useResend) {
+        const result = await sendEmailViaResend({
+            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+            to: toAddress,
+            subject,
+            text
+        });
+        return { success: true, provider: 'resend', id: result.id };
+    }
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER || 'your-email@gmail.com',
+        to: toAddress,
+        subject,
+        text
+    };
+
     const info = await emailTransporter.sendMail(mailOptions);
     return { success: true, provider: 'smtp', messageId: info.messageId };
 }
@@ -584,7 +638,7 @@ router.post('/', async (req, res) => {
             note: 'Current booking system working perfectly - no external integration needed'
         };
         
-        // Step 2: Handle preorder if present
+        // Step 2: Handle preorder if present (and always send restaurant booking email)
         let preorderResult = null;
         console.log('=== PREORDER CHECK ===');
         console.log('preorderData:', JSON.stringify(preorderData, null, 2));
@@ -598,21 +652,30 @@ router.post('/', async (req, res) => {
                 // Generate PDF
                 const pdfPath = await generatePreorderPDF(bookingData, preorderData);
                 console.log('✅ PDF generated at:', pdfPath);
-                
-                // Send email with PDF
-                console.log('📧 Sending restaurant email with PDF...');
+
+                // Send email with PDF (restaurant preorder email)
+                console.log('📧 Sending restaurant email with PDF (preorder)...');
                 console.log('   To:', process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER);
                 console.log('   From:', process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>');
                 preorderResult = await sendPreorderEmail(pdfPath, bookingData);
                 console.log('✅ Preorder email result:', preorderResult);
-                
+
+                // Also send a plain booking notification email (makes behaviour consistent)
+                try {
+                    console.log('📧 Sending restaurant booking summary email (with preorder flag)...');
+                    const bookingEmailResult = await sendRestaurantBookingEmail(bookingData, true);
+                    console.log('✅ Restaurant booking summary email result:', bookingEmailResult);
+                } catch (emailErr) {
+                    console.error('❌ Failed to send restaurant booking summary email (with preorder):', emailErr);
+                }
+
                 // Clean up PDF file after sending
                 setTimeout(() => {
                     if (fs.existsSync(pdfPath)) {
                         fs.unlinkSync(pdfPath);
                     }
                 }, 5000);
-                
+
             } catch (error) {
                 console.error('❌ Error handling preorder:', error);
                 console.error('   Error stack:', error.stack);
@@ -620,7 +683,15 @@ router.post('/', async (req, res) => {
             }
         } else {
             console.warn('⚠️ No preorder data found - skipping PDF generation');
-            console.warn('   This means the restaurant email with PDF will NOT be sent');
+            console.warn('   Sending basic restaurant booking email without preorder.');
+            try {
+                const bookingEmailResult = await sendRestaurantBookingEmail(bookingData, false);
+                console.log('✅ Restaurant booking email (no preorder) result:', bookingEmailResult);
+                preorderResult = bookingEmailResult;
+            } catch (emailErr) {
+                console.error('❌ Failed to send restaurant booking email (no preorder):', emailErr);
+                preorderResult = { success: false, error: emailErr.message };
+            }
         }
         
         // Step 3: Store booking in database

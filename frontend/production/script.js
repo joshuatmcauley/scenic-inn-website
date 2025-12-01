@@ -962,15 +962,8 @@ async function populateMenuSelection() {
 // Load kids menu items
 async function loadKidsMenuItems() {
     try {
-        // Determine which kids menu to load based on the current experience/menu
-        let kidsMenuId = 'kids-menu'; // Default kids menu
-        
-        // Check if we're on a Christmas menu - use the corresponding kids Christmas menu
-        if (bookingData.experience_id === 'christmas-dinner') {
-            kidsMenuId = 'kids-christmas-dinner';
-        } else if (bookingData.experience_id === 'christmas-lunch') {
-            kidsMenuId = 'kids-christmas-lunch';
-        }
+        // Always use the unified kids menu for all bookings
+        const kidsMenuId = 'kids-menu';
         
         console.log('Loading kids menu:', kidsMenuId, 'for experience:', bookingData.experience_id);
         

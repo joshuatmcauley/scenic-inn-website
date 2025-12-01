@@ -970,43 +970,61 @@ async function loadKidsMenuItems() {
         const response = await fetch(`${API_BASE_URL}/menus/${kidsMenuId}/items?forPreorder=true`);
         let data = await response.json();
         
+        console.log('Kids menu API response:', response.status, response.ok, data);
+        
         if (response.ok && data && data.success !== false) {
+            // Handle both shapes: { success, data: [...] } or direct array
             let raw = Array.isArray(data) ? data : (data.data || []);
+            console.log('Kids menu raw data:', raw, 'Length:', raw.length);
             
-            if (raw.length > 0 && raw[0].section_key) {
-                const grouped = {};
-                raw.forEach(item => {
-                    const key = (item.section_key || '').toString().toLowerCase();
-                    if (!grouped[key]) {
-                        grouped[key] = { name: key, items: [] };
-                    }
-                    grouped[key].items.push({
-                        id: item.id,
-                        name: item.name,
-                        description: item.description || '',
-                        price: item.price,
-                        comes_with_side: item.comes_with_side || false,
-                        is_steak: false // Kids menu won't have steaks
-                    });
-                });
-                window.kidsMenuItems = { categories: Object.values(grouped) };
-            } else {
-                window.kidsMenuItems = {
-                    categories: raw.map(section => ({
-                        name: (section.section_key || section.name || '').toString().toLowerCase(),
-                        items: (section.items || []).map(item => ({
+            if (raw.length > 0) {
+                // Some endpoints return a flat list of items with section_key/section_name
+                // Normalize into categories grouped by section_key (same logic as loadMenuItems)
+                if (raw[0].section_key && !raw[0].items) {
+                    console.log('Processing flat array of items with section_key');
+                    const grouped = {};
+                    raw.forEach(item => {
+                        const key = (item.section_key || '').toString().toLowerCase();
+                        if (!grouped[key]) {
+                            grouped[key] = { name: key, items: [] };
+                        }
+                        grouped[key].items.push({
                             id: item.id,
                             name: item.name,
                             description: item.description || '',
                             price: item.price,
                             comes_with_side: item.comes_with_side || false,
-                            is_steak: false
+                            is_steak: false // Kids menu won't have steaks
+                        });
+                    });
+                    window.kidsMenuItems = { categories: Object.values(grouped) };
+                    console.log('Kids menu items grouped:', window.kidsMenuItems);
+                } 
+                // Already grouped by sections with items
+                else {
+                    console.log('Processing grouped sections');
+                    window.kidsMenuItems = {
+                        categories: raw.map(section => ({
+                            // Prefer section_key if present for categorization logic
+                            name: (section.section_key || section.name || '').toString().toLowerCase(),
+                            items: (section.items || []).map(item => ({
+                                id: item.id,
+                                name: item.name,
+                                description: item.description || '',
+                                price: item.price,
+                                comes_with_side: item.comes_with_side || false,
+                                is_steak: false
+                            }))
                         }))
-                    }))
-                };
+                    };
+                    console.log('Kids menu items from sections:', window.kidsMenuItems);
+                }
+            } else {
+                console.warn('Kids menu data is empty');
+                window.kidsMenuItems = null;
             }
         } else {
-            console.warn('Failed to load kids menu items');
+            console.warn('Failed to load kids menu items. Response:', response.status, 'Data:', data);
             window.kidsMenuItems = null;
         }
     } catch (error) {

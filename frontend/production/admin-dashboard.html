@@ -843,6 +843,8 @@
     <script>
         const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
         let allMenus = [];
+        // Store preorder data for each booking
+        window.preorderDataStore = {};
 
         // Helper function to get token from either localStorage or sessionStorage
         function getAdminToken() {
@@ -1362,6 +1364,9 @@
                     return;
                 }
                 
+                // Clear and populate preorder data store
+                window.preorderDataStore = {};
+                
                 bookingsList.innerHTML = result.data.map(booking => {
                     const date = new Date(booking.date).toLocaleDateString('en-GB', { 
                         weekday: 'short', 
@@ -1387,8 +1392,8 @@
                         });
                         
                         if (itemsCount > 0) {
-                            // Store full preorder data for modal
-                            preorderDataForModal = {
+                            // Store full preorder data for modal in global store
+                            window.preorderDataStore[booking.id] = {
                                 preorderData: preorderData,
                                 experienceId: booking.experience_id
                             };
@@ -1444,11 +1449,6 @@
                                 <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'completed')" style="min-width: 140px;">Mark Completed</button>
                                 <button class="action-btn btn-delete" onclick="deleteBooking(${booking.id})" style="min-width: 120px;">Delete</button>
                             </div>
-                            ${preorderDataForModal ? `<script>
-                                (function() {
-                                    window.preorderData_${booking.id} = ${JSON.stringify(preorderDataForModal)};
-                                })();
-                            </script>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -1475,7 +1475,7 @@
 
         // Format and display preorder in modal
         function viewPreorder(bookingId) {
-            const preorderDataObj = window[`preorderData_${bookingId}`];
+            const preorderDataObj = window.preorderDataStore[bookingId];
             if (!preorderDataObj) {
                 alert('Preorder data not found');
                 return;

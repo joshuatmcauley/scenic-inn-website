@@ -1329,8 +1329,17 @@
         // Load Bookings
         async function loadBookings() {
             try {
+                console.log('loadBookings() called');
                 const token = getAdminToken();
+                if (!token) {
+                    console.error('No admin token found');
+                    return;
+                }
                 const bookingsList = document.getElementById('bookings-list');
+                if (!bookingsList) {
+                    console.error('bookings-list element not found');
+                    return;
+                }
                 bookingsList.innerHTML = '<div class="loading">Loading bookings...</div>';
                 
                 const statusFilter = document.getElementById('booking-filter-status').value;
@@ -1379,27 +1388,36 @@
                     const statusClass = `status-${booking.status || 'pending'}`;
                     
                     let preorderButton = '';
-                    let preorderDataForModal = null;
                     if (booking.preorder_enabled && booking.preorder) {
-                        const preorderData = Array.isArray(booking.preorder) ? booking.preorder : [booking.preorder];
-                        let itemsCount = 0;
-                        
-                        // Count total items for button
-                        preorderData.forEach(person => {
-                            if (person.items && Array.isArray(person.items)) {
-                                itemsCount += person.items.length;
+                        try {
+                            // Handle preorder data - might be string or object
+                            let preorderData = booking.preorder;
+                            if (typeof preorderData === 'string') {
+                                preorderData = JSON.parse(preorderData);
                             }
-                        });
-                        
-                        if (itemsCount > 0) {
-                            // Store full preorder data for modal in global store
-                            window.preorderDataStore[booking.id] = {
-                                preorderData: preorderData,
-                                experienceId: booking.experience_id
-                            };
-                            preorderButton = `
-                                <button class="action-btn btn-edit" onclick="viewPreorder(${booking.id})" style="min-width: 150px; margin-top: 10px;">View Preorder (${itemsCount} items)</button>
-                            `;
+                            preorderData = Array.isArray(preorderData) ? preorderData : [preorderData];
+                            let itemsCount = 0;
+                            
+                            // Count total items for button
+                            preorderData.forEach(person => {
+                                if (person && person.items && Array.isArray(person.items)) {
+                                    itemsCount += person.items.length;
+                                }
+                            });
+                            
+                            if (itemsCount > 0) {
+                                // Store full preorder data for modal in global store
+                                window.preorderDataStore[booking.id] = {
+                                    preorderData: preorderData,
+                                    experienceId: booking.experience_id
+                                };
+                                preorderButton = `
+                                    <button class="action-btn btn-edit" onclick="viewPreorder(${booking.id})" style="min-width: 150px; margin-top: 10px;">View Preorder (${itemsCount} items)</button>
+                                `;
+                            }
+                        } catch (preorderError) {
+                            console.error('Error processing preorder for booking', booking.id, preorderError);
+                            // Continue without preorder button if there's an error
                         }
                     }
                     
@@ -1475,9 +1493,14 @@
 
         // Format and display preorder in modal
         function viewPreorder(bookingId) {
+            // Ensure preorderDataStore exists
+            if (!window.preorderDataStore) {
+                window.preorderDataStore = {};
+            }
+            
             const preorderDataObj = window.preorderDataStore[bookingId];
             if (!preorderDataObj) {
-                alert('Preorder data not found');
+                alert('Preorder data not found for this booking');
                 return;
             }
 

@@ -1422,6 +1422,12 @@
                     }
                     
                     const bookingRef = booking.booking_reference || `Booking #${booking.id}`;
+                    const specialRequestsHtml = booking.special_requests ? `
+                                <div style="margin-top: 15px; padding: 12px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;">
+                                    <div class="booking-detail-label">Special Requests:</div>
+                                    <div style="color: #666; margin-top: 5px;">${booking.special_requests}</div>
+                                </div>
+                            ` : '';
                     return `
                         <div class="booking-card">
                             <div class="booking-header">
@@ -1456,12 +1462,7 @@
                                     <div class="booking-detail-value">${booking.experience_id || 'N/A'}</div>
                                 </div>
                             </div>
-                            ${booking.special_requests ? `
-                                <div style="margin-top: 15px; padding: 12px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;">
-                                    <div class="booking-detail-label">Special Requests:</div>
-                                    <div style="color: #666; margin-top: 5px;">${booking.special_requests}</div>
-                                </div>
-                            ` : ''}
+                            ${specialRequestsHtml}
                             ${preorderButton}
                             <div class="booking-actions">
                                 <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'seated')" style="min-width: 140px;">Confirm Seated</button>

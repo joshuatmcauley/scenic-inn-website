@@ -1421,11 +1421,12 @@
                         }
                     }
                     
+                    const bookingRef = booking.booking_reference || `Booking #${booking.id}`;
                     return `
                         <div class="booking-card">
                             <div class="booking-header">
                                 <div class="booking-info">
-                                    <div class="booking-reference">${booking.booking_reference || `Booking #${booking.id}`}</div>
+                                    <div class="booking-reference">${bookingRef}</div>
                                     <div class="booking-status ${statusClass}">${(booking.status || 'pending').toUpperCase()}</div>
                                 </div>
                             </div>

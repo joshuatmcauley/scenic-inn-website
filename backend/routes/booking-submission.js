@@ -465,108 +465,156 @@ async function generatePreorderPDF(bookingData, preorderData) {
 
 // Send email with PDF attachment (restaurant preorder email)
 async function sendPreorderEmail(pdfPath, bookingData) {
-    const useResend = !!RESEND_API_KEY;
-    
-    // Normalize fields to prevent undefined values
-    const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
-    const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
-    const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
-    const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
-    const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
-    const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
-    const date = pick(bookingData, ['date'], 'N/A');
-    const time = pick(bookingData, ['time'], 'N/A');
-    const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
-    
-    const subject = `Preorder for ${fullName} - ${date}`;
-    let text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
-    
-    // Add special requests if provided
-    if (specialRequests && specialRequests.trim()) {
-        text += `\n\nSpecial Requests:\n${specialRequests}`;
-    }
+    try {
+        const useResend = !!RESEND_API_KEY;
+        
+        // Normalize fields to prevent undefined values
+        const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+        const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+        const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+        const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
+        const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
+        const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
+        const date = pick(bookingData, ['date'], 'N/A');
+        const time = pick(bookingData, ['time'], 'N/A');
+        const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
+        
+        const subject = `Preorder for ${fullName} - ${date}`;
+        let text = `New booking with preorder details attached.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
+        
+        // Add special requests if provided
+        if (specialRequests && specialRequests.trim()) {
+            text += `\n\nSpecial Requests:\n${specialRequests}`;
+        }
 
-    if (useResend) {
-        const fs = require('fs');
-        const content = fs.readFileSync(pdfPath).toString('base64');
-        const result = await sendEmailViaResend({
-            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
-            to: process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER,
+        const toAddress = process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
+        const fromAddress = process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>';
+
+        if (!toAddress) {
+            throw new Error('No restaurant email address configured. Please set RESTAURANT_EMAIL or EMAIL_USER environment variable.');
+        }
+
+        console.log(`[sendPreorderEmail] Using ${useResend ? 'Resend' : 'SMTP'}`);
+        console.log(`[sendPreorderEmail] From: ${fromAddress}`);
+        console.log(`[sendPreorderEmail] To: ${toAddress}`);
+
+        if (useResend) {
+            const fs = require('fs');
+            const content = fs.readFileSync(pdfPath).toString('base64');
+            const result = await sendEmailViaResend({
+                from: fromAddress,
+                to: toAddress,
+                subject,
+                text,
+                attachments: [{ filename: `preorder-${date}-${lastName || 'booking'}.pdf`, content }]
+            });
+            console.log(`[sendPreorderEmail] ✅ Email sent via Resend. ID: ${result.id}`);
+            return { success: true, provider: 'resend', id: result.id };
+        }
+
+        // Verify SMTP transporter before using
+        const verify = await verifyTransporter();
+        if (!verify.ok) {
+            throw new Error(`SMTP transporter verification failed: ${verify.error}`);
+        }
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER || 'your-email@gmail.com',
+            to: toAddress,
             subject,
             text,
-            attachments: [{ filename: `preorder-${date}-${lastName || 'booking'}.pdf`, content }]
-        });
-        return { success: true, provider: 'resend', id: result.id };
+            attachments: [
+                {
+                    filename: `preorder-${date}-${lastName || 'booking'}.pdf`,
+                    path: pdfPath
+                }
+            ]
+        };
+        const info = await emailTransporter.sendMail(mailOptions);
+        console.log(`[sendPreorderEmail] ✅ Email sent via SMTP. Message ID: ${info.messageId}`);
+        return { success: true, provider: 'smtp', messageId: info.messageId };
+    } catch (error) {
+        console.error('[sendPreorderEmail] ❌ ERROR:', error.message);
+        console.error('[sendPreorderEmail] Stack:', error.stack);
+        throw error; // Re-throw so caller can handle it
     }
-
-    const mailOptions = {
-        from: process.env.EMAIL_USER || 'your-email@gmail.com',
-        to: process.env.RESTAURANT_EMAIL || 'restaurant@thescenicinn.com',
-        subject,
-        text,
-        attachments: [
-            {
-                filename: `preorder-${date}-${lastName || 'booking'}.pdf`,
-                path: pdfPath
-            }
-        ]
-    };
-    const info = await emailTransporter.sendMail(mailOptions);
-    return { success: true, provider: 'smtp', messageId: info.messageId };
 }
 
 // Send a simple booking notification email to the restaurant (no preorder / no PDF)
 async function sendRestaurantBookingEmail(bookingData, hasPreorder = false) {
-    const useResend = !!RESEND_API_KEY;
+    try {
+        const useResend = !!RESEND_API_KEY;
 
-    // Normalize fields to prevent undefined values
-    const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
-    const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
-    const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
-    const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
-    const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
-    const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
-    const date = pick(bookingData, ['date'], 'N/A');
-    const time = pick(bookingData, ['time'], 'N/A');
-    const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
+        // Normalize fields to prevent undefined values
+        const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+        const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+        const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+        const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
+        const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
+        const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
+        const date = pick(bookingData, ['date'], 'N/A');
+        const time = pick(bookingData, ['time'], 'N/A');
+        const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
 
-    const subject = hasPreorder
-        ? `New booking (with preorder) - ${date}`
-        : `New booking - ${date}`;
+        const subject = hasPreorder
+            ? `New booking (with preorder) - ${date}`
+            : `New booking - ${date}`;
 
-    let text = `New booking received.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
+        let text = `New booking received.\n\nBooking Details:\nDate: ${date}\nTime: ${time}\nParty Size: ${partySize}\nCustomer: ${fullName}\nEmail: ${email}\nPhone: ${phone}`;
 
-    if (specialRequests && specialRequests.trim()) {
-        text += `\n\nSpecial Requests:\n${specialRequests}`;
-    }
+        if (specialRequests && specialRequests.trim()) {
+            text += `\n\nSpecial Requests:\n${specialRequests}`;
+        }
 
-    if (hasPreorder) {
-        text += `\n\nPreorder: Customer has submitted a preorder. See preorder PDF / system for full details.`;
-    } else {
-        text += `\n\nPreorder: No preorder submitted. Customer will order on the day.`;
-    }
+        if (hasPreorder) {
+            text += `\n\nPreorder: Customer has submitted a preorder. See preorder PDF / system for full details.`;
+        } else {
+            text += `\n\nPreorder: No preorder submitted. Customer will order on the day.`;
+        }
 
-    const toAddress = process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
+        const toAddress = process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER;
+        const fromAddress = process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>';
 
-    if (useResend) {
-        const result = await sendEmailViaResend({
-            from: process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>',
+        if (!toAddress) {
+            throw new Error('No restaurant email address configured. Please set RESTAURANT_EMAIL or EMAIL_USER environment variable.');
+        }
+
+        console.log(`[sendRestaurantBookingEmail] Using ${useResend ? 'Resend' : 'SMTP'}`);
+        console.log(`[sendRestaurantBookingEmail] From: ${fromAddress}`);
+        console.log(`[sendRestaurantBookingEmail] To: ${toAddress}`);
+
+        if (useResend) {
+            const result = await sendEmailViaResend({
+                from: fromAddress,
+                to: toAddress,
+                subject,
+                text
+            });
+            console.log(`[sendRestaurantBookingEmail] ✅ Email sent via Resend. ID: ${result.id}`);
+            return { success: true, provider: 'resend', id: result.id };
+        }
+
+        // Verify SMTP transporter before using
+        const verify = await verifyTransporter();
+        if (!verify.ok) {
+            throw new Error(`SMTP transporter verification failed: ${verify.error}`);
+        }
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER || 'your-email@gmail.com',
             to: toAddress,
             subject,
             text
-        });
-        return { success: true, provider: 'resend', id: result.id };
+        };
+
+        const info = await emailTransporter.sendMail(mailOptions);
+        console.log(`[sendRestaurantBookingEmail] ✅ Email sent via SMTP. Message ID: ${info.messageId}`);
+        return { success: true, provider: 'smtp', messageId: info.messageId };
+    } catch (error) {
+        console.error('[sendRestaurantBookingEmail] ❌ ERROR:', error.message);
+        console.error('[sendRestaurantBookingEmail] Stack:', error.stack);
+        throw error; // Re-throw so caller can handle it
     }
-
-    const mailOptions = {
-        from: process.env.EMAIL_USER || 'your-email@gmail.com',
-        to: toAddress,
-        subject,
-        text
-    };
-
-    const info = await emailTransporter.sendMail(mailOptions);
-    return { success: true, provider: 'smtp', messageId: info.messageId };
 }
 
 // Submit booking to Dojo (if they have booking endpoints)
@@ -631,6 +679,14 @@ router.post('/', async (req, res) => {
         console.log('bookingData:', JSON.stringify(bookingData, null, 2));
         console.log('Preorder people count:', Array.isArray(preorderData) ? preorderData.length : 0);
         
+        // Email configuration diagnostics
+        console.log('=== EMAIL CONFIGURATION ===');
+        console.log('RESEND_API_KEY:', RESEND_API_KEY ? '✅ Set (' + RESEND_API_KEY.substring(0, 10) + '...)' : '❌ NOT SET');
+        console.log('EMAIL_FROM:', process.env.EMAIL_FROM || '❌ NOT SET');
+        console.log('RESTAURANT_EMAIL:', process.env.RESTAURANT_EMAIL || '❌ NOT SET');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER || '❌ NOT SET');
+        console.log('Email provider will be:', RESEND_API_KEY ? 'Resend' : 'SMTP');
+        
         // Step 1: Dojo API integration not available
         const dojoResult = { 
             success: false, 
@@ -657,16 +713,27 @@ router.post('/', async (req, res) => {
                 console.log('📧 Sending restaurant email with PDF (preorder)...');
                 console.log('   To:', process.env.RESTAURANT_EMAIL || process.env.EMAIL_USER);
                 console.log('   From:', process.env.EMAIL_FROM || 'Scenic Inn <noreply@scenic-inn.dev>');
-                preorderResult = await sendPreorderEmail(pdfPath, bookingData);
-                console.log('✅ Preorder email result:', preorderResult);
+                try {
+                    preorderResult = await sendPreorderEmail(pdfPath, bookingData);
+                    console.log('✅ Preorder email result:', JSON.stringify(preorderResult, null, 2));
+                } catch (emailError) {
+                    console.error('❌ CRITICAL: Failed to send preorder email with PDF');
+                    console.error('   Error:', emailError.message);
+                    console.error('   Stack:', emailError.stack);
+                    preorderResult = { success: false, error: emailError.message };
+                    // Don't throw - continue to try sending the summary email
+                }
 
                 // Also send a plain booking notification email (makes behaviour consistent)
                 try {
                     console.log('📧 Sending restaurant booking summary email (with preorder flag)...');
                     const bookingEmailResult = await sendRestaurantBookingEmail(bookingData, true);
-                    console.log('✅ Restaurant booking summary email result:', bookingEmailResult);
+                    console.log('✅ Restaurant booking summary email result:', JSON.stringify(bookingEmailResult, null, 2));
                 } catch (emailErr) {
-                    console.error('❌ Failed to send restaurant booking summary email (with preorder):', emailErr);
+                    console.error('❌ Failed to send restaurant booking summary email (with preorder)');
+                    console.error('   Error:', emailErr.message);
+                    console.error('   Stack:', emailErr.stack);
+                    // Don't throw - we've already tried to send the preorder email
                 }
 
                 // Clean up PDF file after sending
@@ -678,6 +745,7 @@ router.post('/', async (req, res) => {
 
             } catch (error) {
                 console.error('❌ Error handling preorder:', error);
+                console.error('   Error message:', error.message);
                 console.error('   Error stack:', error.stack);
                 preorderResult = { success: false, error: error.message };
             }
@@ -686,10 +754,12 @@ router.post('/', async (req, res) => {
             console.warn('   Sending basic restaurant booking email without preorder.');
             try {
                 const bookingEmailResult = await sendRestaurantBookingEmail(bookingData, false);
-                console.log('✅ Restaurant booking email (no preorder) result:', bookingEmailResult);
+                console.log('✅ Restaurant booking email (no preorder) result:', JSON.stringify(bookingEmailResult, null, 2));
                 preorderResult = bookingEmailResult;
             } catch (emailErr) {
-                console.error('❌ Failed to send restaurant booking email (no preorder):', emailErr);
+                console.error('❌ CRITICAL: Failed to send restaurant booking email (no preorder)');
+                console.error('   Error:', emailErr.message);
+                console.error('   Stack:', emailErr.stack);
                 preorderResult = { success: false, error: emailErr.message };
             }
         }

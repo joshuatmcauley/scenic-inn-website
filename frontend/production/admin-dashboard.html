@@ -1534,12 +1534,14 @@
                     html += '<div class="preorder-section">';
                     html += '<div class="preorder-section-title">Buffet Items</div>';
                     html += '<div>';
-                    const sortedItems = Array.from(buffetItems.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-                    sortedItems.forEach(([itemName, quantity]) => {
-                        html += `<div class="preorder-buffet-item">`;
-                        html += `<span>${itemName}</span>`;
-                        html += `<span class="preorder-quantity">x${quantity}</span>`;
-                        html += `</div>`;
+                    const sortedItems = Array.from(buffetItems.entries()).sort(function(a, b) { return a[0].localeCompare(b[0]); });
+                    sortedItems.forEach(function(item) {
+                        const itemName = item[0];
+                        const quantity = item[1];
+                        html += '<div class="preorder-buffet-item">';
+                        html += '<span>' + itemName + '</span>';
+                        html += '<span class="preorder-quantity">x' + quantity + '</span>';
+                        html += '</div>';
                     });
                     html += '</div>';
                     html += '</div>';
@@ -1606,11 +1608,11 @@
                     html += '<table class="preorder-table">';
                     html += '<thead><tr><th>Person</th><th>Item</th><th>Notes</th></tr></thead>';
                     html += '<tbody>';
-                    sortItems(starters).forEach(entry => {
+                    sortItems(starters).forEach(function(entry) {
                         html += '<tr>';
-                        html += `<td>${entry.person || ''}</td>`;
-                        html += `<td>${entry.item}</td>`;
-                        html += `<td class="preorder-notes">${entry.notes || ''}</td>`;
+                        html += '<td>' + (entry.person || '') + '</td>';
+                        html += '<td>' + entry.item + '</td>';
+                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
                         html += '</tr>';
                     });
                     html += '</tbody></table>';
@@ -1624,12 +1626,12 @@
                     html += '<table class="preorder-table">';
                     html += '<thead><tr><th>Person</th><th>Item</th><th>Sides</th><th>Notes</th></tr></thead>';
                     html += '<tbody>';
-                    sortItems(mains).forEach(entry => {
+                    sortItems(mains).forEach(function(entry) {
                         html += '<tr>';
-                        html += `<td>${entry.person || ''}</td>`;
-                        html += `<td>${entry.item}</td>`;
-                        html += `<td>${entry.side || ''}</td>`;
-                        html += `<td class="preorder-notes">${entry.notes || ''}</td>`;
+                        html += '<td>' + (entry.person || '') + '</td>';
+                        html += '<td>' + entry.item + '</td>';
+                        html += '<td>' + (entry.side || '') + '</td>';
+                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
                         html += '</tr>';
                     });
                     html += '</tbody></table>';
@@ -1643,11 +1645,11 @@
                     html += '<table class="preorder-table">';
                     html += '<thead><tr><th>Person</th><th>Item</th><th>Notes</th></tr></thead>';
                     html += '<tbody>';
-                    sortItems(desserts).forEach(entry => {
+                    sortItems(desserts).forEach(function(entry) {
                         html += '<tr>';
-                        html += `<td>${entry.person || ''}</td>`;
-                        html += `<td>${entry.item}</td>`;
-                        html += `<td class="preorder-notes">${entry.notes || ''}</td>`;
+                        html += '<td>' + (entry.person || '') + '</td>';
+                        html += '<td>' + entry.item + '</td>';
+                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
                         html += '</tr>';
                     });
                     html += '</tbody></table>';

@@ -1411,9 +1411,7 @@
                                     preorderData: preorderData,
                                     experienceId: booking.experience_id
                                 };
-                                preorderButton = `
-                                    <button class="action-btn btn-edit" onclick="viewPreorder(${booking.id})" style="min-width: 150px; margin-top: 10px;">View Preorder (${itemsCount} items)</button>
-                                `;
+                                preorderButton = '<button class="action-btn btn-edit" onclick="viewPreorder(' + booking.id + ')" style="min-width: 150px; margin-top: 10px;">View Preorder (' + itemsCount + ' items)</button>';
                             }
                         } catch (preorderError) {
                             console.error('Error processing preorder for booking', booking.id, preorderError);
@@ -1421,13 +1419,8 @@
                         }
                     }
                     
-                    const bookingRef = booking.booking_reference || `Booking #${booking.id}`;
-                    const specialRequestsHtml = booking.special_requests ? `
-                                <div style="margin-top: 15px; padding: 12px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;">
-                                    <div class="booking-detail-label">Special Requests:</div>
-                                    <div style="color: #666; margin-top: 5px;">${booking.special_requests}</div>
-                                </div>
-                            ` : '';
+                    const bookingRef = booking.booking_reference || ('Booking #' + booking.id);
+                    const specialRequestsHtml = booking.special_requests ? '<div style="margin-top: 15px; padding: 12px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;"><div class="booking-detail-label">Special Requests:</div><div style="color: #666; margin-top: 5px;">' + booking.special_requests + '</div></div>' : '';
                     return `
                         <div class="booking-card">
                             <div class="booking-header">

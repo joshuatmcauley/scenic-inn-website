@@ -10,6 +10,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy - required for Railway and other reverse proxies
+app.set('trust proxy', true);
+
 // Security middleware with enhanced configuration
 app.use(helmet({
   contentSecurityPolicy: {

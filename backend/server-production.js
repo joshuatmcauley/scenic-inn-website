@@ -7,6 +7,8 @@ const rateLimit = require('express-rate-limit');
 const { initializeDatabase, dbHelpers } = require('./database-production');
 require('dotenv').config();
 
+// Deployment trigger - Dec 3, 2025
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 

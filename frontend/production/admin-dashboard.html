@@ -528,80 +528,6 @@
             border-bottom: none;
         }
 
-        /* Preorder Modal Styles */
-        .preorder-modal-content {
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .preorder-section {
-            margin-bottom: 25px;
-        }
-
-        .preorder-section-title {
-            font-size: 1.4em;
-            color: #8b4513;
-            font-weight: 600;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #d4af37;
-        }
-
-        .preorder-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .preorder-table th {
-            background: rgba(139, 69, 19, 0.1);
-            color: #8b4513;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #d4af37;
-        }
-
-        .preorder-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(139, 69, 19, 0.1);
-        }
-
-        .preorder-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .preorder-table tr:hover {
-            background: rgba(139, 69, 19, 0.03);
-        }
-
-        .preorder-quantity {
-            text-align: center;
-            font-weight: 600;
-            color: #8b4513;
-        }
-
-        .preorder-notes {
-            font-style: italic;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .preorder-buffet-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid rgba(139, 69, 19, 0.1);
-        }
-
-        .preorder-buffet-item:last-child {
-            border-bottom: none;
-        }
-
-        .preorder-buffet-item:hover {
-            background: rgba(139, 69, 19, 0.03);
-        }
         
         .schedule-rules-list {
             display: grid;
@@ -827,24 +753,9 @@
         </div>
     </div>
 
-    <!-- Preorder Modal -->
-    <div id="preorderModal" class="modal">
-        <div class="modal-content preorder-modal-content">
-            <div class="modal-header">
-                <h2>Preorder Details</h2>
-                <button class="close-btn" onclick="closePreorderModal()">&times;</button>
-            </div>
-            <div id="preorderModalContent">
-                <!-- Preorder content will be inserted here -->
-            </div>
-        </div>
-    </div>
-
     <script>
         const API_BASE_URL = 'https://scenic-inn-website-production.up.railway.app/api';
         let allMenus = [];
-        // Store preorder data for each booking
-        window.preorderDataStore = {};
 
         // Helper function to get token from either localStorage or sessionStorage
         function getAdminToken() {
@@ -1315,15 +1226,11 @@
         window.onclick = function(event) {
             const addSpecialModal = document.getElementById('addSpecialModal');
             const scheduleRuleModal = document.getElementById('scheduleRuleModal');
-            const preorderModal = document.getElementById('preorderModal');
             if (event.target === addSpecialModal) {
                 closeAddSpecialModal();
             }
             if (event.target === scheduleRuleModal) {
                 closeScheduleRuleModal();
-            }
-            if (event.target === preorderModal) {
-                closePreorderModal();
             }
         }
         // Load Bookings
@@ -1373,9 +1280,6 @@
                     return;
                 }
                 
-                // Clear and populate preorder data store
-                window.preorderDataStore = {};
-                
                 bookingsList.innerHTML = result.data.map(booking => {
                     const date = new Date(booking.date).toLocaleDateString('en-GB', { 
                         weekday: 'short', 
@@ -1388,34 +1292,25 @@
                     const statusClass = `status-${booking.status || 'pending'}`;
                     
                     let preorderButton = '';
+                    let preorderItemsData = null;
                     if (booking.preorder_enabled && booking.preorder) {
-                        try {
-                            // Handle preorder data - might be string or object
-                            let preorderData = booking.preorder;
-                            if (typeof preorderData === 'string') {
-                                preorderData = JSON.parse(preorderData);
+                        const preorderData = Array.isArray(booking.preorder) ? booking.preorder : [booking.preorder];
+                        let itemsList = [];
+                        
+                        preorderData.forEach(person => {
+                            if (person.items && Array.isArray(person.items)) {
+                                person.items.forEach(item => {
+                                    const itemName = item.item_name || item.name || item.menu_item_id || 'Unknown Item';
+                                    const quantity = item.quantity || 1;
+                                    const price = item.price ? ' - £' + parseFloat(item.price).toFixed(2) : '';
+                                    itemsList.push({ name: itemName, quantity: quantity, price: price });
+                                });
                             }
-                            preorderData = Array.isArray(preorderData) ? preorderData : [preorderData];
-                            let itemsCount = 0;
-                            
-                            // Count total items for button
-                            preorderData.forEach(person => {
-                                if (person && person.items && Array.isArray(person.items)) {
-                                    itemsCount += person.items.length;
-                                }
-                            });
-                            
-                            if (itemsCount > 0) {
-                                // Store full preorder data for modal in global store
-                                window.preorderDataStore[booking.id] = {
-                                    preorderData: preorderData,
-                                    experienceId: booking.experience_id
-                                };
-                                preorderButton = '<button class="action-btn btn-edit" onclick="viewPreorder(' + booking.id + ')" style="min-width: 150px; margin-top: 10px;">View Preorder (' + itemsCount + ' items)</button>';
-                            }
-                        } catch (preorderError) {
-                            console.error('Error processing preorder for booking', booking.id, preorderError);
-                            // Continue without preorder button if there's an error
+                        });
+                        
+                        if (itemsList.length > 0) {
+                            preorderItemsData = itemsList;
+                            preorderButton = '<button class="action-btn btn-edit" onclick="viewPreorder(' + booking.id + ')" style="min-width: 150px; margin-top: 10px;">View Preorder (' + itemsList.length + ' items)</button>';
                         }
                     }
                     
@@ -1462,6 +1357,7 @@
                                 <button class="action-btn btn-edit" onclick="updateBookingStatus(${booking.id}, 'completed')" style="min-width: 140px;">Mark Completed</button>
                                 <button class="action-btn btn-delete" onclick="deleteBooking(${booking.id})" style="min-width: 120px;">Delete</button>
                             </div>
+                            ${preorderItemsData ? '<div id="preorder-' + booking.id + '" style="display: none; margin-top: 15px; padding: 15px; background: rgba(139, 69, 19, 0.05); border-radius: 8px;"><div class="preorder-items-title">Preorder Items:</div>' + preorderItemsData.map(function(item) { return '<div class="preorder-item">' + item.name + item.price + ' x' + item.quantity + '</div>'; }).join('') + '</div>' : ''}
                         </div>
                     `;
                 }).join('');
@@ -1480,194 +1376,16 @@
             loadBookings();
         }
         
-        // Helper function to clean item names (remove trailing price patterns)
-        function cleanItemName(name) {
-            if (!name) return '';
-            return name.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
-        }
-
-        // Format and display preorder in modal
+        // View/Show preorder items
         function viewPreorder(bookingId) {
-            // Ensure preorderDataStore exists
-            if (!window.preorderDataStore) {
-                window.preorderDataStore = {};
-            }
-            
-            const preorderDataObj = window.preorderDataStore[bookingId];
-            if (!preorderDataObj) {
-                alert('Preorder data not found for this booking');
-                return;
-            }
-
-            const { preorderData, experienceId } = preorderDataObj;
-            const isBuffetMenu = experienceId === 'buffet';
-            
-            let html = '';
-
-            if (isBuffetMenu) {
-                // Handle buffet menu - group items by name with quantities
-                const buffetItems = new Map();
-                
-                preorderData.forEach(person => {
-                    if (person.items && Array.isArray(person.items)) {
-                        person.items.forEach(item => {
-                            let itemName = '';
-                            const quantity = item.quantity || 1;
-                            
-                            if (item.item_name) {
-                                itemName = cleanItemName(item.item_name);
-                            } else if (item.name) {
-                                itemName = cleanItemName(item.name);
-                            } else if (item.menu_item_id) {
-                                itemName = item.menu_item_id;
-                            }
-                            
-                            if (itemName) {
-                                const currentQty = buffetItems.get(itemName) || 0;
-                                buffetItems.set(itemName, currentQty + quantity);
-                            }
-                        });
-                    }
-                });
-
-                if (buffetItems.size > 0) {
-                    html += '<div class="preorder-section">';
-                    html += '<div class="preorder-section-title">Buffet Items</div>';
-                    html += '<div>';
-                    const sortedItems = Array.from(buffetItems.entries()).sort(function(a, b) { return a[0].localeCompare(b[0]); });
-                    sortedItems.forEach(function(item) {
-                        const itemName = item[0];
-                        const quantity = item[1];
-                        html += '<div class="preorder-buffet-item">';
-                        html += '<span>' + itemName + '</span>';
-                        html += '<span class="preorder-quantity">x' + quantity + '</span>';
-                        html += '</div>';
-                    });
-                    html += '</div>';
-                    html += '</div>';
-                }
-            } else {
-                // Regular menu - group by course type
-                const starters = [];
-                const mains = [];
-                const desserts = [];
-
-                preorderData.forEach(person => {
-                    const personName = person.person_name || null;
-                    const personNotes = person.special_instructions || '';
-                    const personLabel = personName || '';
-
-                    let personStarter = null;
-                    let personMain = null;
-                    let personSide = null;
-                    let personDessert = null;
-
-                    if (person.items && Array.isArray(person.items)) {
-                        person.items.forEach(item => {
-                            const course = (item.course_type || '').toLowerCase();
-                            let name = '';
-
-                            if (item.item_name) {
-                                name = cleanItemName(item.item_name);
-                            } else if (item.name) {
-                                name = cleanItemName(item.name);
-                            } else if (item.menu_item_id) {
-                                name = item.menu_item_id;
-                            }
-
-                            if (course === 'starter') personStarter = name;
-                            else if (course === 'main') personMain = name;
-                            else if (course === 'side') personSide = name;
-                            else if (course === 'dessert') personDessert = name;
-                        });
-                    } else {
-                        if (person.starter) personStarter = cleanItemName(person.starter);
-                        if (person.main) personMain = cleanItemName(person.main);
-                        if (person.side) personSide = cleanItemName(person.side);
-                        if (person.dessert) personDessert = cleanItemName(person.dessert);
-                    }
-
-                    if (personStarter) starters.push({ person: personLabel, item: personStarter, notes: personNotes });
-                    if (personMain) mains.push({ person: personLabel, item: personMain, side: personSide, notes: personNotes });
-                    if (personDessert) desserts.push({ person: personLabel, item: personDessert, notes: personNotes });
-                }
-
-                // Sort items by name to group identical items together
-                const sortItems = (items) => {
-                    return items.sort((a, b) => {
-                        const itemA = a.item || '';
-                        const itemB = b.item || '';
-                        return itemA.localeCompare(itemB);
-                    });
-                };
-
-                // Render starters
-                if (starters.length > 0) {
-                    html += '<div class="preorder-section">';
-                    html += '<div class="preorder-section-title">Starters</div>';
-                    html += '<table class="preorder-table">';
-                    html += '<thead><tr><th>Person</th><th>Item</th><th>Notes</th></tr></thead>';
-                    html += '<tbody>';
-                    sortItems(starters).forEach(function(entry) {
-                        html += '<tr>';
-                        html += '<td>' + (entry.person || '') + '</td>';
-                        html += '<td>' + entry.item + '</td>';
-                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table>';
-                    html += '</div>';
-                }
-
-                // Render mains (with sides)
-                if (mains.length > 0) {
-                    html += '<div class="preorder-section">';
-                    html += '<div class="preorder-section-title">Mains</div>';
-                    html += '<table class="preorder-table">';
-                    html += '<thead><tr><th>Person</th><th>Item</th><th>Sides</th><th>Notes</th></tr></thead>';
-                    html += '<tbody>';
-                    sortItems(mains).forEach(function(entry) {
-                        html += '<tr>';
-                        html += '<td>' + (entry.person || '') + '</td>';
-                        html += '<td>' + entry.item + '</td>';
-                        html += '<td>' + (entry.side || '') + '</td>';
-                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table>';
-                    html += '</div>';
-                }
-
-                // Render desserts
-                if (desserts.length > 0) {
-                    html += '<div class="preorder-section">';
-                    html += '<div class="preorder-section-title">Desserts</div>';
-                    html += '<table class="preorder-table">';
-                    html += '<thead><tr><th>Person</th><th>Item</th><th>Notes</th></tr></thead>';
-                    html += '<tbody>';
-                    sortItems(desserts).forEach(function(entry) {
-                        html += '<tr>';
-                        html += '<td>' + (entry.person || '') + '</td>';
-                        html += '<td>' + entry.item + '</td>';
-                        html += '<td class="preorder-notes">' + (entry.notes || '') + '</td>';
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table>';
-                    html += '</div>';
+            const preorderDiv = document.getElementById('preorder-' + bookingId);
+            if (preorderDiv) {
+                if (preorderDiv.style.display === 'none') {
+                    preorderDiv.style.display = 'block';
+                } else {
+                    preorderDiv.style.display = 'none';
                 }
             }
-
-            if (!html) {
-                html = '<p style="text-align: center; color: #666; padding: 20px;">No preorder items found.</p>';
-            }
-
-            document.getElementById('preorderModalContent').innerHTML = html;
-            document.getElementById('preorderModal').style.display = 'block';
-        }
-
-        // Close preorder modal
-        function closePreorderModal() {
-            document.getElementById('preorderModal').style.display = 'none';
         }
         
         // Update Booking Status

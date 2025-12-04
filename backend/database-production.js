@@ -689,12 +689,43 @@ const dbHelpers = {
 
   // Get available sections for a menu
   getMenuSections: async (menuId) => {
-    const result = await pool.query(`
+    // First try to get sections from menu_sections table
+    let result = await pool.query(`
       SELECT section_key, name 
       FROM menu_sections 
       WHERE menu_id = $1 
       ORDER BY section_key
     `, [menuId]);
+    
+    // If no sections found in menu_sections, infer from menu_items
+    if (result.rows.length === 0) {
+      const itemsResult = await pool.query(`
+        SELECT DISTINCT section_key
+        FROM menu_items
+        WHERE menu_id = $1 AND section_key IS NOT NULL
+        ORDER BY section_key
+      `, [menuId]);
+      
+      // Convert section_key to readable name
+      const sectionNames = {
+        'main-course': 'Main Course',
+        'starters': 'Starters',
+        'desserts': 'Desserts',
+        'dessert': 'Dessert',
+        'sides': 'Sides',
+        'side-orders': 'Side Orders',
+        'drinks': 'Drinks',
+        'tea-or-coffee': 'Tea or Coffee',
+        'vegan-dishes': 'Vegan Dishes',
+        'specials': 'Specials'
+      };
+      
+      result.rows = itemsResult.rows.map(row => ({
+        section_key: row.section_key,
+        name: sectionNames[row.section_key] || row.section_key.charAt(0).toUpperCase() + row.section_key.slice(1).replace(/-/g, ' ')
+      }));
+    }
+    
     return result.rows;
   },
 

@@ -35,10 +35,17 @@ app.use(helmet({
 app.use(compression());
 
 // Rate limiting
+// Note: trust proxy is required for Railway to get correct client IPs
+// We disable the validation warning since Railway's proxy is trusted
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  validate: false, // Disable validation (Railway requires trust proxy)
+  keyGenerator: (req) => {
+    // Use IP from Railway's proxy headers (trust proxy handles this)
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
 });
 app.use('/api/', limiter);
 

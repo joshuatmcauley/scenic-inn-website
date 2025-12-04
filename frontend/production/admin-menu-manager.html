@@ -912,7 +912,7 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div class="form-group">
                                     <label>Price (£)</label>
-                                    <input type="number" class="item-price" step="0.01" value="${item.price || ''}" placeholder="0.00">
+                                    <input type="number" class="item-price" step="0.01" value="${item.price ? (typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[£Â£,\s]/g, '')) || '') : ''}" placeholder="0.00">
                                 </div>
                                 
                                 <div class="form-group">
@@ -1100,12 +1100,28 @@
             if (!window.currentAddMenu || window.currentAddMenu.id !== menuId) {
                 // Load sections if not already loaded
                 try {
-                    const token = localStorage.getItem('adminToken');
+                    const token = getAdminToken();
+                    if (!token) {
+                        showStatus('error', 'Authentication required. Please log in again.');
+                        window.location.href = 'admin-login.html';
+                        return;
+                    }
+                    
                     const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
                     });
+                    
+                    if (!sectionsResponse.ok) {
+                        if (sectionsResponse.status === 401) {
+                            showStatus('error', 'Session expired. Please log in again.');
+                            window.location.href = 'admin-login.html';
+                            return;
+                        }
+                        throw new Error(`Failed to load sections: ${sectionsResponse.status}`);
+                    }
+                    
                     const sectionsData = await sectionsResponse.json();
                     console.log('Sections API response for', menuId, ':', sectionsData);
                     const sections = sectionsData.success ? (sectionsData.data || []) : [];
@@ -1116,7 +1132,8 @@
                         sections: sections
                     };
                 } catch (error) {
-                    showStatus('error', 'Failed to load sections');
+                    console.error('Error loading sections:', error);
+                    showStatus('error', 'Failed to load sections: ' + error.message);
                     return;
                 }
             }

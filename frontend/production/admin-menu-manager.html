@@ -1097,45 +1097,56 @@
 
         // Open add item form modal
         async function openAddItemForm(menuId, menuName) {
-            if (!window.currentAddMenu || window.currentAddMenu.id !== menuId) {
-                // Load sections if not already loaded
-                try {
-                    const token = getAdminToken();
-                    if (!token) {
-                        showStatus('error', 'Authentication required. Please log in again.');
+            // Always reload sections to ensure fresh data
+            try {
+                const token = getAdminToken();
+                if (!token) {
+                    showStatus('error', 'Authentication required. Please log in again.');
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+                
+                console.log('Loading sections for menu:', menuId);
+                const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!sectionsResponse.ok) {
+                    const errorText = await sectionsResponse.text();
+                    console.error('Sections API error:', sectionsResponse.status, errorText);
+                    if (sectionsResponse.status === 401) {
+                        showStatus('error', 'Session expired. Please log in again.');
+                        // Clear tokens and redirect
+                        localStorage.removeItem('adminToken');
+                        sessionStorage.removeItem('adminToken');
                         window.location.href = 'admin-login.html';
                         return;
                     }
-                    
-                    const sectionsResponse = await fetch(`${API_BASE_URL}/admin/menus/${menuId}/sections`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (!sectionsResponse.ok) {
-                        if (sectionsResponse.status === 401) {
-                            showStatus('error', 'Session expired. Please log in again.');
-                            window.location.href = 'admin-login.html';
-                            return;
-                        }
-                        throw new Error(`Failed to load sections: ${sectionsResponse.status}`);
-                    }
-                    
-                    const sectionsData = await sectionsResponse.json();
-                    console.log('Sections API response for', menuId, ':', sectionsData);
-                    const sections = sectionsData.success ? (sectionsData.data || []) : [];
-                    console.log('Parsed sections:', sections);
-                    window.currentAddMenu = { 
-                        id: menuId, 
-                        name: menuName, 
-                        sections: sections
-                    };
-                } catch (error) {
-                    console.error('Error loading sections:', error);
-                    showStatus('error', 'Failed to load sections: ' + error.message);
-                    return;
+                    throw new Error(`Failed to load sections: ${sectionsResponse.status} - ${errorText}`);
                 }
+                
+                const sectionsData = await sectionsResponse.json();
+                console.log('Sections API response for', menuId, ':', sectionsData);
+                const sections = sectionsData.success ? (sectionsData.data || []) : [];
+                console.log('Parsed sections:', sections);
+                
+                if (sections.length === 0) {
+                    console.warn('No sections returned for menu:', menuId, 'Response:', sectionsData);
+                    showStatus('error', 'No sections found for this menu. Please check the database.');
+                }
+                
+                window.currentAddMenu = { 
+                    id: menuId, 
+                    name: menuName, 
+                    sections: sections
+                };
+            } catch (error) {
+                console.error('Error loading sections:', error);
+                showStatus('error', 'Failed to load sections: ' + error.message);
+                return;
             }
 
             const sections = window.currentAddMenu.sections || [];

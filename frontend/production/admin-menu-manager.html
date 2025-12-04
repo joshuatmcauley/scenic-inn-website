@@ -1107,10 +1107,13 @@
                         }
                     });
                     const sectionsData = await sectionsResponse.json();
+                    console.log('Sections API response for', menuId, ':', sectionsData);
+                    const sections = sectionsData.success ? (sectionsData.data || []) : [];
+                    console.log('Parsed sections:', sections);
                     window.currentAddMenu = { 
                         id: menuId, 
                         name: menuName, 
-                        sections: sectionsData.success ? sectionsData.data : [] 
+                        sections: sections
                     };
                 } catch (error) {
                     showStatus('error', 'Failed to load sections');
@@ -1122,13 +1125,28 @@
             
             // Populate section dropdown
             const sectionSelect = document.getElementById('itemSection');
+            if (!sectionSelect) {
+                console.error('Section select element not found');
+                showStatus('error', 'Section dropdown not found');
+                return;
+            }
+            
             sectionSelect.innerHTML = '<option value="">Select section...</option>';
-            sections.forEach(section => {
-                const option = document.createElement('option');
-                option.value = section.section_key;
-                option.textContent = section.name || section.section_key;
-                sectionSelect.appendChild(option);
-            });
+            
+            if (sections.length === 0) {
+                console.warn('No sections found for menu:', menuId);
+                showStatus('error', 'No sections found for this menu. Please create sections first.');
+                sectionSelect.disabled = true;
+            } else {
+                sectionSelect.disabled = false;
+                sections.forEach(section => {
+                    const option = document.createElement('option');
+                    option.value = section.section_key;
+                    option.textContent = section.name || section.section_key;
+                    sectionSelect.appendChild(option);
+                });
+                console.log('Populated sections dropdown with', sections.length, 'sections:', sections);
+            }
 
             // Set menu ID in form
             const form = document.getElementById('addItemForm');

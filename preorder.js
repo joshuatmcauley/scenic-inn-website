@@ -5,7 +5,9 @@
 // restaurant a PDF with every guest's choices.
 // =====================================================================
 
-var STORE_KEY = 'scenic-preorder-v2';
+var TYPE = new URLSearchParams(location.search).get('type') === 'event' ? 'event' : 'party';
+var STORE_KEY = 'scenic-preorder-v3-' + TYPE;
+var PARTY_MIN = 11;
 var COURSES = [
   { key: 'starter', label: 'Starter' },
   { key: 'main', label: 'Main course' },
@@ -17,11 +19,17 @@ var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'Augu
 
 function blankGuest() { return { name: '', starter: null, main: null, side: null, dessert: null, notes: '', avoid: [] }; }
 
-var state = load() || {
-  step: 1, menuId: null, date: '', time: '', occasion: '', requests: '',
-  organiser: { first: '', last: '', email: '', phone: '' },
-  guests: [], current: 0
-};
+function freshState() {
+  return {
+    type: TYPE, style: TYPE === 'event' ? 'buffet' : null, eventType: '',
+    step: 1, menuId: null, date: '', time: '', occasion: '', requests: '',
+    organiser: { first: '', last: '', email: '', phone: '' },
+    guests: [], current: 0, buffet: [], buffetNotes: ''
+  };
+}
+var state = load() || freshState();
+function isBuffet() { return state.style === 'buffet'; }
+function buffetItems() { var out = []; BUFFET.sections.forEach(function (s) { s.items.forEach(function (i) { out.push(i); }); }); return out; }
 
 // ---------- helpers ----------
 function $(id) { return document.getElementById(id); }
@@ -73,8 +81,9 @@ function menuAvailability(id, dateStr) {
 }
 function timeOptions(id) {
   var m = MENUS[id], out = [];
-  if (!m || !m.times) return out;
-  var a = m.times[0].split(':'), b = m.times[1].split(':');
+  var range = isBuffet() ? ['12:00', '20:30'] : (m && m.times);
+  if (!range) return out;
+  var a = range[0].split(':'), b = range[1].split(':');
   for (var t = (+a[0]) * 60 + (+a[1]); t <= (+b[0]) * 60 + (+b[1]); t += 30) {
     var hh = Math.floor(t / 60), mm = t % 60;
     out.push((hh < 10 ? '0' : '') + hh + ':' + (mm ? mm : '00'));
@@ -133,6 +142,36 @@ function renderMenuCards() {
   });
 }
 
+function renderStyleCards() {
+  var box = $('style-cards'); box.innerHTML = '';
+  [
+    { id: 'meals', name: 'Everyone chooses a meal', when: 'Each guest picks their own dishes from the menu ahead of time', price: 'Priced by the menu you choose' },
+    { id: 'buffet', name: 'Buffet', when: 'Pick up to ' + BUFFET.maxChoices + ' dishes and we’ll lay them out for the whole group', price: BUFFET.pricePerHead ? formatPrice(BUFFET.pricePerHead) + ' per person' : 'Price confirmed when we call you' }
+  ].forEach(function (o) {
+    var input = h('input', { type: 'radio', name: 'po-style', value: o.id, checked: state.style === o.id });
+    input.addEventListener('change', function () { state.style = o.id; save(); applyMode(); renderTimes(); });
+    box.appendChild(h('label', { class: 'menu-card' }, [input,
+      h('span', { class: 'mc-name', text: o.name }), h('span', { class: 'mc-when', text: o.when }), h('span', { class: 'mc-price', text: o.price })]));
+  });
+}
+
+function applyMode() {
+  var ev = state.type === 'event';
+  document.title = (ev ? 'Book an event' : 'Book a large party') + ' – The Scenic Inn';
+  $('po-title').textContent = ev ? 'Events' : 'Large party';
+  $('po-intro').textContent = ev
+    ? 'Birthdays, christenings, wakes and celebrations. Tell us about your event, choose a buffet, and we’ll look after the rest.'
+    : 'Booking for ' + PARTY_MIN + ' or more? Choose a buffet, or have everyone pick their own meal ahead of time so the food comes out together. Your progress saves on this device, so you can collect choices over a few days.';
+  document.querySelectorAll('[data-nav]').forEach(function (a) { if (a.getAttribute('data-nav') === state.type) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  $('style-block').hidden = ev;
+  $('menu-block').hidden = isBuffet() || !state.style;
+  $('event-type-field').hidden = !ev;
+  $('when-h').classList.toggle('spaced', !ev);
+  $('step2-label').textContent = isBuffet() ? 'Buffet' : 'Everyone’s food';
+  $('po-guests').min = ev ? 2 : PARTY_MIN;
+  if (!ev) renderStyleCards();
+}
+
 function chooseMenu(id) {
   if (state.menuId && state.menuId !== id && state.guests.some(function (g) { return g.starter || g.main || g.dessert; })) {
     if (!confirm('Switching menu clears the food chosen so far. Names and notes are kept. Switch to ' + MENUS[id].label + '?')) {
@@ -147,7 +186,7 @@ function chooseMenu(id) {
 function renderTimes() {
   var sel = $('po-time'); sel.innerHTML = '';
   var opts = timeOptions(state.menuId);
-  sel.appendChild(h('option', { value: '', text: opts.length ? 'Choose a time' : 'Choose a menu first' }));
+  sel.appendChild(h('option', { value: '', text: opts.length ? 'Choose a time' : (state.style ? 'Pick a menu first' : 'Pick buffet or meals first') }));
   opts.forEach(function (t) { sel.appendChild(h('option', { value: t, text: niceTime(t), selected: t === state.time })); });
   if (opts.indexOf(state.time) === -1) state.time = '';
 }
@@ -172,12 +211,16 @@ function fillStep1() {
   $('po-last').value = state.organiser.last;
   $('po-email').value = state.organiser.email;
   $('po-phone').value = state.organiser.phone;
-  renderMenuCards(); renderTimes(); checkMenuMsg();
+  var et = $('po-event-type'); et.innerHTML = '';
+  et.appendChild(h('option', { value: '', text: 'Choose one' }));
+  EVENT_TYPES.forEach(function (t) { et.appendChild(h('option', { value: t, text: t, selected: state.eventType === t })); });
+  applyMode(); renderMenuCards(); renderTimes(); checkMenuMsg();
 }
 
 function bindStep1() {
   $('po-date').addEventListener('change', function () { state.date = this.value; renderMenuCards(); checkMenuMsg(); save(); });
   $('po-time').addEventListener('change', function () { state.time = this.value; save(); });
+  $('po-event-type').addEventListener('change', function () { state.eventType = this.value; save(); });
   $('po-guests').addEventListener('change', function () { setGuestCount(parseInt(this.value, 10) || 0); save(); });
   [['po-occasion', 'occasion'], ['po-requests', 'requests']].forEach(function (p) {
     $(p[0]).addEventListener('input', function () { state[p[1]] = this.value; save(); });
@@ -193,7 +236,7 @@ function bindStep1() {
 }
 
 function setGuestCount(n) {
-  n = Math.max(0, Math.min(80, n));
+  n = Math.max(0, Math.min(150, n));
   while (state.guests.length < n) state.guests.push(blankGuest());
   while (state.guests.length > n) {
     var last = state.guests[state.guests.length - 1];
@@ -206,11 +249,13 @@ function setGuestCount(n) {
 }
 
 function step1Error() {
-  if (!state.menuId) return 'Choose a menu.';
+  if (!state.style) return 'Choose a buffet or individual meals.';
+  if (!isBuffet() && !state.menuId) return 'Choose a menu.';
   if (!state.date) return 'Choose a date.';
-  if (!menuAvailability(state.menuId, state.date).ok) return 'That menu isn’t served on your date.';
+  if (!isBuffet() && !menuAvailability(state.menuId, state.date).ok) return 'That menu isn’t served on your date.';
   if (!state.time) return 'Choose a time.';
-  if (state.guests.length < 2) return 'Enter how many guests are coming (at least 2).';
+  if (state.type === 'party' && state.guests.length < PARTY_MIN) return 'Large party bookings are for ' + PARTY_MIN + ' or more. For smaller groups, use Book a table.';
+  if (state.guests.length < 2) return 'Enter how many guests are coming.';
   var o = state.organiser;
   if (!o.first.trim() || !o.last.trim()) return 'Enter the organiser’s name.';
   if (!/^\S+@\S+\.\S+$/.test(o.email.trim())) return 'Enter a valid email address.';
@@ -353,9 +398,36 @@ function bindStep2() {
     g.starter = prev.starter; g.main = prev.main; g.side = prev.side; g.dessert = prev.dessert;
     save(); renderGuestList(); renderEditor();
   });
+  $('buffet-notes').addEventListener('input', function () { state.buffetNotes = this.value; save(); });
   $('add-guest').addEventListener('click', function () {
     state.guests.push(blankGuest()); state.current = state.guests.length - 1;
     $('po-guests').value = state.guests.length; save(); renderGuestList(); renderEditor(); scrollEditor();
+  });
+}
+
+// ---------- buffet ----------
+function renderBuffet() {
+  var items = buffetItems(), max = BUFFET.maxChoices;
+  $('buffet-empty').hidden = items.length > 0;
+  $('buffet-intro').textContent = items.length ? 'Choose up to ' + max + ' dishes for ' + state.guests.length + ' guests.' + (BUFFET.note ? ' ' + BUFFET.note : '') : '';
+  $('buffet-count').textContent = items.length ? state.buffet.length + ' of ' + max + ' chosen' : '';
+  $('buffet-notes').value = state.buffetNotes;
+  var box = $('buffet-sections'); box.innerHTML = '';
+  BUFFET.sections.forEach(function (sec) {
+    var fs = h('fieldset', { class: 'course' }, [h('legend', { text: sec.title })]);
+    var grid = h('div', { class: 'dishes' });
+    sec.items.forEach(function (it) {
+      var on = state.buffet.indexOf(it.name) !== -1;
+      var cb = h('input', { type: 'checkbox', checked: on, disabled: !on && state.buffet.length >= max });
+      cb.addEventListener('change', function () {
+        if (this.checked) state.buffet.push(it.name); else state.buffet = state.buffet.filter(function (n) { return n !== it.name; });
+        save(); renderBuffet();
+      });
+      grid.appendChild(h('label', { class: 'dish' + (cb.disabled ? ' maxed' : '') }, [cb,
+        h('span', { class: 'dtop' }, [h('span', { class: 'dname', text: it.name })]),
+        it.desc ? h('span', { class: 'ddesc', text: it.desc }) : null]));
+    });
+    fs.appendChild(grid); box.appendChild(fs);
   });
 }
 
@@ -363,7 +435,23 @@ function bindStep2() {
 // STEP 3
 // =====================================================================
 function renderReview() {
-  var m = menu(), o = state.organiser;
+  var o = state.organiser;
+  $('buffet-review').hidden = !isBuffet();
+  $('meals-review').hidden = isBuffet();
+  if (isBuffet()) {
+    $('review-event').textContent = (state.type === 'event' ? (state.eventType || 'Event') : 'Large party') + ' with a buffet for ' + state.guests.length + ' guests, ' +
+      niceDate(state.date) + ' at ' + niceTime(state.time) + '. Organised by ' + o.first + ' ' + o.last + (state.occasion ? ' (' + state.occasion + ')' : '') + '.';
+    $('problems').hidden = true;
+    var bl = $('buffet-list'); bl.innerHTML = '';
+    if (state.buffet.length) state.buffet.forEach(function (n) { bl.appendChild(h('li', { text: n })); });
+    else bl.appendChild(h('li', { text: 'To be chosen with us by phone' }));
+    $('buffet-review-notes').textContent = state.buffetNotes ? 'Dietary needs: ' + state.buffetNotes : '';
+    $('total-line').parentNode.hidden = !BUFFET.pricePerHead;
+    $('est-total').textContent = BUFFET.pricePerHead ? money(BUFFET.pricePerHead * state.guests.length) : '';
+    return;
+  }
+  $('total-line').parentNode.hidden = false;
+  var m = menu();
   $('review-event').textContent = m.label + ' menu for ' + state.guests.length + ' guests, ' + niceDate(state.date) + ' at ' + niceTime(state.time) +
     '. Organised by ' + o.first + ' ' + o.last + (state.occasion ? ' (' + state.occasion + ')' : '') + '.';
 
@@ -418,7 +506,25 @@ function renderReview() {
 
 // ---------- outputs ----------
 function payload() {
-  var m = menu(), o = state.organiser;
+  var o = state.organiser;
+  if (isBuffet()) {
+    var bits = [state.type === 'event' ? 'Event booking' : 'Large party', 'Buffet'];
+    if (state.eventType) bits.push('Event: ' + state.eventType);
+    if (state.occasion) bits.push('Occasion: ' + state.occasion);
+    if (!state.buffet.length) bits.push('Buffet to be chosen by phone');
+    if (state.buffetNotes) bits.push('Dietary needs: ' + state.buffetNotes);
+    if (state.requests) bits.push(state.requests);
+    return {
+      bookingData: {
+        firstName: o.first.trim(), lastName: o.last.trim(), email: o.email.trim(), phone: o.phone.trim(),
+        date: state.date, time: state.time, partySize: state.guests.length, experience_id: 'buffet',
+        menu_name: 'Buffet', specialRequests: bits.join('. '), source: 'website-' + state.type
+      },
+      preorderData: state.buffet.length ? [{ person_number: 1, person_name: 'Buffet', special_instructions: state.buffetNotes,
+        items: state.buffet.map(function (n) { return { item_name: n, quantity: state.guests.length }; }) }] : []
+    };
+  }
+  var m = menu();
   var total = state.guests.reduce(function (a, g) { return a + guestPrice(g); }, 0);
   var extras = ['Menu: ' + m.label];
   if (state.occasion) extras.push('Occasion: ' + state.occasion);
@@ -428,7 +534,7 @@ function payload() {
     bookingData: {
       firstName: o.first.trim(), lastName: o.last.trim(), email: o.email.trim(), phone: o.phone.trim(),
       date: state.date, time: state.time, partySize: state.guests.length,
-      menu_name: m.label, specialRequests: extras.join('. '), source: 'website-preorder'
+      menu_name: m.label, specialRequests: extras.join('. '), source: 'website-' + state.type
     },
     preorderData: state.guests.map(function (g, i) {
       var items = [];
@@ -443,12 +549,13 @@ function payload() {
 
 function plainText() {
   var p = payload(), b = p.bookingData, lines = [];
-  lines.push('Group preorder: ' + b.menu_name + ' menu');
+  lines.push((state.type === 'event' ? 'Event booking: ' : 'Large party: ') + b.menu_name + (isBuffet() ? '' : ' menu'));
   lines.push(niceDate(state.date) + ' at ' + niceTime(state.time) + ', ' + b.partySize + ' guests');
   lines.push('Organiser: ' + b.firstName + ' ' + b.lastName + ', ' + b.phone + ', ' + b.email);
   if (state.occasion) lines.push('Occasion: ' + state.occasion);
   if (state.requests) lines.push('Notes: ' + state.requests);
   lines.push('');
+  if (isBuffet()) { lines.push('Buffet: ' + (state.buffet.join(', ') || 'to be chosen by phone')); if (state.buffetNotes) lines.push('Dietary needs: ' + state.buffetNotes); return lines.join('\n'); }
   p.preorderData.forEach(function (g) {
     lines.push(g.person_number + '. ' + g.person_name + ': ' + g.items.map(function (i) { return i.item_name; }).join(' / ') + (g.special_instructions ? ' (' + g.special_instructions + ')' : ''));
   });
@@ -456,6 +563,12 @@ function plainText() {
 }
 
 function downloadCsv() {
+  if (isBuffet()) {
+    var rows0 = [['Buffet dish', 'Servings']].concat(state.buffet.map(function (n) { return [n, state.guests.length]; }));
+    var csv0 = rows0.map(function (r) { return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+    var a0 = h('a', { href: URL.createObjectURL(new Blob([csv0], { type: 'text/csv' })), download: 'scenic-inn-buffet-' + state.date + '.csv' });
+    document.body.appendChild(a0); a0.click(); a0.remove(); return;
+  }
   var cols = COURSES.filter(function (c) { return hasCourse(c.key); });
   var rows = [['#', 'Guest'].concat(cols.map(function (c) { return c.label; })).concat(['Side', 'Notes', 'Price'])];
   state.guests.forEach(function (g, i) {
@@ -478,14 +591,15 @@ function send() {
   }).then(function (res) {
     clearTimeout(timer);
     if (!res.ok) throw new Error('Server replied ' + res.status);
-    $('sent-line').textContent = 'Thanks ' + state.organiser.first + '. ' + state.guests.length + ' guests, ' + niceDate(state.date) + ' at ' + niceTime(state.time) + ', ' + menu().label + ' menu.';
+    $('sent-h').textContent = isBuffet() ? 'Booking sent' : 'Preorder sent';
+    $('sent-line').textContent = 'Thanks ' + state.organiser.first + '. ' + state.guests.length + ' guests, ' + niceDate(state.date) + ' at ' + niceTime(state.time) + ', ' + (isBuffet() ? 'buffet' : menu().label + ' menu') + '.';
     state.sent = true; save(); go(4);
   }).catch(function () {
     clearTimeout(timer);
     btn.disabled = false; btn.textContent = 'Try sending again';
     err.hidden = false; err.innerHTML = '';
-    var mail = 'mailto:' + SCENIC_EMAIL + '?subject=' + encodeURIComponent('Group preorder, ' + niceDate(state.date)) + '&body=' + encodeURIComponent(plainText());
-    err.appendChild(document.createTextNode('The preorder didn’t go through. Your choices are still saved here. You can '));
+    var mail = 'mailto:' + SCENIC_EMAIL + '?subject=' + encodeURIComponent((state.type === 'event' ? 'Event booking, ' : 'Large party, ') + niceDate(state.date)) + '&body=' + encodeURIComponent(plainText());
+    err.appendChild(document.createTextNode('That didn’t go through. Your choices are still saved here. You can '));
     err.appendChild(h('a', { href: mail, text: 'email it to us instead' }));
     err.appendChild(document.createTextNode(' or call ' + SCENIC_PHONE + '.'));
   });
@@ -503,14 +617,18 @@ function go(step) {
   });
   $('po-steps').hidden = step === 4;
   if (step === 1) fillStep1();
-  if (step === 2) { $('share-menu').href = 'menus.html#' + state.menuId; renderGuestList(); renderEditor(); }
+  if (step === 2) {
+    $('buffet-work').hidden = !isBuffet(); $('meals-work').hidden = isBuffet();
+    if (isBuffet()) renderBuffet();
+    else { $('share-menu').href = 'menus.html#' + state.menuId; renderGuestList(); renderEditor(); }
+  }
   if (step === 3) renderReview();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function reset() {
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-  location.href = 'preorder.html';
+  location.href = 'preorder.html?type=' + TYPE;
 }
 
 // ---------- start ----------
@@ -520,16 +638,16 @@ function reset() {
   try {
     var fromBooking = JSON.parse(sessionStorage.getItem('scenic-booking'));
     if (fromBooking && params.get('from') === 'booking') {
-      state = { step: 1, menuId: null, date: fromBooking.date, time: fromBooking.time, occasion: '', requests: fromBooking.requests || '',
-        organiser: { first: fromBooking.firstName || '', last: fromBooking.lastName || '', email: fromBooking.email || '', phone: fromBooking.phone || '' },
-        guests: [], current: 0 };
+      state = freshState();
+      state.date = fromBooking.date; state.time = fromBooking.time; state.requests = fromBooking.requests || '';
+      state.organiser = { first: fromBooking.firstName || '', last: fromBooking.lastName || '', email: fromBooking.email || '', phone: fromBooking.phone || '' };
       for (var i = 0; i < fromBooking.guests; i++) state.guests.push(blankGuest());
       PREORDER_MENUS.some(function (id) { if (menuAvailability(id, state.date).ok && timeOptions(id).indexOf(state.time) !== -1) { state.menuId = id; return true; } return false; });
       sessionStorage.removeItem('scenic-booking');
     }
   } catch (e) {}
-  if (params.get('menu') && MENUS[params.get('menu')] && !state.menuId) state.menuId = params.get('menu');
-  if (state.sent) { state = { step: 1, menuId: state.menuId, date: '', time: '', occasion: '', requests: '', organiser: state.organiser, guests: [], current: 0 }; }
+  if (params.get('menu') && MENUS[params.get('menu')] && !state.menuId) { state.menuId = params.get('menu'); if (state.type === 'party' && !state.style) state.style = 'meals'; }
+  if (state.sent) { var keep = state.organiser; state = freshState(); state.organiser = keep; }
 
   bindStep1(); bindStep2();
   document.querySelectorAll('[data-po-go]').forEach(function (b) { b.addEventListener('click', function () { go(Number(b.getAttribute('data-po-go'))); }); });

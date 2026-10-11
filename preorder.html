@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Group preorder – The Scenic Inn</title>
+<title>Large parties and events – The Scenic Inn</title>
 <meta name="description" content="Coming as a group? Choose everyone's food before you arrive at The Scenic Inn, Armoy.">
 <link rel="icon" href="mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,8 @@
     <a href="index.html" class="logo" aria-label="The Scenic Inn home"><img src="logo_light.png" alt="The Scenic Inn, bar and restaurant"></a>
     <nav class="site-nav" aria-label="Main">
       <a href="menus.html">Menus</a>
-      <a href="preorder.html" aria-current="page">Group preorder</a>
+      <a href="preorder.html?type=party" data-nav="party">Large party</a>
+      <a href="preorder.html?type=event" data-nav="event">Events</a>
       <a href="index.html#visit">Find us</a>
       <a href="tel:+442820751260">028 2075 1260</a>
       <a href="book.html" class="nav-book">Book a table</a>
@@ -29,29 +30,37 @@
 <main class="wrap page">
   <div class="po-head">
     <div>
-      <h1 class="page-title">Group preorder</h1>
+      <h1 class="page-title" id="po-title">Large party</h1>
       <div class="double-rule"></div>
-      <p class="po-intro">Choose everyone’s food before you arrive and the kitchen will have it ready together. Your progress saves on this device as you go, so you can collect choices over a few days.</p>
+      <p class="po-intro" id="po-intro"></p>
     </div>
     <img src="goats-cheese.jpg" alt="Whipped goats cheese with granola and a trio of beetroot" class="po-head-img">
   </div>
 
   <ol class="po-steps" id="po-steps" aria-label="Preorder steps">
     <li><span>1</span>Your event</li>
-    <li><span>2</span>Everyone’s food</li>
+    <li><span>2</span><b id="step2-label">Everyone’s food</b></li>
     <li><span>3</span>Check and send</li>
   </ol>
 
   <!-- STEP 1 -->
   <section data-po-step="1" aria-labelledby="s1-h">
-    <h2 id="s1-h" class="po-h2">Which menu?</h2>
-    <div class="menu-cards" id="menu-cards" role="radiogroup" aria-label="Menu"></div>
+    <div id="style-block">
+      <h2 id="s1-h" class="po-h2">How would you like to eat?</h2>
+      <div class="menu-cards" id="style-cards" role="radiogroup" aria-label="How you'd like to eat"></div>
+    </div>
 
-    <h2 class="po-h2 spaced">When, and how many?</h2>
+    <div id="menu-block">
+      <h2 class="po-h2 spaced">Which menu?</h2>
+      <div class="menu-cards" id="menu-cards" role="radiogroup" aria-label="Menu"></div>
+    </div>
+
+    <h2 class="po-h2 spaced" id="when-h">When, and how many?</h2>
     <div class="fields">
+      <label class="field" id="event-type-field">Type of event<select id="po-event-type"></select></label>
       <label class="field">Date<input type="date" id="po-date" required></label>
       <label class="field">Time<select id="po-time" required></select></label>
-      <label class="field">Number of guests<input type="number" id="po-guests" min="2" max="80" inputmode="numeric" required></label>
+      <label class="field">Number of guests<input type="number" id="po-guests" min="2" max="150" inputmode="numeric" required></label>
       <label class="field">Occasion <span class="hint">Optional</span><input type="text" id="po-occasion" placeholder="Christmas party, birthday…"></label>
     </div>
     <p class="field-msg" id="menu-msg" hidden></p>
@@ -66,15 +75,29 @@
     <label class="field field-full">Anything else we should know? <span class="hint">High chairs, wheelchair access, a cake you’re bringing</span><textarea id="po-requests" rows="3"></textarea></label>
 
     <div class="actions">
-      <button type="button" class="btn btn-primary" id="to-step-2">Start choosing food</button>
+      <button type="button" class="btn btn-primary" id="to-step-2">Continue</button>
       <span class="error" id="s1-error" hidden></span>
     </div>
   </section>
 
   <!-- STEP 2 -->
   <section data-po-step="2" hidden aria-labelledby="s2-h">
-    <h2 id="s2-h" class="visually-hidden">Everyone’s food</h2>
-    <div class="po-work">
+    <h2 id="s2-h" class="visually-hidden">Food</h2>
+
+    <div id="buffet-work" hidden>
+      <div class="editor-top">
+        <h2 class="po-h2" style="margin:0">Choose your buffet</h2>
+        <p class="editor-price" id="buffet-count" aria-live="polite"></p>
+      </div>
+      <p class="buffet-intro" id="buffet-intro"></p>
+      <div id="buffet-sections"></div>
+      <div class="callout buffet-empty" id="buffet-empty" hidden>
+        <p>We’re putting the buffet menu online. Send your booking now and we’ll call you to choose the food, or call us on <a href="tel:+442820751260">028 2075 1260</a>.</p>
+      </div>
+      <label class="field field-full">Dietary needs in the group <span class="hint">e.g. 3 vegetarians, 1 coeliac, a nut allergy</span><textarea id="buffet-notes" rows="3"></textarea></label>
+    </div>
+
+    <div class="po-work" id="meals-work">
       <aside class="guest-panel" aria-label="Guests">
         <div class="guest-panel-head">
           <p class="guest-count" id="guest-progress"></p>
@@ -130,16 +153,24 @@
       <p class="hint-line">You can still send the order now and phone us with the rest, or fill them in first.</p>
     </div>
 
-    <h3 class="po-h3">For the kitchen</h3>
-    <div class="kitchen" id="kitchen"></div>
+    <div id="buffet-review" hidden>
+      <h3 class="po-h3">Buffet</h3>
+      <ul class="buffet-list" id="buffet-list"></ul>
+      <p id="buffet-review-notes"></p>
+    </div>
 
-    <h3 class="po-h3">Guest by guest</h3>
-    <div class="table-scroll">
-      <table class="guest-table" id="guest-table"></table>
+    <div id="meals-review">
+      <h3 class="po-h3">For the kitchen</h3>
+      <div class="kitchen" id="kitchen"></div>
+
+      <h3 class="po-h3">Guest by guest</h3>
+      <div class="table-scroll">
+        <table class="guest-table" id="guest-table"></table>
+      </div>
     </div>
 
     <div class="total-box">
-      <p>Estimated food total <strong id="est-total"></strong></p>
+      <p id="total-line">Estimated food total <strong id="est-total"></strong></p>
       <p class="hint-line">A guide only. The final bill is settled on the night and drinks aren’t included.</p>
     </div>
 
@@ -147,7 +178,7 @@
       <button type="button" class="btn btn-outline" data-po-go="2">Change choices</button>
       <button type="button" class="btn btn-outline" id="print-btn">Print or save as PDF</button>
       <button type="button" class="btn btn-outline" id="csv-btn">Download spreadsheet</button>
-      <button type="button" class="btn btn-primary" id="send-btn">Send preorder to The Scenic Inn</button>
+      <button type="button" class="btn btn-primary" id="send-btn">Send to The Scenic Inn</button>
     </div>
     <p class="error" id="send-error" hidden></p>
   </section>
@@ -155,12 +186,12 @@
   <!-- STEP 4 -->
   <section data-po-step="4" hidden class="confirmed dark">
     <img src="mark.png" alt="">
-    <h2>Preorder sent</h2>
+    <h2 id="sent-h">Sent</h2>
     <p id="sent-line"></p>
-    <p>The kitchen has everyone’s choices. If anything changes, call us on <a href="tel:+442820751260" style="color:#EAE3D5">028 2075 1260</a> and quote the organiser’s name.</p>
+    <p>We’ll be in touch to confirm. If anything changes, call us on <a href="tel:+442820751260" style="color:#EAE3D5">028 2075 1260</a> and quote the organiser’s name.</p>
     <div class="btn-row">
       <a href="menus.html" class="btn btn-light">See the menus</a>
-      <button type="button" class="btn btn-outline" id="new-preorder">Start a new preorder</button>
+      <button type="button" class="btn btn-outline" id="new-preorder">Start a new booking</button>
     </div>
   </section>
 

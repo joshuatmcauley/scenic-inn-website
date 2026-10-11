@@ -82,7 +82,7 @@ function render() {
   $('children').textContent = state.children;
   $('large-notice').hidden = !isLarge();
   var sub = document.querySelector('#details button[type="submit"]');
-  if (sub && !sub.disabled) sub.textContent = isLarge() ? 'Continue to the preorder' : 'Confirm booking';
+  if (sub && !sub.disabled) sub.textContent = isLarge() ? 'Continue to food choices' : 'Confirm booking';
 
   var d = days[state.dateIdx];
   $('sum-guests').textContent = guestsText();
@@ -136,7 +136,7 @@ function submitBooking(details) {
       firstName: details.firstName, lastName: details.lastName, email: details.email, phone: details.phone,
       requests: details.requests || ''
     }));
-    location.href = 'preorder.html?from=booking';
+    location.href = 'preorder.html?type=party&from=booking';
     return;
   }
 

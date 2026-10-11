@@ -369,3 +369,13 @@ p { margin: 0; }
   .page-title { font-size: 32pt; }
   .guest-table { min-width: 0; }
 }
+
+/* Buffet */
+.buffet-intro { margin-bottom: 8px; color: var(--muted); }
+.dish.maxed { opacity: 0.5; cursor: not-allowed; }
+.buffet-list { margin: 0; padding-left: 20px; font-size: 18px; }
+.buffet-list li { padding: 4px 0; }
+.buffet-empty { max-width: none; margin-top: 24px; }
+.buffet-empty p { margin: 0; }
+#buffet-work .field-full { margin-top: 32px; }
+.po-steps b { font-weight: inherit; }

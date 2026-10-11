@@ -41,6 +41,7 @@ var MENUS = {
   lunch: {
     label: 'Lunch',
     when: 'Monday to Saturday, 12pm to 4:45pm',
+    days: [1, 2, 3, 4, 5, 6], times: ['12:00', '16:30'],
     note: 'Dishes marked * come complete. Everything else comes with a side of your choice.',
     photos: [
       { src: 'prawns-toast.jpg', alt: 'King prawns in a garlic cream on toasted ciabatta' },
@@ -201,9 +202,33 @@ var MENUS = {
   sunday: {
     label: 'Sunday lunch',
     when: 'Sunday, 12pm to 5pm',
-    note: '',
-    photos: [],
-    sections: [] // [ADD THE SUNDAY LUNCH MENU HERE]
+    note: 'One course £18.95, two courses £22.95, three courses £26.95.', // [CHECK: prices from the old booking system]
+    setPrice: { 1: 18.95, 2: 22.95, 3: 26.95 },
+    minCourses: 1,
+    days: [0], times: ['12:00', '16:30'],
+    photos: [{ src: 'diningroom.jpg', alt: 'The restaurant dining room set for lunch' }],
+    sections: [
+      section('Starters', 'starter', [
+        item('Soup of the day', 'Wheaten bread'),
+        item('Garlic mushrooms', 'Breaded mushrooms, salad garnish, garlic mayo'),
+        item('Prawn cocktail', 'Prawns, salad, Marie Rose sauce, wheaten bread'),
+        item('Chicken strippers', 'Chinese seasoned battered chicken, salad garnish, dip'),
+        item('Egg mayo', 'Salad, paprika')
+      ]),
+      section('Main course', 'main', [
+        item('Traditional turkey, ham and stuffing', 'Mash, roast potato, chef’s vegetables, sauce'),
+        item('Roast beef and Yorkshire pudding', 'Mash, roast potato, chef’s vegetables, sauce'),
+        item('Gammon and pineapple', 'Mash, roast potato, chef’s vegetables, sauce'),
+        item('Pan fried chicken escalope', 'Mash, roast potato, chef’s vegetables, sauce')
+      ]),
+      section('Desserts', 'dessert', [
+        item('Sherry trifle', 'Fresh cream, sprinkles'),
+        item('Sticky toffee pudding', 'Fresh cream or ice cream'),
+        item('Chef’s cheesecake', 'Ice cream or fresh cream'),
+        item('Apple crumble', 'Custard'),
+        item('Brownie sundae', 'Vanilla ice cream, chocolate ice cream, brownie pieces, fresh cream')
+      ])
+    ]
   },
 
   // ------------------------------------------------------------------
@@ -253,7 +278,25 @@ var MENUS = {
 var MENU_ORDER = ['lunch', 'tea', 'evening', 'sunday', 'christmas'];
 
 // Menus that can be preordered for a group
-var PREORDER_MENUS = ['christmas', 'evening', 'tea'];
+var PREORDER_MENUS = ['christmas', 'evening', 'tea', 'sunday', 'lunch'];
+
+// ---------------------------------------------------------------------
+// BUFFET (for events and large parties)
+// The old booking site loaded this from the live database, so it isn't in
+// the repo yet. Add the sections and items here, e.g.
+//   section('Hot food', null, [ item('Chicken goujons', 'With dips'), ... ])
+// maxChoices: how many different items a group can pick.
+// pricePerHead: number in pounds, or null to leave the price off.
+// ---------------------------------------------------------------------
+var BUFFET = {
+  label: 'Buffet',
+  note: '',
+  maxChoices: 4,
+  pricePerHead: null,
+  sections: [] // [ADD THE BUFFET MENU HERE]
+};
+
+var EVENT_TYPES = ['Birthday', 'Christening', 'Communion or confirmation', 'Engagement', 'Anniversary', 'Funeral or wake', 'Work night out', 'Christmas party', 'Other'];
 
 function formatPrice(n) {
   if (n === null || n === undefined || n === '') return '';

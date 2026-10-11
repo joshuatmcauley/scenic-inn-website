@@ -30,7 +30,7 @@ function render(id) {
 
   var pre = document.getElementById('preorder-callout');
   pre.hidden = PREORDER_MENUS.indexOf(id) === -1;
-  document.getElementById('preorder-link').href = 'preorder.html?menu=' + id;
+  document.getElementById('preorder-link').href = 'preorder.html?type=party&menu=' + id;
 
   var photos = document.getElementById('menu-photos');
   photos.innerHTML = '';

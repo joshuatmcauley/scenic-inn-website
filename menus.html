@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menus – The Scenic Inn</title>
+<meta name="description" content="Lunch, tea time, evening, Sunday lunch and Christmas 2026 menus at The Scenic Inn, Armoy.">
+<link rel="icon" href="mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header dark">
+  <div class="wrap">
+    <a href="index.html" class="logo" aria-label="The Scenic Inn home"><img src="logo_light.png" alt="The Scenic Inn, bar and restaurant"></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="menus.html" aria-current="page">Menus</a>
+      <a href="preorder.html">Group preorder</a>
+      <a href="index.html#visit">Find us</a>
+      <a href="tel:+442820751260">028 2075 1260</a>
+      <a href="book.html" class="nav-book">Book a table</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap page">
+  <h1 class="page-title">Menus</h1>
+  <div class="double-rule"></div>
+
+  <div class="tabs" role="group" aria-label="Choose a menu" id="tabs"></div>
+
+  <div class="menu-head">
+    <h2 id="menu-title"></h2>
+    <p id="menu-when"></p>
+  </div>
+  <p class="menu-note" id="menu-note"></p>
+
+  <div class="menu-photos" id="menu-photos"></div>
+
+  <div class="preorder-callout" id="preorder-callout" hidden>
+    <p><strong>Coming as a group?</strong> Everyone can choose their food in advance, so it all comes out together.</p>
+    <a href="preorder.html" id="preorder-link" class="btn btn-dark">Start a group preorder</a>
+  </div>
+
+  <div class="callout" id="sunday-callout" hidden>
+    <p>Sunday lunch is served from 12pm to 5pm. [ADD THE CURRENT SUNDAY LUNCH MENU HERE]</p>
+    <a href="tel:+442820751260" style="font-weight:600">Call 028 2075 1260 for this week’s roast</a>
+  </div>
+
+  <div class="menu-grid" id="menu-grid" aria-live="polite"></div>
+
+  <div class="allergen-key" id="allergen-key" hidden>
+    <p><strong>Allergens.</strong> Some dishes can be adapted to suit allergen needs, so please ask your server. Codes used on our printed menu: C crustaceans, D dairy, E egg, F fish, G gluten, M mustard, N nuts, S sulphites, SY soya, SES sesame.</p>
+  </div>
+
+  <div class="menu-foot">
+    <p>Please ask a member of staff if you need to know about allergens in any of our dishes. Prices in pounds sterling. Menus may change with the season.</p>
+    <a href="book.html" class="btn btn-primary">Book a table</a>
+  </div>
+</main>
+
+<footer class="site-footer slim-footer dark">
+  <div class="wrap">
+    <p>38 Fivey Road, Armoy, Ballymoney, BT53 8UT</p>
+    <p><a href="tel:+442820751260">028 2075 1260</a> &nbsp; <a href="mailto:enquiries@thescenicinn.com">enquiries@thescenicinn.com</a></p>
+  </div>
+</footer>
+
+<script src="menu-data.js"></script>
+<script src="menus.js"></script>
+</body>
+</html>

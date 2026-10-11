@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group preorder – The Scenic Inn</title>
+<meta name="description" content="Coming as a group? Choose everyone's food before you arrive at The Scenic Inn, Armoy.">
+<link rel="icon" href="mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header dark">
+  <div class="wrap">
+    <a href="index.html" class="logo" aria-label="The Scenic Inn home"><img src="logo_light.png" alt="The Scenic Inn, bar and restaurant"></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="menus.html">Menus</a>
+      <a href="preorder.html" aria-current="page">Group preorder</a>
+      <a href="index.html#visit">Find us</a>
+      <a href="tel:+442820751260">028 2075 1260</a>
+      <a href="book.html" class="nav-book">Book a table</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap page">
+  <div class="po-head">
+    <div>
+      <h1 class="page-title">Group preorder</h1>
+      <div class="double-rule"></div>
+      <p class="po-intro">Choose everyone’s food before you arrive and the kitchen will have it ready together. Your progress saves on this device as you go, so you can collect choices over a few days.</p>
+    </div>
+    <img src="goats-cheese.jpg" alt="Whipped goats cheese with granola and a trio of beetroot" class="po-head-img">
+  </div>
+
+  <ol class="po-steps" id="po-steps" aria-label="Preorder steps">
+    <li><span>1</span>Your event</li>
+    <li><span>2</span>Everyone’s food</li>
+    <li><span>3</span>Check and send</li>
+  </ol>
+
+  <!-- STEP 1 -->
+  <section data-po-step="1" aria-labelledby="s1-h">
+    <h2 id="s1-h" class="po-h2">Which menu?</h2>
+    <div class="menu-cards" id="menu-cards" role="radiogroup" aria-label="Menu"></div>
+
+    <h2 class="po-h2 spaced">When, and how many?</h2>
+    <div class="fields">
+      <label class="field">Date<input type="date" id="po-date" required></label>
+      <label class="field">Time<select id="po-time" required></select></label>
+      <label class="field">Number of guests<input type="number" id="po-guests" min="2" max="80" inputmode="numeric" required></label>
+      <label class="field">Occasion <span class="hint">Optional</span><input type="text" id="po-occasion" placeholder="Christmas party, birthday…"></label>
+    </div>
+    <p class="field-msg" id="menu-msg" hidden></p>
+
+    <h2 class="po-h2 spaced">Who’s organising?</h2>
+    <div class="fields">
+      <label class="field">First name<input type="text" id="po-first" autocomplete="given-name" required></label>
+      <label class="field">Last name<input type="text" id="po-last" autocomplete="family-name" required></label>
+      <label class="field">Email<input type="email" id="po-email" autocomplete="email" required></label>
+      <label class="field">Phone<input type="tel" id="po-phone" autocomplete="tel" required></label>
+    </div>
+    <label class="field field-full">Anything else we should know? <span class="hint">High chairs, wheelchair access, a cake you’re bringing</span><textarea id="po-requests" rows="3"></textarea></label>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="to-step-2">Start choosing food</button>
+      <span class="error" id="s1-error" hidden></span>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section data-po-step="2" hidden aria-labelledby="s2-h">
+    <h2 id="s2-h" class="visually-hidden">Everyone’s food</h2>
+    <div class="po-work">
+      <aside class="guest-panel" aria-label="Guests">
+        <div class="guest-panel-head">
+          <p class="guest-count" id="guest-progress"></p>
+          <div class="bar" aria-hidden="true"><div id="guest-bar"></div></div>
+        </div>
+        <ol class="guest-list" id="guest-list"></ol>
+        <div class="guest-panel-foot">
+          <button type="button" class="btn btn-outline btn-small" id="add-guest">Add a guest</button>
+          <a class="share-link" id="share-menu" href="menus.html">Send the menu round</a>
+        </div>
+      </aside>
+
+      <div class="guest-editor" id="guest-editor">
+        <div class="editor-top">
+          <p class="editor-label" id="editor-label"></p>
+          <p class="editor-price" id="editor-price" aria-live="polite"></p>
+        </div>
+        <label class="field">Guest’s name <span class="hint">So the staff know whose plate is whose</span><input type="text" id="guest-name" autocomplete="off"></label>
+
+        <fieldset class="avoid" id="avoid-box">
+          <legend>Avoiding anything? <span class="hint">We’ll flag dishes that contain it</span></legend>
+          <div class="chips" id="avoid-chips"></div>
+        </fieldset>
+
+        <div id="courses"></div>
+
+        <label class="field field-full">Allergies or changes for this guest <span class="hint">e.g. no onions, coeliac, sauce on the side</span><textarea id="guest-notes" rows="2"></textarea></label>
+
+        <div class="actions editor-actions">
+          <button type="button" class="btn btn-outline" id="prev-guest">Previous guest</button>
+          <button type="button" class="btn btn-outline" id="copy-prev">Same as previous guest</button>
+          <button type="button" class="btn btn-primary" id="next-guest">Next guest</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions po-bottom">
+      <button type="button" class="btn btn-outline" data-po-go="1">Back to event details</button>
+      <button type="button" class="btn btn-dark" data-po-go="3">Check the order</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section data-po-step="3" hidden aria-labelledby="s3-h" id="review">
+    <div class="review-head">
+      <h2 id="s3-h" class="po-h2">Check and send</h2>
+      <p id="review-event" class="review-event"></p>
+    </div>
+
+    <div class="problems" id="problems" hidden>
+      <p class="title">A few guests still need choices</p>
+      <ul id="problem-list"></ul>
+      <p class="hint-line">You can still send the order now and phone us with the rest, or fill them in first.</p>
+    </div>
+
+    <h3 class="po-h3">For the kitchen</h3>
+    <div class="kitchen" id="kitchen"></div>
+
+    <h3 class="po-h3">Guest by guest</h3>
+    <div class="table-scroll">
+      <table class="guest-table" id="guest-table"></table>
+    </div>
+
+    <div class="total-box">
+      <p>Estimated food total <strong id="est-total"></strong></p>
+      <p class="hint-line">A guide only. The final bill is settled on the night and drinks aren’t included.</p>
+    </div>
+
+    <div class="actions no-print">
+      <button type="button" class="btn btn-outline" data-po-go="2">Change choices</button>
+      <button type="button" class="btn btn-outline" id="print-btn">Print or save as PDF</button>
+      <button type="button" class="btn btn-outline" id="csv-btn">Download spreadsheet</button>
+      <button type="button" class="btn btn-primary" id="send-btn">Send preorder to The Scenic Inn</button>
+    </div>
+    <p class="error" id="send-error" hidden></p>
+  </section>
+
+  <!-- STEP 4 -->
+  <section data-po-step="4" hidden class="confirmed dark">
+    <img src="mark.png" alt="">
+    <h2>Preorder sent</h2>
+    <p id="sent-line"></p>
+    <p>The kitchen has everyone’s choices. If anything changes, call us on <a href="tel:+442820751260" style="color:#EAE3D5">028 2075 1260</a> and quote the organiser’s name.</p>
+    <div class="btn-row">
+      <a href="menus.html" class="btn btn-light">See the menus</a>
+      <button type="button" class="btn btn-outline" id="new-preorder">Start a new preorder</button>
+    </div>
+  </section>
+
+  <p class="start-over no-print"><button type="button" class="link-btn" id="start-over">Clear everything and start again</button></p>
+</main>
+
+<footer class="site-footer slim-footer dark no-print">
+  <div class="wrap">
+    <p>38 Fivey Road, Armoy, Ballymoney, BT53 8UT</p>
+    <p><a href="tel:+442820751260">028 2075 1260</a> &nbsp; <a href="mailto:enquiries@thescenicinn.com">enquiries@thescenicinn.com</a></p>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="menu-data.js"></script>
+<script src="preorder.js"></script>
+</body>
+</html>

@@ -103,360 +103,185 @@ function cleanName(name) {
   return name.replace(/\s*-\s*£?\d+(?:[.,]\d{1,2})?\s*$/i, '').trim();
 }
 
-// Generate PDF for preorder (table layout)
+// Generate the kitchen PDF for a preorder: logo, booking details, totals
+// per dish, then one row per guest with their choices and allergy notes.
+// Logo is read from backend/logo.png (also checks backend/assets/logo.png and the repo-root logo.png).
+function findLogo() {
+    const options = [
+        path.join(__dirname, '../logo.png'),
+        path.join(__dirname, '../assets/logo.png'),
+        path.join(__dirname, '../../logo.png')
+    ];
+    return options.find(p => fs.existsSync(p)) || null;
+}
+
+function niceDateStr(s) {
+    const p = String(s || '').split('-');
+    if (p.length !== 3) return s || '';
+    const d = new Date(+p[0], +p[1] - 1, +p[2]);
+    const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+}
+
+function niceTimeStr(t) {
+    if (!t || t.indexOf(':') === -1) return t || '';
+    const [hh, mm] = t.split(':');
+    const h = +hh;
+    return `${h > 12 ? h - 12 : h}:${mm.slice(0, 2)}${h >= 12 ? 'pm' : 'am'}`;
+}
+
 async function generatePreorderPDF(bookingData, preorderData) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const doc = new PDFDocument({ margin: 50 });
-            const pdfPath = path.join(__dirname, '../temp', `preorder-${Date.now()}.pdf`);
-            
-            // Ensure temp directory exists
-            const tempDir = path.dirname(pdfPath);
-            if (!fs.existsSync(tempDir)) {
-                fs.mkdirSync(tempDir, { recursive: true });
+    const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
+    const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
+    const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
+    const partySize = pick(bookingData, ['partySize', 'party_size'], '');
+    const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], '');
+    const date = pick(bookingData, ['date'], '');
+    const time = pick(bookingData, ['time'], '');
+    const menuName = pick(bookingData, ['menu_name'], '');
+    const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
+    const isBuffet = pick(bookingData, ['experience_id'], '') === 'buffet';
+
+    // Resolve item names up front (older payloads may only send menu_item_id)
+    const people = [];
+    for (const person of (preorderData || [])) {
+        const row = {
+            number: person.person_number || people.length + 1,
+            name: person.person_name || `Guest ${people.length + 1}`,
+            notes: person.special_instructions || '',
+            starter: '', main: '', side: '', dessert: '', items: [], orders: {}
+        };
+        if (Array.isArray(person.items)) {
+            for (const sel of person.items) {
+                let name = cleanName(sel.item_name || sel.name || '');
+                if (!name && sel.menu_item_id) {
+                    try {
+                        const item = await dbHelpers.getMenuItemById(sel.menu_item_id);
+                        name = item ? cleanName(item.name) : String(sel.menu_item_id);
+                    } catch (err) { name = String(sel.menu_item_id); }
+                }
+                const course = (sel.course_type || '').toLowerCase();
+                if (['starter', 'main', 'side', 'dessert'].includes(course)) {
+                    row[course] = name;
+                    if (typeof sel.menu_order === 'number') row.orders[course] = sel.menu_order;
+                }
+                row.items.push({ name, quantity: sel.quantity || 1 });
             }
-            
+        } else {
+            ['starter', 'main', 'side', 'dessert'].forEach(k => { if (person[k]) row[k] = cleanName(person[k]); });
+        }
+        people.push(row);
+    }
+
+    const pdfPath = path.join(__dirname, '../temp', `preorder-${Date.now()}.pdf`);
+    if (!fs.existsSync(path.dirname(pdfPath))) fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
+
+    return new Promise((resolve, reject) => {
+        try {
+            const M = 40;
+            const doc = new PDFDocument({ size: 'A4', margin: M, bufferPages: true });
             const stream = fs.createWriteStream(pdfPath);
             doc.pipe(stream);
-            
-            // Header
-            doc.fontSize(20)
-               .text('The Scenic Inn - Preorder Details', { align: 'center' })
-               .moveDown();
-            
-      // Normalize fields from various payload shapes
-      const firstName = pick(bookingData, ['firstName', 'first_name', 'firstname'], '');
-      const lastName = pick(bookingData, ['lastName', 'last_name', 'lastname'], '');
-      const fullName = `${firstName} ${lastName}`.trim() || 'N/A';
-      const partySize = pick(bookingData, ['partySize', 'party_size'], 'N/A');
-      const email = pick(bookingData, ['email', 'contactEmail', 'contact_email'], 'N/A');
-      const phone = pick(bookingData, ['phone', 'contactPhone', 'contact_phone'], 'N/A');
-      const date = pick(bookingData, ['date'], '');
-      const time = pick(bookingData, ['time'], '');
-      const specialRequests = pick(bookingData, ['specialRequests', 'special_requests'], '');
-      const experienceId = pick(bookingData, ['experience_id'], '');
+            const W = doc.page.width, H = doc.page.height, CW = W - M * 2;
+            const INK = '#28221E', GREY = '#6E645C', RUST = '#8E3B22', LINE = '#C8C0B2';
+            let y = M;
+            const rule = () => { doc.moveTo(M, y).lineTo(W - M, y).lineWidth(0.6).strokeColor(LINE).stroke(); };
+            const room = (need) => { if (y + need > H - M - 20) { doc.addPage(); y = M; return true; } return false; };
 
-      // Booking Information
-            doc.fontSize(14)
-               .text('Booking Information:', { underline: true })
-               .fontSize(12)
-         .text(`Date: ${date}`)
-         .text(`Time: ${time}`)
-         .text(`Party Size: ${partySize} people`)
-         .text(`Customer: ${fullName}`)
-         .text(`Email: ${email}`)
-         .text(`Phone: ${phone}`)
-               .moveDown();
-            
-            // Special Requests
-            if (specialRequests && specialRequests.trim()) {
-                doc.fontSize(14)
-                   .text('Special Requests:', { underline: true })
-                   .fontSize(12)
-                   .text(specialRequests, { 
-                     width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-                     align: 'left'
-                   })
-                   .moveDown();
-            }
-            
-      // Preorder Details (grouped lists)
-            if (preorderData && preorderData.length > 0) {
-                doc.fontSize(14)
-                   .text('Preorder Menu Selections:', { underline: true })
-                   .moveDown();
-                
-        // Check if this is a buffet menu (buffet items don't have course_type)
-        const isBuffetMenu = experienceId === 'buffet';
-        
-        if (isBuffetMenu) {
-          // For buffet, collect all items with quantities
-          const buffetItems = new Map(); // item name -> total quantity
-          
-          for (const person of preorderData) {
-            if (person.items && Array.isArray(person.items)) {
-              for (const sel of person.items) {
-                let itemName = '';
-                const quantity = sel.quantity || 1;
-                
-                // Try to get item name from various sources
-                if (sel.item_name) {
-                  itemName = cleanName(sel.item_name);
-                } else if (sel.name) {
-                  itemName = cleanName(sel.name);
-                } else if (sel.menu_item_id) {
-                  // Fetch item name from database
-                  try {
-                    const item = await dbHelpers.getMenuItemById(sel.menu_item_id);
-                    if (item) {
-                      itemName = cleanName(item.name);
-                    } else {
-                      itemName = sel.menu_item_id; // Fallback to ID
-                    }
-                  } catch (err) {
-                    console.error('Error fetching menu item:', err);
-                    itemName = sel.menu_item_id; // Fallback to ID
-                  }
-                }
-                
-                if (itemName) {
-                  const currentQty = buffetItems.get(itemName) || 0;
-                  buffetItems.set(itemName, currentQty + quantity);
-                }
-              }
-            }
-          }
-          
-          // Display buffet items in a simple list
-          if (buffetItems.size > 0) {
-            doc.font('Helvetica-Bold').fontSize(12).text('Buffet Items:').moveDown(0.3);
-            doc.font('Helvetica').fontSize(10);
-            
-            const x0 = doc.x;
-            const itemW = 300;
-            const qtyW = 80;
-            
             // Header
-            doc.font('Helvetica-Bold').fontSize(9);
-            doc.text('Item', x0, doc.y, { width: itemW });
-            doc.text('Quantity', x0 + itemW, doc.y, { width: qtyW });
-            doc.moveDown(0.2);
-            
-            // Draw line
-            doc.lineWidth(0.5);
-            const lineY = doc.y;
-            doc.moveTo(x0, lineY).lineTo(x0 + itemW + qtyW, lineY).stroke();
-            doc.moveDown(0.2);
-            
-            // Items
-            doc.font('Helvetica').fontSize(10);
-            for (const [itemName, quantity] of buffetItems.entries()) {
-              doc.text(itemName, x0, doc.y, { width: itemW });
-              doc.text(`${quantity}x`, x0 + itemW, doc.y, { width: qtyW });
-              doc.moveDown(0.3);
-            }
-          }
-        } else {
-          // Regular menu with course types
-          const starters = [];
-          const mains = [];
-          const sides = [];
-          const desserts = [];
+            const logo = findLogo();
+            if (logo) { try { doc.image(logo, M, y, { width: 130 }); } catch (e) { console.warn('Logo not added:', e.message); } }
+            doc.fillColor(INK).font('Helvetica-Bold').fontSize(22).text('KITCHEN ORDER', M, y + 4, { width: CW, align: 'right' });
+            doc.fontSize(14).text(`${niceDateStr(date)} at ${niceTimeStr(time)}`, M, y + 32, { width: CW, align: 'right' });
+            doc.font('Helvetica').fontSize(11).text(`${partySize} guests  ·  ${isBuffet ? 'Buffet' : (menuName ? menuName + ' menu' : 'Preorder')}`, M, y + 50, { width: CW, align: 'right' });
+            y += 76; rule(); y += 10;
 
-          for (const person of preorderData) {
-            const personNumber = person.person_number || 1;
-            const personName = person.person_name || null;
-            const personNotes = person.special_instructions || '';
-            
-            // Format person identifier: only show name if available, otherwise empty string
-            const personLabel = personName ? personName : '';
-            
-            // Collect items by person to match sides with mains
-            let personStarter = null;
-            let personMain = null;
-            let personSide = null;
-            let personDessert = null;
-            
-            if (person.items && Array.isArray(person.items)) {
-              for (const sel of person.items) {
-                const course = (sel.course_type || '').toLowerCase();
-                let name = '';
-                
-                // Try to get item name
-                if (sel.item_name) {
-                  name = cleanName(sel.item_name);
-                } else if (sel.name) {
-                  name = cleanName(sel.name);
-                } else if (sel.menu_item_id) {
-                  // Fetch item name from database
-                  try {
-                    const item = await dbHelpers.getMenuItemById(sel.menu_item_id);
-                    if (item) {
-                      name = cleanName(item.name);
-                    } else {
-                      name = sel.menu_item_id; // Fallback to ID
-                    }
-                  } catch (err) {
-                    console.error('Error fetching menu item:', err);
-                    name = sel.menu_item_id; // Fallback to ID
-                  }
-                }
-                
-                if (course === 'starter') personStarter = name;
-                else if (course === 'main') personMain = name;
-                else if (course === 'side') personSide = name;
-                else if (course === 'dessert') personDessert = name;
-              }
+            doc.font('Helvetica').fontSize(10.5).fillColor(INK);
+            doc.text(`Organiser: ${fullName}${phone ? '  ·  ' + phone : ''}`, M, y, { width: CW }); y = doc.y + 2;
+            if (specialRequests) { doc.text(`Notes: ${specialRequests}`, M, y, { width: CW }); y = doc.y + 2; }
+            y += 8;
+
+            if (isBuffet) {
+                const dishes = people.length ? people[0].items : [];
+                doc.font('Helvetica-Bold').fontSize(14).fillColor(INK).text(`Buffet for ${partySize}`, M, y); y = doc.y + 6;
+                doc.font('Helvetica').fontSize(12);
+                (dishes.length ? dishes.map(d => d.name) : ['To be chosen by phone']).forEach(n => {
+                    room(20); doc.rect(M + 2, y + 1, 9, 9).lineWidth(0.8).strokeColor(INK).stroke();
+                    doc.fillColor(INK).text(n, M + 18, y, { width: CW - 18 }); y = doc.y + 6;
+                });
+                const notes = people.length ? people[0].notes : '';
+                if (notes) { y += 6; doc.font('Helvetica-Bold').fontSize(11).fillColor(RUST).text(`Dietary needs: ${notes}`, M, y, { width: CW }); }
             } else {
-              if (person.starter) personStarter = cleanName(person.starter);
-              if (person.main) personMain = cleanName(person.main);
-              if (person.side) personSide = cleanName(person.side);
-              if (person.dessert) personDessert = cleanName(person.dessert);
-            }
-            
-            // Add to arrays with side matched to main
-            if (personStarter) starters.push({ person: personLabel, item: personStarter, notes: personNotes });
-            if (personMain) mains.push({ person: personLabel, item: personMain, side: personSide, notes: personNotes });
-            if (personDessert) desserts.push({ person: personLabel, item: personDessert, notes: personNotes });
-          }
+                // One section per course, identical dishes grouped together
+                // (all the steaks together, etc). Dishes follow menu order when the
+                // website sends it, otherwise A to Z.
+                const groupsFor = (course) => {
+                    const map = new Map();
+                    people.forEach((p, idx) => {
+                        const key = p[course] || (course === 'main' ? 'NOT CHOSEN YET' : null);
+                        if (!key) return;
+                        if (!map.has(key)) map.set(key, { name: key, guests: [], order: key === 'NOT CHOSEN YET' ? 99999 : 99998 });
+                        const grp = map.get(key);
+                        grp.guests.push(p);
+                        if (typeof p.orders[course] === 'number') grp.order = Math.min(grp.order === 99998 ? Infinity : grp.order, p.orders[course]);
+                    });
+                    return [...map.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+                };
+                const TITLES = { starter: 'STARTERS', main: 'MAINS', dessert: 'DESSERTS' };
+                ['starter', 'main', 'dessert'].forEach(course => {
+                    const groups = groupsFor(course);
+                    if (!groups.length) return;
+                    const total = groups.reduce((a, g) => a + g.guests.length, 0);
+                    room(70);
+                    doc.rect(M, y, CW, 20).fill(INK);
+                    doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#FFFFFF').text(`${TITLES[course]}   ${total}`, M + 8, y + 5.5, { width: CW - 16, lineBreak: false });
+                    y += 28;
 
-        // Draw table with Person, Item, Sides, Notes columns
-        const drawTable = (title, items, showSides = false) => {
-          if (items.length === 0) return; // Don't draw empty tables
-          
-          // Sort items by item name to group identical items together
-          items.sort((a, b) => {
-            const itemA = typeof a === 'object' ? a.item : a.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
-            const itemB = typeof b === 'object' ? b.item : b.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
-            return itemA.localeCompare(itemB);
-          });
-          
-          const x0 = doc.page.margins.left;
-          let y = doc.y;
-          const totalW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-          const personW = 60;
-          const sidesW = showSides ? 100 : 0;
-          const notesW = 100; // Increased notes width for better wrapping
-          const itemW = totalW - personW - sidesW - notesW; // Item gets remaining space
-          const minRowH = 12; // Minimum row height
-          const cellPadding = 3;
-          const fontSize = 8;
-          
-          // Set font for height calculations
-          doc.font('Helvetica').fontSize(fontSize);
-          
-          // Calculate row heights first by measuring text
-          const rowHeights = [];
-          const headerH = 12; // Header row height
-          
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const personText = typeof item === 'object' ? (item.person || '') : '';
-            const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
-            const sideName = typeof item === 'object' ? (item.side || '') : '';
-            const notes = typeof item === 'object' ? (item.notes || '') : '';
-            
-            // Calculate height needed for each cell
-            const personHeight = doc.heightOfString(personText || '', { width: personW - cellPadding * 2 });
-            const itemHeight = doc.heightOfString(itemName || '', { width: itemW - cellPadding * 2 });
-            const sideHeight = showSides ? doc.heightOfString(sideName || '', { width: sidesW - cellPadding * 2 }) : 0;
-            const notesHeight = doc.heightOfString(notes || '', { width: notesW - cellPadding * 2 });
-            
-            // Row height is the maximum of all cell heights
-            const rowH = Math.max(minRowH, personHeight, itemHeight, sideHeight, notesHeight) + 4; // +4 for padding
-            rowHeights.push(rowH);
-          }
-          
-          // Calculate total table height BEFORE drawing
-          const totalHeight = headerH + rowHeights.reduce((sum, h) => sum + h, 0);
-          const titleHeight = 15; // Space for title
-          const spacingAfter = 10; // Space after table
-          const totalNeeded = titleHeight + totalHeight + spacingAfter;
-          
-          // Check if we need a new page BEFORE drawing
-          const availableSpace = doc.page.height - doc.y - doc.page.margins.bottom;
-          if (availableSpace < totalNeeded) {
-            doc.addPage();
-            y = doc.page.margins.top;
-            doc.y = y;
-          } else {
-            y = doc.y;
-          }
-          
-          // Draw header
-          doc.font('Helvetica-Bold').fontSize(9);
-          const headerY = y + 2;
-          doc.text('Person', x0 + cellPadding, headerY, { width: personW - cellPadding * 2 });
-          doc.text('Item', x0 + personW + cellPadding, headerY, { width: itemW - cellPadding * 2 });
-          if (showSides) {
-            doc.text('Sides', x0 + personW + itemW + cellPadding, headerY, { width: sidesW - cellPadding * 2 });
-          }
-          doc.text('Notes', x0 + personW + itemW + sidesW + cellPadding, headerY, { width: notesW - cellPadding * 2 });
-          
-          // Draw grid lines
-          doc.lineWidth(0.5);
-          // Horizontal lines
-          let currentY = y;
-          doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke(); // Top border
-          currentY += headerH;
-          doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke(); // Header bottom
-          for (let i = 0; i < rowHeights.length; i++) {
-            currentY += rowHeights[i];
-            doc.moveTo(x0, currentY).lineTo(x0 + totalW, currentY).stroke();
-          }
-          // Vertical borders
-          doc.moveTo(x0, y).lineTo(x0, y + totalHeight).stroke(); // Left
-          doc.moveTo(x0 + personW, y).lineTo(x0 + personW, y + totalHeight).stroke();
-          doc.moveTo(x0 + personW + itemW, y).lineTo(x0 + personW + itemW, y + totalHeight).stroke();
-          if (showSides) {
-            doc.moveTo(x0 + personW + itemW + sidesW, y).lineTo(x0 + personW + itemW + sidesW, y + totalHeight).stroke();
-          }
-          doc.moveTo(x0 + totalW, y).lineTo(x0 + totalW, y + totalHeight).stroke(); // Right
-          
-          // Fill body with text that wraps
-          doc.font('Helvetica').fontSize(fontSize);
-          currentY = y + headerH + 2;
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const personText = typeof item === 'object' ? (item.person || '') : '';
-            const itemName = typeof item === 'object' ? item.item : item.replace(/^Person \d+:\s*/, '').replace(/\s*-\s*£.*$/,'');
-            const sideName = typeof item === 'object' ? (item.side || '') : '';
-            const notes = typeof item === 'object' ? (item.notes || '') : '';
-            
-            // Center text vertically in row
-            const rowH = rowHeights[i];
-            const textY = currentY + (rowH - doc.heightOfString(personText || 'A', { width: personW - cellPadding * 2 })) / 2;
-            
-            doc.text(personText, x0 + cellPadding, textY, { width: personW - cellPadding * 2, align: 'left' });
-            doc.text(itemName, x0 + personW + cellPadding, textY, { width: itemW - cellPadding * 2, align: 'left' });
-            if (showSides) {
-              doc.text(sideName, x0 + personW + itemW + cellPadding, textY, { width: sidesW - cellPadding * 2, align: 'left' });
+                    groups.forEach((grp, gi) => {
+                        let cont = false;
+                        const head = () => {
+                            doc.font('Helvetica-Bold').fontSize(13).fillColor(INK)
+                               .text(`${grp.guests.length} x ${grp.name}${cont ? ' (cont.)' : ''}`, M, y, { width: CW });
+                            y = doc.y + 5;
+                        };
+                        if (gi > 0) room(60);
+                        head();
+                        grp.guests.forEach(p => {
+                            const side = course === 'main' && p.side ? `Side: ${p.side}` : '';
+                            doc.font('Helvetica-Bold').fontSize(10);
+                            const hName = doc.heightOfString(p.name, { width: 140 });
+                            const hNote = p.notes ? doc.heightOfString(p.notes, { width: CW - 250 }) : 0;
+                            doc.font('Helvetica').fontSize(10);
+                            const hSide = side ? doc.heightOfString(side, { width: 105 }) : 0;
+                            const rh = Math.max(hName, hNote, hSide, 11) + 4;
+                            if (room(rh)) { cont = true; head(); }
+                            doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(p.name, M + 12, y, { width: 140 });
+                            if (side) doc.font('Helvetica').fontSize(10).fillColor(INK).text(side, M + 160, y, { width: 105 });
+                            if (p.notes) doc.font('Helvetica-Bold').fontSize(10).fillColor(RUST).text(p.notes, M + 270, y, { width: CW - 270 });
+                            y += rh - 2;
+                            doc.moveTo(M + 12, y).lineTo(W - M, y).lineWidth(0.4).strokeColor('#E4DED4').stroke();
+                            y += 2;
+                        });
+                        y += 8;
+                    });
+                    y += 6;
+                });
             }
-            doc.text(notes, x0 + personW + itemW + sidesW + cellPadding, textY, { width: notesW - cellPadding * 2, align: 'left' });
-            
-            currentY += rowH;
-          }
-          
-          // Update doc.y to position after the table
-          doc.y = y + totalHeight + spacingAfter;
-          doc.fontSize(12); // Reset font size
-        };
 
-          // Only show sections that have data
-          if (starters.length > 0) {
-            doc.font('Helvetica-Bold').text('Starters').moveDown(0.2);
-            drawTable('Starters', starters);
-            doc.moveDown(0.3);
-          }
-          
-          if (mains.length > 0) {
-            // Check if we need a new page for mains
-            if (doc.y > doc.page.height - 200) {
-              doc.addPage();
+            // Footer on every page
+            const range = doc.bufferedPageRange();
+            for (let i = 0; i < range.count; i++) {
+                doc.switchToPage(range.start + i);
+                doc.page.margins.bottom = 0;
+                doc.font('Helvetica').fontSize(8).fillColor(GREY)
+                   .text(`The Scenic Inn  ·  ${lastName || fullName}, ${niceDateStr(date)}  ·  page ${i + 1} of ${range.count}`,
+                         M, H - M + 8, { width: CW, align: 'center', lineBreak: false });
             }
-            doc.font('Helvetica-Bold').text('Mains').moveDown(0.2);
-            drawTable('Mains', mains, true); // Show sides column for mains
-            doc.moveDown(0.3);
-          }
 
-          // Sides are now included in the mains table, no separate table needed
-          
-          if (desserts.length > 0) {
-            // drawTable now handles page breaks internally, so we just need to add the title
-            doc.font('Helvetica-Bold').fontSize(14).text('Desserts').moveDown(0.2);
-            drawTable('Desserts', desserts);
-          }
-        }
-            }
-            
             doc.end();
-            
-            stream.on('finish', () => {
-                resolve(pdfPath);
-            });
-            
+            stream.on('finish', () => resolve(pdfPath));
             stream.on('error', reject);
-            
         } catch (error) {
             reject(error);
         }

@@ -8,10 +8,12 @@
 <link rel="icon" href="mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<script src="loader.js"></script>
+<script src="nav.js" defer></script>
 
 <header class="site-header dark">
   <div class="wrap">
@@ -19,8 +21,13 @@
     <nav class="site-nav" aria-label="Main">
       <a href="menus.html">Menus</a>
       <a href="#christmas">Christmas</a>
-      <a href="preorder.html?type=party">Large party</a>
-      <a href="preorder.html?type=event">Events</a>
+      <details class="nav-drop">
+        <summary>Book for an event</summary>
+        <div class="nav-panel">
+          <a href="preorder.html?type=party">Book for a large party</a>
+          <a href="preorder.html?type=party&amp;style=buffet">Book for a buffet</a>
+        </div>
+      </details>
       <a href="#visit">Find us</a>
       <a href="tel:+442820751260">028 2075 1260</a>
       <a href="book.html" class="nav-book">Book a table</a>
@@ -32,8 +39,8 @@
 <section class="hero dark">
   <div class="wrap">
     <div class="hero-text">
-      <p class="muted" style="margin-bottom:20px">Bar and restaurant, Armoy, County Antrim</p>
-      <h1>The Scenic Inn</h1>
+      <p class="muted" style="margin-bottom:20px">Armoy, County Antrim</p>
+      <h1 class="hero-logo"><img src="logo_light.png" alt="The Scenic Inn, bar and restaurant"></h1>
       <div class="double-rule"></div>
       <p class="est">Est 2010</p>
       <p class="lede">A family-run pub a short distance from the Dark Hedges. Locally sourced steaks, our famous sizzling pepper chicken, everything cooked from fresh, and a live band every weekend.</p>
@@ -50,6 +57,44 @@
   </div>
 </section>
 
+<section id="christmas" class="christmas dark" aria-labelledby="xmas-h">
+  <div class="wrap">
+    <img src="christmas-room.jpg" alt="The dining room decorated for Christmas, with two trees by the fireplace">
+    <div class="xmas-text">
+      <p class="muted">Bookings now open</p>
+      <h2 id="xmas-h">Christmas 2026</h2>
+      <p class="xmas-lede">Turkey and ham with sage and cranberry stuffing, daube of beef with Yorkshire pudding, a vegan mushroom and leek pithivier, and plenty more.</p>
+      <dl class="xmas-prices">
+        <div><dt>One course</dt><dd>£19.95</dd></div>
+        <div><dt>Two courses</dt><dd>£24.95</dd></div>
+        <div><dt>Three courses</dt><dd>£28.95</dd></div>
+      </dl>
+      <div class="btn-row">
+        <a href="preorder.html?type=party&amp;menu=christmas" class="btn btn-light">Preorder for your party</a>
+        <a href="menus.html#christmas" class="btn btn-outline">See the full menu</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap showcase" aria-labelledby="showcase-h">
+  <div class="showcase-head">
+    <h2 id="showcase-h">Plated with care</h2>
+    <p class="prose">Pub favourites, cooked from fresh and sent out looking the part.</p>
+  </div>
+  <div class="showcase-grid">
+    <figure>
+      <img src="pork-belly-feature.jpg" alt="Crispy pork belly with mashed potato, roast cabbage, broccoli and a glossy gravy" style="object-position:50% 30%">
+      <figcaption><strong>Crispy pork belly</strong> with mash, roast cabbage, broccoli and gravy</figcaption>
+    </figure>
+    <figure>
+      <img src="salmon-feature.jpg" alt="Seared salmon with crispy potatoes, broccoli, sugar snap peas and a chive cream" style="object-position:50% 40%">
+      <figcaption><strong>Seared salmon</strong> with crispy potatoes, broccoli, sugar snaps and chive cream</figcaption>
+    </figure>
+  </div>
+  <p class="showcase-link"><a href="menus.html">See the menus</a></p>
+</section>
+
 <section class="wrap split">
   <div>
     <h2>Local food, cooked from fresh</h2>
@@ -60,8 +105,8 @@
   <div class="photo-pair">
     <img src="diningroom.jpg" alt="The restaurant dining room with patterned chairs and warm lighting">
     <div class="stack">
-      <img src="goats-cheese.jpg" alt="Whipped goats cheese with granola and a trio of beetroot">
-      <img src="pork-belly.jpg" alt="Korean BBQ pork belly bites with sesame and pickled veg">
+      <img src="steak.jpg" alt="Steak with chips, a roast tomato, crispy onions and pepper sauce" style="object-position:50% 38%">
+      <img src="braised-beef.jpg" alt="Braised beef with chive mash, savoy cabbage and a rich gravy">
     </div>
   </div>
 </section>
@@ -104,10 +149,12 @@
     <a href="menus.html#evening" style="font-weight:600">See the evening menu</a>
   </div>
   <div class="gallery-grid">
+    <figure class="g-wide"><img src="pork-belly-bites.jpg" alt="Korean BBQ pork belly bites with sesame and pickled veg" loading="lazy"><figcaption>Korean BBQ pork belly bites</figcaption></figure>
+    <figure><img src="salmon-peas.jpg" alt="Seared salmon with crispy potatoes, broccoli, sugar snap peas and a chive cream" loading="lazy"><figcaption>Seared salmon</figcaption></figure>
+    <figure><img src="prawns-tempura.jpg" alt="Crispy battered prawns with lemon and two dips" loading="lazy"><figcaption>Crispy battered prawns</figcaption></figure>
     <figure class="g-wide"><img src="prawns-toast.jpg" alt="Piri piri king prawns in a garlic cream on toasted ciabatta" loading="lazy"><figcaption>Piri piri prawns</figcaption></figure>
-    <figure><img src="garlic-bread.jpg" alt="Bacon and cheddar garlic bread with rocket, pickled shallot and aioli" loading="lazy"><figcaption>Bacon and cheddar garlic bread</figcaption></figure>
-    <figure><img src="salmon.jpg" alt="Seared salmon with baby potatoes and lemon" loading="lazy"><figcaption>Seared salmon</figcaption></figure>
     <figure class="g-wide"><img src="cheesecake.jpg" alt="Cheesecake with chocolate, cream, a strawberry and vanilla ice cream" loading="lazy"><figcaption>Cheesecake and ice cream</figcaption></figure>
+    <figure><img src="garlic-bread.jpg" alt="Bacon and cheddar garlic bread with rocket, pickled shallot and aioli" loading="lazy"><figcaption>Bacon and cheddar garlic bread</figcaption></figure>
   </div>
 </section>
 
@@ -117,26 +164,6 @@
     <figure><blockquote>“I’ve never had a bad meal at the Scenic Inn! The food is always fantastic, and the staff couldn’t be nicer, or more helpful.”</blockquote><figcaption>Lauren C</figcaption></figure>
     <figure><blockquote>“Had a brilliant meal in very comfortable surroundings. Food is great and the prices are very good.”</blockquote><figcaption>shirl228</figcaption></figure>
     <figure><blockquote>“First time there for a birthday meal, food was excellent, staff were so friendly and couldn’t do enough for you.”</blockquote><figcaption>macey612</figcaption></figure>
-  </div>
-</section>
-
-<section id="christmas" class="christmas dark" aria-labelledby="xmas-h">
-  <div class="wrap">
-    <img src="christmas-room.jpg" alt="The dining room decorated for Christmas, with two trees by the fireplace">
-    <div class="xmas-text">
-      <p class="muted">Bookings now open</p>
-      <h2 id="xmas-h">Christmas 2026</h2>
-      <p class="xmas-lede">Turkey and ham with sage and cranberry stuffing, daube of beef with Yorkshire pudding, a vegan mushroom and leek pithivier, and plenty more.</p>
-      <dl class="xmas-prices">
-        <div><dt>One course</dt><dd>£19.95</dd></div>
-        <div><dt>Two courses</dt><dd>£24.95</dd></div>
-        <div><dt>Three courses</dt><dd>£28.95</dd></div>
-      </dl>
-      <div class="btn-row">
-        <a href="preorder.html?type=party&amp;menu=christmas" class="btn btn-light">Preorder for your party</a>
-        <a href="menus.html#christmas" class="btn btn-outline">See the full menu</a>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -188,11 +215,10 @@
       <a href="menus.html">Menus</a>
       <a href="book.html">Book a table</a>
       <a href="preorder.html?type=party">Large parties</a>
-      <a href="preorder.html?type=event">Events</a>
+      <a href="preorder.html?type=event">Book for an event</a>
       <a href="#whats-on">What’s on</a>
       <a href="#visit">Find us</a>
-      <a href="#">Facebook</a>
-      <a href="#">Instagram</a>
+      <a href="https://www.facebook.com/thescenicinn/" target="_blank" rel="noopener">Facebook</a>
     </nav>
   </div>
   <div class="wrap bottom">© <span id="year">2026</span> The Scenic Inn</div>
